@@ -71,6 +71,5 @@ export const simpleForm = new Topic<SimpleFormState, SimpleFormInitArgs, SimpleF
             throw `not expecting type "${metadata.type}"`;
         topic.instance.state.form[topic.args.name] = topic.args.value;
         topic.instance.state.prompt = undefined;
-
         topic.next();
     })

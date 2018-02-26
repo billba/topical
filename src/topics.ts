@@ -161,22 +161,24 @@ export class TopicOnReceiveHelper <
 
 export type TopicCallback <
     State,
-    CallbackArgs,
+    IncomingCallbackArgs,
+    OutgoingCallbackArgs,
     T
 > = (
     context: BotContext,
-    topicCallbackHelper: TopicCallbackHelper<State, CallbackArgs>,
+    topicCallbackHelper: TopicCallbackHelper<State, IncomingCallbackArgs, OutgoingCallbackArgs>,
 ) => T;
 
 export class TopicCallbackHelper <
     State,
-    CallbackArgs,
+    IncomingCallbackArgs,
+    OutgoingCallbackArgs,
 > {
     constructor(
         public instance: TopicInstance<State>,
-        public args: CallbackArgs,
+        public args: IncomingCallbackArgs,
         public child: string,
-        private data: TopicHelperData<CallbackArgs>,
+        private data: TopicHelperData<OutgoingCallbackArgs>,
     ) {
     }
 
@@ -188,7 +190,7 @@ export class TopicCallbackHelper <
     }
 
     complete (
-        args?: CallbackArgs,
+        args?: OutgoingCallbackArgs,
     ) {
         if (this.data.lifecycle)
             throw "you may only call one of next() or complete()";
@@ -413,12 +415,12 @@ export class Topic <
     }
 
     private _callbacks: {
-        [topicName: string]: TopicCallback<any, any, Promise<void>>;
+        [topicName: string]: TopicCallback<any, any, any, Promise<void>>;
     } = {}
 
     onComplete <C> (
         topic: Topic<any, any, C>,
-        callback: TopicCallback<State, C, Promiseable<void>>,
+        callback: TopicCallback<State, C, CallbackArgs, Promiseable<void>>,
     ): this {
         if (this._callbacks[topic.name])
             throw new Error(`An attempt was made to create a callback with existing topic named ${topic.name}. Ignored.`);
