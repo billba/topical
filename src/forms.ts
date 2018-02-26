@@ -41,14 +41,10 @@ export const simpleForm = new Topic<SimpleFormState, SimpleFormInitArgs, SimpleF
                 const metadata = topic.instance.state.schema[name];
                 if (metadata.type !== 'string')
                     throw `not expecting type "${metadata.type}"`;
-                topic.instance.state.prompt = await stringPrompt.createInstance(
-                    context,
-                    {
-                        name,
-                        prompt: metadata.prompt,
-                    },
-                    topic.instance.name,
-                );
+                topic.instance.state.prompt = await stringPrompt.createInstance(context, topic.instance.name, {
+                    name,
+                    prompt: metadata.prompt,
+                });
                 break;
             }
         }

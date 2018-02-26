@@ -21,6 +21,7 @@ export class TopicInstance <State = any> {
         public topicName: string,
         public callbackInstanceName?: string,
     ) {
+        this.name = `instance of "${topicName}"(${Date.now().toString()}${Math.random().toString().substr(1)})`;
     }
 }
 
@@ -235,32 +236,39 @@ export class Topic <
 
     createInstance (
         context: BotContext,
-        args?: InitArgs,
         callbackInstanceName?: string,
+        args?: InitArgs,
     ): Promise<string>;
 
     createInstance (
         context: BotContext,
-        callbackInstanceName?: string,
+        args?: InitArgs,
     ): Promise<string>;
     
     async createInstance (
         context: BotContext,
         ... params,
     ) {
-        let args: InitArgs = params.length > 0 && typeof params[0] !== 'string'
-            ? params[0]
-            : {}
+        let args = {} as InitArgs;
+        let callbackInstanceName: string;
         
-        let callbackInstanceName: string = params.length > 0 && typeof params[0] === 'string'
-            ? params[0]
-            : params.length > 1 && typeof params[1] === 'string'
-                ? params[1]
-                : undefined;
+        if (params.length > 0) {
+            if (typeof params[0] === 'string') {
+                callbackInstanceName = params[0];
+                if (params.length > 1) {
+                    args = params[1];
+                }
+            } else {
+                args = params[0];
+            }
+        }
      
-        const data = {} as TopicHelperData<CallbackArgs>;
         const instance = new TopicInstance<State>(this.name, callbackInstanceName);
 
+        context.state.conversation.topical.instances[instance.name] = instance;
+
+        const data = {} as TopicHelperData<CallbackArgs>;
+        
         await toPromise(this._init(context, new TopicInitHelper(context, instance, args, data)));
 
         if (data.lifecycle === TopicLifecycle.complete) {
@@ -268,9 +276,6 @@ export class Topic <
 
             return undefined;
         } else {
-            instance.name = `instance of "${instance.topicName}"(${Date.now().toString()}${Math.random().toString().substr(1)})`;
-            context.state.conversation.topical.instances[instance.name] = instance;
-    
             if (data.lifecycle === TopicLifecycle.next) {
                 await Topic.next(context, instance.name);
             } else if (data.lifecycle === TopicLifecycle.dispatch) {
