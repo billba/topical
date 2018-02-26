@@ -1,6 +1,6 @@
 {
   "name": "botbuilder-topical",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Topics abstraction for BotBuilder 4.x",
   "main": "lib/topical.js",
   "types": "lib/topical.d.ts",

@@ -268,7 +268,7 @@ export class Topic <
 
             return undefined;
         } else {
-            instance.name = Date.now().toString() + Math.random().toString().substr(1);
+            instance.name = `instance of "${instance.topicName}"(${Date.now().toString()}${Math.random().toString().substr(1)})`;
             context.state.conversation.topical.instances[instance.name] = instance;
     
             if (data.lifecycle === TopicLifecycle.next) {
@@ -380,6 +380,8 @@ export class Topic <
         const data = {} as TopicHelperData<any>;
     
         const topicCallbackHelper = new TopicCallbackHelper(parentInstance, args, instance.name, data);
+
+        delete context.state.conversation.topical.instances[instance.name];
 
         await topic._callbacks[instance.topicName](context, topicCallbackHelper);
 
