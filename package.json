@@ -1,0 +1,20 @@
+{
+  "name": "botbuilder-topical",
+  "version": "0.1.0",
+  "description": "Topics abstraction for BotBuilder 4.x",
+  "main": "lib/topical.js",
+  "types": "lib/topical.d.ts",
+  "scripts": {
+    "watch": "tsc -w",
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Bill Barnes",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^2.7.2"
+  },
+  "dependencies": {
+    "botbuilder": "^4.0.0-m1.7"
+  }
+}
