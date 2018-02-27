@@ -1,4 +1,4 @@
-import { Topic } from './topics';
+import { TopicClass } from './topics';
 
 export interface PromptState {
     name: string;
@@ -14,7 +14,7 @@ export interface PromptCallbackArgs {
     value: string;
 }
 
-export class StringPrompt extends Topic<PromptInitArgs, PromptState, PromptCallbackArgs> {
+export class StringPrompt extends TopicClass<PromptInitArgs, PromptState, PromptCallbackArgs> {
     constructor(
         name: string,
     ) {
@@ -26,7 +26,7 @@ export class StringPrompt extends Topic<PromptInitArgs, PromptState, PromptCallb
                 context.reply(topic.args.prompt);
             })
             .onReceive((context, topic) => {
-                topic.complete({
+                topic.returnToParent({
                     name: topic.instance.state.name,
                     value: context.request.text
                 })

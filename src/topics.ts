@@ -28,43 +28,43 @@ export class TopicInstance <State = any> {
 export type TopicInit <
     InitArgs,
     State,
-    CompleteArgs,
+    ReturnArgs,
     T
 > = (
     context: BotContext,
-    topic: TopicInitHelper<InitArgs, State, CompleteArgs>,
+    topic: TopicInitContext<InitArgs, State, ReturnArgs>,
 ) => T;
 
 export enum TopicMethods {
     next,
-    complete,
+    returnToParent,
     dispatch,
 }
 
 export type TopicMethod <
     State,
-    CompleteArgs,
+    ReturnArgs,
     T
 > = (
     context: BotContext,
-    topic: TopicMethodHelper<State, CompleteArgs>,
+    topic: TopicContext<State, ReturnArgs>,
 ) => T;
 
-export interface TopicMethodHelperData <CompleteArgs> {
+export interface TopicContextData <ReturnArgs> {
     topicMethod?: TopicMethods;
-    args?: CompleteArgs;
+    args?: ReturnArgs;
 }
 
-export class TopicMethodHelper <State, CompleteArgs> {
+export class TopicContext <State, ReturnArgs> {
     constructor(
         protected context: BotContext,
         public instance: TopicInstance<State>,
-        protected data: TopicMethodHelperData <CompleteArgs>,
+        protected data: TopicContextData <ReturnArgs>,
     ) {
     }
 
     createTopicInstance <_InitArgs> (
-        topic: Topic<_InitArgs>,
+        topic: TopicClass<_InitArgs>,
         args?: _InitArgs,
     ) {
         return topic.createInstance(this.context, this.instance.name, args);
@@ -72,24 +72,24 @@ export class TopicMethodHelper <State, CompleteArgs> {
 
     next () {
         if (this.data.topicMethod)
-            throw "you may only call one of next(), onReceive(), or complete()";
+            throw "you may only call one of next(), dispatchToSelf(), or returnToParent()";
         
         this.data.topicMethod = TopicMethods.next;
     }
 
-    complete (
-        args?: CompleteArgs,
+    returnToParent (
+        args?: ReturnArgs,
     ) {
         if (this.data.topicMethod)
-            throw "you may only call one of next(), onReceive(), or complete()";
+            throw "you may only call one of next(), dispatchToSelf(), or returnToParent()";
         
-        this.data.topicMethod = TopicMethods.complete;
+        this.data.topicMethod = TopicMethods.returnToParent;
         this.data.args = args;
     }
 
-    onReceive () {
+    dispatchToSelf () {
         if (this.data.topicMethod)
-            throw "you may only call one of next(), onReceive(), or complete()";
+            throw "you may only call one of next(), dispatchToSelf(), or returnToParent()";
         
         this.data.topicMethod = TopicMethods.dispatch;
     }
@@ -97,45 +97,45 @@ export class TopicMethodHelper <State, CompleteArgs> {
     dispatchToInstance (
         instanceName: string
     ) {
-        return Topic.dispatch(this.context, instanceName);
+        return TopicClass.dispatch(this.context, instanceName);
     }
 }
 
-export class TopicInitHelper <
+export class TopicInitContext <
     InitArgs,
     State,
-    CompleteArgs,
-> extends TopicMethodHelper<State, CompleteArgs> {
+    ReturnArgs,
+> extends TopicContext<State, ReturnArgs> {
     constructor(
         context: BotContext,
         instance: TopicInstance<State>,
-        data: TopicMethodHelperData <CompleteArgs>,
+        data: TopicContextData <ReturnArgs>,
         public args: InitArgs,
     ) {
         super(context, instance, data);
     }
 }
 
-export type TopicOnComplete <
+export type TopicOnChildReturn <
     State,
-    IncomingCompleteArgs,
-    OutgoingCompleteArgs,
+    IncomingReturnArgs,
+    OutgoingReturnArgs,
     T
 > = (
     context: BotContext,
-    topicOnCompleteHelper: TopicOnCompleteHelper<State, IncomingCompleteArgs, OutgoingCompleteArgs>,
+    topicOnChildReturnHelper: TopicOnChildReturnContext<State, IncomingReturnArgs, OutgoingReturnArgs>,
 ) => T;
 
-export class TopicOnCompleteHelper <
+export class TopicOnChildReturnContext <
     State,
-    IncomingCompleteArgs,
-    OutgoingCompleteArgs,
-> extends TopicInitHelper<IncomingCompleteArgs, State, OutgoingCompleteArgs> {
+    IncomingReturnArgs,
+    OutgoingReturnArgs,
+> extends TopicInitContext<IncomingReturnArgs, State, OutgoingReturnArgs> {
     constructor(
         context: BotContext,
         instance: TopicInstance<State>,
-        data: TopicMethodHelperData<OutgoingCompleteArgs>,
-        args: IncomingCompleteArgs,
+        data: TopicContextData<OutgoingReturnArgs>,
+        args: IncomingReturnArgs,
         public childInstanceName: string,
     ) {
         super(context, instance, data, args);
@@ -144,27 +144,27 @@ export class TopicOnCompleteHelper <
 
 const returnsPromiseVoid = () => Promise.resolve(); // a little more efficient than creating a new one every time
 
-export class Topic <
+export class TopicClass <
     InitArgs extends {} = {},
     State extends {} = {},
-    CompleteArgs extends {} = {},
+    ReturnArgs extends {} = {},
 > {
-    private static topics: {
-        [name: string]: Topic;
+    private static topicClasses: {
+        [name: string]: TopicClass;
     } = {}
 
-    protected _init: TopicInit<InitArgs, State, CompleteArgs, Promise<void>> = returnsPromiseVoid;
-    protected _next: TopicMethod<State, CompleteArgs, Promise<void>> = returnsPromiseVoid;
-    protected _onReceive: TopicMethod<State, CompleteArgs, Promise<void>> = returnsPromiseVoid;
+    protected _init: TopicInit<InitArgs, State, ReturnArgs, Promise<void>> = returnsPromiseVoid;
+    protected _next: TopicMethod<State, ReturnArgs, Promise<void>> = returnsPromiseVoid;
+    protected _onReceive: TopicMethod<State, ReturnArgs, Promise<void>> = returnsPromiseVoid;
 
     constructor (
         public name: string
     ) {
-        if (Topic.topics[name]) {
+        if (TopicClass.topicClasses[name]) {
             throw new Error(`An attempt was made to create a topic with existing name "${name}".`);
         }
         
-        Topic.topics[name] = this;
+        TopicClass.topicClasses[name] = this;
     }
 
     async createInstance (
@@ -176,19 +176,19 @@ export class Topic <
 
         context.state.conversation.topical.instances[instance.name] = instance;
 
-        const data = {} as TopicMethodHelperData<CompleteArgs>;
+        const data = {} as TopicContextData<ReturnArgs>;
         
-        await toPromise(this._init(context, new TopicInitHelper(context, instance, data, args)));
+        await toPromise(this._init(context, new TopicInitContext(context, instance, data, args)));
 
-        if (data.topicMethod === TopicMethods.complete) {
-            await Topic.complete(context, instance, data.args);
+        if (data.topicMethod === TopicMethods.returnToParent) {
+            await TopicClass.returnToParent(context, instance, data.args);
 
             return undefined;
         } else {
             if (data.topicMethod === TopicMethods.next) {
-                await Topic.next(context, instance.name);
+                await TopicClass.next(context, instance.name);
             } else if (data.topicMethod === TopicMethods.dispatch) {
-                await Topic.dispatch(context, instance.name);
+                await TopicClass.dispatch(context, instance.name);
             }
 
             return instance.name;
@@ -200,7 +200,7 @@ export class Topic <
         getRootInstanceName: () => Promise<string>
     ) {
         if (context.state.conversation.topical)
-            return Topic.dispatch(context, context.state.conversation.topical.rootInstanceName);
+            return TopicClass.dispatch(context, context.state.conversation.topical.rootInstanceName);
         
         context.state.conversation.topical = {
             instances: {},
@@ -221,21 +221,21 @@ export class Topic <
             return;
         }
 
-        const topic = Topic.topics[instance.topicName];
+        const topic = TopicClass.topicClasses[instance.topicName];
         
         if (!topic) {
             console.warn(`Unknown topic ${instance.topicName}`);
             return;
         }
 
-        const data = {} as TopicMethodHelperData<any>;
+        const data = {} as TopicContextData<any>;
 
-        await topic._next(context, new TopicMethodHelper(context, instance, data));
+        await topic._next(context, new TopicContext(context, instance, data));
 
         if (data.topicMethod === TopicMethods.next) {
-            await Topic.next(context, instanceName);
-        } else if (data.topicMethod === TopicMethods.complete) {
-            await Topic.complete(context, instance, data.args);
+            await TopicClass.next(context, instanceName);
+        } else if (data.topicMethod === TopicMethods.returnToParent) {
+            await TopicClass.returnToParent(context, instance, data.args);
         }
     }
 
@@ -250,28 +250,28 @@ export class Topic <
             return;
         }
 
-        const topic = Topic.topics[instance.topicName];
+        const topic = TopicClass.topicClasses[instance.topicName];
         
         if (!topic) {
             console.warn(`Unknown topic ${instance.topicName}`);
             return;
         }
 
-        const data = {} as TopicMethodHelperData<any>;
+        const data = {} as TopicContextData<any>;
 
-        await topic._onReceive(context, new TopicMethodHelper(context, instance, data));
+        await topic._onReceive(context, new TopicContext(context, instance, data));
 
         if (data.topicMethod === TopicMethods.next) {
-            await Topic.next(context, instanceName);
-        } else if (data.topicMethod === TopicMethods.complete) {
-            await Topic.complete(context, instance, data.args);
+            await TopicClass.next(context, instanceName);
+        } else if (data.topicMethod === TopicMethods.returnToParent) {
+            await TopicClass.returnToParent(context, instance, data.args);
         }
     }
 
-    static async complete <CompleteArgs = any> (
+    static async returnToParent <ReturnArgs = any> (
         context: BotContext,
         instance: TopicInstance<any>,
-        args: CompleteArgs,
+        args: ReturnArgs,
     ) {
         if (!instance.parentInstanceName) {
             return;
@@ -284,30 +284,30 @@ export class Topic <
             return;
         }
 
-        const topic = Topic.topics[parentInstance.topicName];
+        const topic = TopicClass.topicClasses[parentInstance.topicName];
 
         if (!topic) {
             console.warn(`Unknown topic ${parentInstance.topicName}`);
             return;
         }
 
-        const data = {} as TopicMethodHelperData<any>;
+        const data = {} as TopicContextData<any>;
     
-        const topicCompleteHelper = new TopicOnCompleteHelper(context, parentInstance, data, args, instance.name);
+        const topicOnChildReturnContext = new TopicOnChildReturnContext(context, parentInstance, data, args, instance.name);
 
         delete context.state.conversation.topical.instances[instance.name];
 
-        await topic._completeHandlers[instance.topicName](context, topicCompleteHelper);
+        await topic._onChildReturnHandlers[instance.topicName](context, topicOnChildReturnContext);
 
         if (data.topicMethod === TopicMethods.next) {
-            await Topic.next(context, parentInstance.name);
-        } else if (data.topicMethod === TopicMethods.complete) {
-            await Topic.complete(context, parentInstance, data.args);
+            await TopicClass.next(context, parentInstance.name);
+        } else if (data.topicMethod === TopicMethods.returnToParent) {
+            await TopicClass.returnToParent(context, parentInstance, data.args);
         }
     }
 
     init (
-        init: TopicInit<InitArgs, State, CompleteArgs, Promiseable<void>>,
+        init: TopicInit<InitArgs, State, ReturnArgs, Promiseable<void>>,
     ): this {
         this._init = (context, topic) => toPromise(init(context, topic));
     
@@ -315,7 +315,7 @@ export class Topic <
     }
 
     next (
-        next: TopicMethod<State, CompleteArgs, Promiseable<void>>,
+        next: TopicMethod<State, ReturnArgs, Promiseable<void>>,
     ): this {
         this._next = (context, topic) => toPromise(next(context, topic));
 
@@ -323,25 +323,25 @@ export class Topic <
     }
 
     onReceive (
-        onReceive: TopicMethod<State, CompleteArgs, Promiseable<void>>,
+        onReceive: TopicMethod<State, ReturnArgs, Promiseable<void>>,
     ): this {
         this._onReceive = (context, instance) => toPromise(onReceive(context, instance));
 
         return this;
     }
 
-    private _completeHandlers: {
-        [topicName: string]: TopicOnComplete<any, any, any, Promise<void>>;
+    private _onChildReturnHandlers: {
+        [topicName: string]: TopicOnChildReturn<any, any, any, Promise<void>>;
     } = {}
 
-    onComplete <C> (
-        topic: Topic<any, any, C>,
-        completeHandler: TopicOnComplete<State, C, CompleteArgs, Promiseable<void>> = returnsPromiseVoid,
+    onChildReturn <C> (
+        topic: TopicClass<any, any, C>,
+        onChildReturnHandler: TopicOnChildReturn<State, C, ReturnArgs, Promiseable<void>> = returnsPromiseVoid,
     ): this {
-        if (this._completeHandlers[topic.name])
-            throw new Error(`An attempt was made to call onComplete for topic ${topic.name}. This topic is already handled.`);
+        if (this._onChildReturnHandlers[topic.name])
+            throw new Error(`An attempt was made to call onChildReturn for topic ${topic.name}. This topic is already handled.`);
 
-        this._completeHandlers[topic.name] = (context, topic) => toPromise(completeHandler(context, topic));
+        this._onChildReturnHandlers[topic.name] = (context, topic) => toPromise(onChildReturnHandler(context, topic));
 
         return this;
     }

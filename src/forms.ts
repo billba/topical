@@ -1,4 +1,4 @@
-import { Topic } from './topics';
+import { TopicClass } from './topics';
 import { StringPrompt } from './prompts';
 
 export interface SimpleFormMetadata {
@@ -28,7 +28,7 @@ export interface SimpleFormCallbackArgs {
     form: SimpleFormData;
 }
 
-export class SimpleForm extends Topic<SimpleFormInitArgs, SimpleFormState, SimpleFormCallbackArgs> {
+export class SimpleForm extends TopicClass<SimpleFormInitArgs, SimpleFormState, SimpleFormCallbackArgs> {
     constructor (
         name: string
     ) {
@@ -60,7 +60,7 @@ export class SimpleForm extends Topic<SimpleFormInitArgs, SimpleFormState, Simpl
                 }
 
                 if (!topic.instance.state.prompt) {
-                    topic.complete({
+                    topic.returnToParent({
                         form: topic.instance.state.form
                     });
                 }
@@ -71,7 +71,7 @@ export class SimpleForm extends Topic<SimpleFormInitArgs, SimpleFormState, Simpl
 
                 await topic.dispatchToInstance(topic.instance.state.prompt);
             })
-            .onComplete(stringPrompt, (context, topic) => {
+            .onChildReturn(stringPrompt, (context, topic) => {
                 const metadata = topic.instance.state.schema[topic.args.name];
 
                 if (metadata.type !== 'string')
