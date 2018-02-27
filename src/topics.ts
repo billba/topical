@@ -26,31 +26,31 @@ export class TopicInstance <State = any> {
 }
 
 export type TopicInit <
-    State,
     InitArgs,
+    State,
     CallbackArgs,
     T
 > = (
     context: BotContext,
-    topic: TopicInitHelper<State, InitArgs, CallbackArgs>,
+    topic: TopicInitHelper<InitArgs, State, CallbackArgs>,
 ) => T;
 
-export enum TopicLifecycle {
+export enum TopicMethods {
     next,
     complete,
     dispatch,
 }
 
 export class TopicInitHelper <
-    State,
     InitArgs,
+    State,
     CallbackArgs,
 > {
     constructor(
         private context: BotContext,
         public instance: TopicInstance<State>,
         public args: InitArgs,
-        private data: TopicHelperData <CallbackArgs>
+        private data: TopicHelperData <CallbackArgs, TopicMethods>
     ) {
     }
 
@@ -58,7 +58,7 @@ export class TopicInitHelper <
         if (this.data.lifecycle)
             throw "you may only call one of next(), dispatch(), or complete()";
         
-        this.data.lifecycle = TopicLifecycle.next;
+        this.data.lifecycle = TopicMethods.next;
     }
 
     complete (
@@ -67,7 +67,7 @@ export class TopicInitHelper <
         if (this.data.lifecycle)
             throw "you may only call one of next(), dispatch(), or complete()";
         
-        this.data.lifecycle = TopicLifecycle.complete;
+        this.data.lifecycle = TopicMethods.complete;
         this.data.args = args;
     }
 
@@ -75,7 +75,7 @@ export class TopicInitHelper <
         if (this.data.lifecycle)
             throw "you may only call one of next(), dispatch(), or complete()";
         
-        this.data.lifecycle = TopicLifecycle.dispatch;
+        this.data.lifecycle = TopicMethods.dispatch;
     }
 }
 
@@ -95,7 +95,7 @@ export class TopicNextHelper <
     constructor(
         private context: BotContext,
         public instance: TopicInstance<State>,
-        private data: TopicHelperData<CallbackArgs>,
+        private data: TopicHelperData<CallbackArgs, TopicMethods.next | TopicMethods.complete>,
     ) {
     }
 
@@ -103,7 +103,7 @@ export class TopicNextHelper <
         if (this.data.lifecycle)
             throw "you may only call one of next() or complete()";
         
-        this.data.lifecycle = TopicLifecycle.next;
+        this.data.lifecycle = TopicMethods.next;
     }
 
     complete (
@@ -112,13 +112,13 @@ export class TopicNextHelper <
         if (this.data.lifecycle)
             throw "you may only call one of next() or complete()";
         
-        this.data.lifecycle = TopicLifecycle.complete;
+        this.data.lifecycle = TopicMethods.complete;
         this.data.args = args;
     }
 }
 
-export interface TopicHelperData <CallbackArgs> {
-    lifecycle?: TopicLifecycle;
+export interface TopicHelperData <CallbackArgs, AllowableTopicMethods> {
+    lifecycle?: AllowableTopicMethods;
     args?: CallbackArgs;
 }
 
@@ -138,7 +138,7 @@ export class TopicOnReceiveHelper <
     constructor(
         private context: BotContext,
         public instance: TopicInstance<State>,
-        private data: TopicHelperData<CallbackArgs>,
+        private data: TopicHelperData<CallbackArgs, TopicMethods.next | TopicMethods.complete>,
     ) {
     }
 
@@ -146,7 +146,7 @@ export class TopicOnReceiveHelper <
         if (this.data.lifecycle)
             throw "you may only call one of next() or complete()";
         
-        this.data.lifecycle = TopicLifecycle.next;
+        this.data.lifecycle = TopicMethods.next;
     }
 
     complete (
@@ -155,7 +155,7 @@ export class TopicOnReceiveHelper <
         if (this.data.lifecycle)
             throw "you may only call one of next() or complete()";
         
-        this.data.lifecycle = TopicLifecycle.complete;
+        this.data.lifecycle = TopicMethods.complete;
         this.data.args = args;
     }
 }
@@ -179,7 +179,7 @@ export class TopicCallbackHelper <
         public instance: TopicInstance<State>,
         public args: IncomingCallbackArgs,
         public child: string,
-        private data: TopicHelperData<OutgoingCallbackArgs>,
+        private data: TopicHelperData<OutgoingCallbackArgs, TopicMethods.next | TopicMethods.complete>,
     ) {
     }
 
@@ -187,7 +187,7 @@ export class TopicCallbackHelper <
         if (this.data.lifecycle)
             throw "you may only call one of next() or complete()";
         
-        this.data.lifecycle = TopicLifecycle.next;
+        this.data.lifecycle = TopicMethods.next;
     }
 
     complete (
@@ -196,7 +196,7 @@ export class TopicCallbackHelper <
         if (this.data.lifecycle)
             throw "you may only call one of next() or complete()";
         
-        this.data.lifecycle = TopicLifecycle.complete;
+        this.data.lifecycle = TopicMethods.complete;
         this.data.args = args;
     }
 }
@@ -204,15 +204,15 @@ export class TopicCallbackHelper <
 const returnsPromiseVoid = () => Promise.resolve();
 
 export class Topic <
-    State extends {} = {},
     InitArgs extends {} = {},
+    State extends {} = {},
     CallbackArgs extends {} = {},
 > {
     private static topics: {
         [name: string]: Topic;
     } = {}
 
-    protected _init: TopicInit<State, InitArgs, CallbackArgs, Promise<void>> = returnsPromiseVoid;
+    protected _init: TopicInit<InitArgs, State, CallbackArgs, Promise<void>> = returnsPromiseVoid;
     protected _next: TopicNext<State, CallbackArgs, Promise<void>> = returnsPromiseVoid;
     protected _onReceive: TopicOnReceive<State, CallbackArgs, Promise<void>> = returnsPromiseVoid;
 
@@ -259,18 +259,18 @@ export class Topic <
 
         context.state.conversation.topical.instances[instance.name] = instance;
 
-        const data = {} as TopicHelperData<CallbackArgs>;
+        const data = {} as TopicHelperData<CallbackArgs, TopicMethods>;
         
         await toPromise(this._init(context, new TopicInitHelper(context, instance, args, data)));
 
-        if (data.lifecycle === TopicLifecycle.complete) {
+        if (data.lifecycle === TopicMethods.complete) {
             await Topic.complete(context, instance, data.args);
 
             return undefined;
         } else {
-            if (data.lifecycle === TopicLifecycle.next) {
+            if (data.lifecycle === TopicMethods.next) {
                 await Topic.next(context, instance.name);
-            } else if (data.lifecycle === TopicLifecycle.dispatch) {
+            } else if (data.lifecycle === TopicMethods.dispatch) {
                 await Topic.dispatch(context, instance.name);
             }
 
@@ -311,13 +311,13 @@ export class Topic <
             return;
         }
 
-        const data = {} as TopicHelperData<any>;
+        const data = {} as TopicHelperData<any, TopicMethods.next | TopicMethods.complete>;
 
         await topic._next(context, new TopicNextHelper(context, instance, data));
 
-        if (data.lifecycle === TopicLifecycle.next) {
+        if (data.lifecycle === TopicMethods.next) {
             await Topic.next(context, instanceName);
-        } else if (data.lifecycle === TopicLifecycle.complete) {
+        } else if (data.lifecycle === TopicMethods.complete) {
             await Topic.complete(context, instance, data.args);
         }
     }
@@ -340,13 +340,13 @@ export class Topic <
             return;
         }
 
-        const data = {} as TopicHelperData<any>;
+        const data = {} as TopicHelperData<any, TopicMethods.next | TopicMethods.complete>;
 
         await topic._onReceive(context, new TopicOnReceiveHelper(context, instance, data));
 
-        if (data.lifecycle === TopicLifecycle.next) {
+        if (data.lifecycle === TopicMethods.next) {
             await Topic.next(context, instanceName);
-        } else if (data.lifecycle === TopicLifecycle.complete) {
+        } else if (data.lifecycle === TopicMethods.complete) {
             await Topic.complete(context, instance, data.args);
         }
     }
@@ -374,7 +374,7 @@ export class Topic <
             return;
         }
 
-        const data = {} as TopicHelperData<any>;
+        const data = {} as TopicHelperData<any, TopicMethods.next | TopicMethods.complete>;
     
         const topicCallbackHelper = new TopicCallbackHelper(parentInstance, args, instance.name, data);
 
@@ -382,15 +382,15 @@ export class Topic <
 
         await topic._callbacks[instance.topicName](context, topicCallbackHelper);
 
-        if (data.lifecycle === TopicLifecycle.next) {
+        if (data.lifecycle === TopicMethods.next) {
             await Topic.next(context, parentInstance.name);
-        } else if (data.lifecycle === TopicLifecycle.complete) {
+        } else if (data.lifecycle === TopicMethods.complete) {
             await Topic.complete(context, parentInstance, data.args);
         }
     }
 
     init (
-        init: TopicInit<State, InitArgs, CallbackArgs, Promiseable<void>>,
+        init: TopicInit<InitArgs, State, CallbackArgs, Promiseable<void>>,
     ): this {
         this._init = (context, topic) => toPromise(init(context, topic));
     

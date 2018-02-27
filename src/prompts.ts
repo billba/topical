@@ -14,7 +14,7 @@ export interface PromptCallbackArgs {
     value: string;
 }
 
-export class StringPrompt extends Topic<PromptState, PromptInitArgs, PromptCallbackArgs> {
+export class StringPrompt extends Topic<PromptInitArgs, PromptState, PromptCallbackArgs> {
     constructor(
         name: string,
     ) {

@@ -28,14 +28,14 @@ export interface SimpleFormCallbackArgs {
     form: SimpleFormData;
 }
 
-export class SimpleForm extends Topic<SimpleFormState, SimpleFormInitArgs, SimpleFormCallbackArgs> {
+export class SimpleForm extends Topic<SimpleFormInitArgs, SimpleFormState, SimpleFormCallbackArgs> {
     constructor (
         name: string
     ) {
         super(name);
 
         const stringPrompt = new StringPrompt(name + ".stringPrompt");
-        
+
         this
             .init((context, topic) => {
                 topic.instance.state.schema = topic.args.schema;
