@@ -19,7 +19,7 @@ export class TopicInstance <State = any> {
 
     constructor(
         public topicName: string,
-        public callbackInstanceName?: string,
+        public parentInstanceName?: string,
     ) {
         this.name = `instance of "${topicName}"(${Date.now().toString()}${Math.random().toString().substr(1)})`;
     }
@@ -28,11 +28,11 @@ export class TopicInstance <State = any> {
 export type TopicInit <
     InitArgs,
     State,
-    CallbackArgs,
+    CompleteArgs,
     T
 > = (
     context: BotContext,
-    topic: TopicInitHelper<InitArgs, State, CallbackArgs>,
+    topic: TopicInitHelper<InitArgs, State, CompleteArgs>,
 ) => T;
 
 export enum TopicMethods {
@@ -44,13 +44,13 @@ export enum TopicMethods {
 export class TopicInitHelper <
     InitArgs,
     State,
-    CallbackArgs,
+    CompleteArgs,
 > {
     constructor(
         private context: BotContext,
         public instance: TopicInstance<State>,
         public args: InitArgs,
-        private data: TopicHelperData <CallbackArgs, TopicMethods>
+        private data: TopicHelperData <CompleteArgs, TopicMethods>
     ) {
     }
 
@@ -62,7 +62,7 @@ export class TopicInitHelper <
     }
 
     complete (
-        args?: CallbackArgs,
+        args?: CompleteArgs,
     ) {
         if (this.data.lifecycle)
             throw "you may only call one of next(), dispatch(), or complete()";
@@ -81,21 +81,21 @@ export class TopicInitHelper <
 
 export type TopicNext <
     State,
-    CallbackArgs,
+    CompleteArgs,
     T
 > = (
     context: BotContext,
-    topic: TopicNextHelper<State, CallbackArgs>
+    topic: TopicNextHelper<State, CompleteArgs>
 ) => T
 
 export class TopicNextHelper <
     State,
-    CallbackArgs,
+    CompleteArgs,
 > {
     constructor(
         private context: BotContext,
         public instance: TopicInstance<State>,
-        private data: TopicHelperData<CallbackArgs, TopicMethods.next | TopicMethods.complete>,
+        private data: TopicHelperData<CompleteArgs, TopicMethods.next | TopicMethods.complete>,
     ) {
     }
 
@@ -107,7 +107,7 @@ export class TopicNextHelper <
     }
 
     complete (
-        args?: CallbackArgs,
+        args?: CompleteArgs,
     ) {
         if (this.data.lifecycle)
             throw "you may only call one of next() or complete()";
@@ -117,28 +117,28 @@ export class TopicNextHelper <
     }
 }
 
-export interface TopicHelperData <CallbackArgs, AllowableTopicMethods> {
+export interface TopicHelperData <CompleteArgs, AllowableTopicMethods> {
     lifecycle?: AllowableTopicMethods;
-    args?: CallbackArgs;
+    args?: CompleteArgs;
 }
 
 export type TopicOnReceive <
     State,
-    CallbackArgs,
+    CompleteArgs,
     T
 > = (
     context: BotContext,
-    topic: TopicOnReceiveHelper<State, CallbackArgs>
+    topic: TopicOnReceiveHelper<State, CompleteArgs>
 ) => T;
 
 export class TopicOnReceiveHelper <
     State,
-    CallbackArgs,
+    CompleteArgs,
 > {
     constructor(
         private context: BotContext,
         public instance: TopicInstance<State>,
-        private data: TopicHelperData<CallbackArgs, TopicMethods.next | TopicMethods.complete>,
+        private data: TopicHelperData<CompleteArgs, TopicMethods.next | TopicMethods.complete>,
     ) {
     }
 
@@ -150,7 +150,7 @@ export class TopicOnReceiveHelper <
     }
 
     complete (
-        args?: CallbackArgs,
+        args?: CompleteArgs,
     ) {
         if (this.data.lifecycle)
             throw "you may only call one of next() or complete()";
@@ -160,26 +160,26 @@ export class TopicOnReceiveHelper <
     }
 }
 
-export type TopicCallback <
+export type TopicComplete <
     State,
-    IncomingCallbackArgs,
-    OutgoingCallbackArgs,
+    IncomingCompleteArgs,
+    OutgoingCompleteArgs,
     T
 > = (
     context: BotContext,
-    topicCallbackHelper: TopicCallbackHelper<State, IncomingCallbackArgs, OutgoingCallbackArgs>,
+    topicCompleteHelper: TopicCompleteHelper<State, IncomingCompleteArgs, OutgoingCompleteArgs>,
 ) => T;
 
-export class TopicCallbackHelper <
+export class TopicCompleteHelper <
     State,
-    IncomingCallbackArgs,
-    OutgoingCallbackArgs,
+    IncomingCompleteArgs,
+    OutgoingCompleteArgs,
 > {
     constructor(
         public instance: TopicInstance<State>,
-        public args: IncomingCallbackArgs,
+        public args: IncomingCompleteArgs,
         public child: string,
-        private data: TopicHelperData<OutgoingCallbackArgs, TopicMethods.next | TopicMethods.complete>,
+        private data: TopicHelperData<OutgoingCompleteArgs, TopicMethods.next | TopicMethods.complete>,
     ) {
     }
 
@@ -191,7 +191,7 @@ export class TopicCallbackHelper <
     }
 
     complete (
-        args?: OutgoingCallbackArgs,
+        args?: OutgoingCompleteArgs,
     ) {
         if (this.data.lifecycle)
             throw "you may only call one of next() or complete()";
@@ -206,21 +206,21 @@ const returnsPromiseVoid = () => Promise.resolve();
 export class Topic <
     InitArgs extends {} = {},
     State extends {} = {},
-    CallbackArgs extends {} = {},
+    CompleteArgs extends {} = {},
 > {
     private static topics: {
         [name: string]: Topic;
     } = {}
 
-    protected _init: TopicInit<InitArgs, State, CallbackArgs, Promise<void>> = returnsPromiseVoid;
-    protected _next: TopicNext<State, CallbackArgs, Promise<void>> = returnsPromiseVoid;
-    protected _onReceive: TopicOnReceive<State, CallbackArgs, Promise<void>> = returnsPromiseVoid;
+    protected _init: TopicInit<InitArgs, State, CompleteArgs, Promise<void>> = returnsPromiseVoid;
+    protected _next: TopicNext<State, CompleteArgs, Promise<void>> = returnsPromiseVoid;
+    protected _onReceive: TopicOnReceive<State, CompleteArgs, Promise<void>> = returnsPromiseVoid;
 
     constructor (
         public name: string
     ) {
         if (Topic.topics[name]) {
-            throw new Error(`An attempt was made to create a topic with existing name "${name}". Ignored.`);
+            throw new Error(`An attempt was made to create a topic with existing name "${name}".`);
         }
         
         Topic.topics[name] = this;
@@ -228,7 +228,7 @@ export class Topic <
 
     createInstance (
         context: BotContext,
-        callbackInstanceName?: string,
+        parentInstanceName?: string,
         args?: InitArgs,
     ): Promise<string>;
 
@@ -242,11 +242,11 @@ export class Topic <
         ... params,
     ) {
         let args = {} as InitArgs;
-        let callbackInstanceName: string;
+        let parentInstanceName: string;
         
         if (params.length > 0) {
             if (typeof params[0] === 'string') {
-                callbackInstanceName = params[0];
+                parentInstanceName = params[0];
                 if (params.length > 1) {
                     args = params[1];
                 }
@@ -255,11 +255,11 @@ export class Topic <
             }
         }
      
-        const instance = new TopicInstance<State>(this.name, callbackInstanceName);
+        const instance = new TopicInstance<State>(this.name, parentInstanceName);
 
         context.state.conversation.topical.instances[instance.name] = instance;
 
-        const data = {} as TopicHelperData<CallbackArgs, TopicMethods>;
+        const data = {} as TopicHelperData<CompleteArgs, TopicMethods>;
         
         await toPromise(this._init(context, new TopicInitHelper(context, instance, args, data)));
 
@@ -351,19 +351,19 @@ export class Topic <
         }
     }
 
-    static async complete <CallbackArgs = any> (
+    static async complete <CompleteArgs = any> (
         context: BotContext,
         instance: TopicInstance<any>,
-        args: CallbackArgs,
+        args: CompleteArgs,
     ) {
-        if (!instance.callbackInstanceName) {
+        if (!instance.parentInstanceName) {
             return;
         }
                 
-        const parentInstance = context.state.conversation.topical.instances[instance.callbackInstanceName];
+        const parentInstance = context.state.conversation.topical.instances[instance.parentInstanceName];
 
         if (!parentInstance) {
-            console.warn(`Unknown parent instance ${instance.callbackInstanceName}`);
+            console.warn(`Unknown parent instance ${instance.parentInstanceName}`);
             return;
         }
 
@@ -376,11 +376,11 @@ export class Topic <
 
         const data = {} as TopicHelperData<any, TopicMethods.next | TopicMethods.complete>;
     
-        const topicCallbackHelper = new TopicCallbackHelper(parentInstance, args, instance.name, data);
+        const topicCompleteHelper = new TopicCompleteHelper(parentInstance, args, instance.name, data);
 
         delete context.state.conversation.topical.instances[instance.name];
 
-        await topic._callbacks[instance.topicName](context, topicCallbackHelper);
+        await topic._completeHandlers[instance.topicName](context, topicCompleteHelper);
 
         if (data.lifecycle === TopicMethods.next) {
             await Topic.next(context, parentInstance.name);
@@ -390,7 +390,7 @@ export class Topic <
     }
 
     init (
-        init: TopicInit<InitArgs, State, CallbackArgs, Promiseable<void>>,
+        init: TopicInit<InitArgs, State, CompleteArgs, Promiseable<void>>,
     ): this {
         this._init = (context, topic) => toPromise(init(context, topic));
     
@@ -398,7 +398,7 @@ export class Topic <
     }
 
     next (
-        next: TopicNext<State, CallbackArgs, Promiseable<void>>,
+        next: TopicNext<State, CompleteArgs, Promiseable<void>>,
     ): this {
         this._next = (context, topic) => toPromise(next(context, topic));
 
@@ -406,25 +406,25 @@ export class Topic <
     }
 
     onReceive (
-        onReceive: TopicOnReceive<State, CallbackArgs, Promiseable<void>>,
+        onReceive: TopicOnReceive<State, CompleteArgs, Promiseable<void>>,
     ): this {
         this._onReceive = (context, instance) => toPromise(onReceive(context, instance));
 
         return this;
     }
 
-    private _callbacks: {
-        [topicName: string]: TopicCallback<any, any, any, Promise<void>>;
+    private _completeHandlers: {
+        [topicName: string]: TopicComplete<any, any, any, Promise<void>>;
     } = {}
 
     onComplete <C> (
         topic: Topic<any, any, C>,
-        callback: TopicCallback<State, C, CallbackArgs, Promiseable<void>>,
+        completeHandler: TopicComplete<State, C, CompleteArgs, Promiseable<void>>,
     ): this {
-        if (this._callbacks[topic.name])
-            throw new Error(`An attempt was made to create a callback with existing topic named ${topic.name}. Ignored.`);
+        if (this._completeHandlers[topic.name])
+            throw new Error(`An attempt was made to call onComplete for topic ${topic.name}. This topic is already handled.`);
 
-        this._callbacks[topic.name] = (context, topic) => toPromise(callback(context, topic));
+        this._completeHandlers[topic.name] = (context, topic) => toPromise(completeHandler(context, topic));
 
         return this;
     }
