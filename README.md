@@ -1,8 +1,12 @@
 # Topical
 
-Conversation model for [Microsoft BotBuilder 4.x]()
+Conversation model for [Microsoft BotBuilder 4.x](https://github.com/microsoft/botbuilder-js).
+
+`npm install -S botbuilder-topical`
 
 ```js
+import { TopicClass } from 'botbuilder-topical';
+
 bot.onReceive(async context => {
     await TopicClass.do(context, () => rootTopicClass.createInstance(context))
 });
