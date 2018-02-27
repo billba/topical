@@ -217,18 +217,10 @@ export class Topic <
     protected _onReceive: TopicOnReceive<State, CallbackArgs, Promise<void>> = returnsPromiseVoid;
 
     constructor (
-        public name: string,
-        behavior?: 'singleton' | 'overwrite',
+        public name: string
     ) {
         if (Topic.topics[name]) {
-            switch (behavior) {
-                case 'singleton':
-                    return;
-                case 'overwrite':
-                    break;
-                default:
-                    throw new Error(`An attempt was made to create a topic with existing name "${name}". Ignored.`);
-            }
+            throw new Error(`An attempt was made to create a topic with existing name "${name}". Ignored.`);
         }
         
         Topic.topics[name] = this;
