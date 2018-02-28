@@ -236,6 +236,8 @@ export class TopicClass <
             await TopicClass.next(context, instanceName);
         } else if (data.topicMethod === TopicMethods.returnToParent) {
             await TopicClass.returnToParent(context, instance, data.args);
+        } else {
+            throw "you may not call dispatchToSelf() here"
         }
     }
 
@@ -265,6 +267,8 @@ export class TopicClass <
             await TopicClass.next(context, instanceName);
         } else if (data.topicMethod === TopicMethods.returnToParent) {
             await TopicClass.returnToParent(context, instance, data.args);
+        } else {
+            throw "you may not call dispatchToSelf() here"
         }
     }
 
@@ -303,6 +307,8 @@ export class TopicClass <
             await TopicClass.next(context, parentInstance.name);
         } else if (data.topicMethod === TopicMethods.returnToParent) {
             await TopicClass.returnToParent(context, parentInstance, data.args);
+        } else {
+            throw "you may not call dispatchToSelf() here"
         }
     }
 
