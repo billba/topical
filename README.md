@@ -21,10 +21,11 @@ class IntranetTopic extends Topic {
             return this.child.onReceive(context);
 
         if (context.request.text === "book travel") {
-            this.child = new TravelTopic(context, async () => {
+            this.child = await new TravelTopic(context, async () => {
                 context.reply(`Welcome back to the Intranet bot!`);
                 this.child = undefined;
-            }).init();
+            })
+            .init();
         }
     }
 }
