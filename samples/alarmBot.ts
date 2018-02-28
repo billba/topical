@@ -149,8 +149,6 @@ const alarmBot = new TopicClass<undefined, AlarmBotState, undefined>('alarmBot')
         t.instance.state.alarms.push({ ... t.args.form } as any as Alarm);
 
         c.reply(`Alarm successfully added!`);
-        
-        t.instance.state.child = undefined;
     })
     .onChildReturn(showAlarms)
     .onChildReturn(deleteAlarm, (c, t) => {
@@ -162,6 +160,7 @@ const alarmBot = new TopicClass<undefined, AlarmBotState, undefined>('alarmBot')
         } else {
             c.reply(`Okay, the status quo has been preserved.`)
         }
-
+    })
+    .afterChildReturn((c, t) => {
         t.instance.state.child = undefined;
     });

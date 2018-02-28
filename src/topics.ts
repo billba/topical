@@ -155,9 +155,10 @@ export class TopicClass <
     protected _init: TopicInit<InitArgs, State, ReturnArgs, Promise<void>> = returnsPromiseVoid;
     protected _next: TopicMethod<State, ReturnArgs, Promise<void>> = returnsPromiseVoid;
     protected _onReceive: TopicMethod<State, ReturnArgs, Promise<void>> = returnsPromiseVoid;
+    protected _afterChildReturn: TopicOnChildReturn<State, any, any, Promise<void>> = returnsPromiseVoid;
 
     constructor (
-        public name: string
+        public name: string,
     ) {
         if (TopicClass.topicClasses[name]) {
             throw new Error(`An attempt was made to create a topic with existing name "${name}".`);
@@ -333,6 +334,15 @@ export class TopicClass <
         [topicName: string]: TopicOnChildReturn<any, any, any, Promise<void>>;
     } = {}
 
+    
+    afterChildReturn (
+        cleanup: TopicOnChildReturn<State, any, any, Promiseable<void>>,
+    ) {
+        this._afterChildReturn = (context, topic) => toPromise(cleanup(context, topic));
+
+        return this;
+    }
+
     onChildReturn <C> (
         topic: TopicClass<any, any, C>,
         onChildReturnHandler: TopicOnChildReturn<State, C, ReturnArgs, Promiseable<void>> = returnsPromiseVoid,
@@ -340,7 +350,10 @@ export class TopicClass <
         if (this._onChildReturnHandlers[topic.name])
             throw new Error(`An attempt was made to call onChildReturn for topic ${topic.name}. This topic is already handled.`);
 
-        this._onChildReturnHandlers[topic.name] = (context, topic) => toPromise(onChildReturnHandler(context, topic));
+        this._onChildReturnHandlers[topic.name] = async (context, topic) => {
+            await toPromise(onChildReturnHandler(context, topic));
+            await this._afterChildReturn(context, topic);
+        }
 
         return this;
     }
