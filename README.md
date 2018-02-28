@@ -30,7 +30,7 @@ class IntranetTopic extends Topic {
 }
 ```
 
-However this won't work for many-users-to-many-instances web apps. The heirarchy of topics for each conversation must be maintained in a centralized store.
+However this won't work for many-users-to-many-instances web apps. The heirarchy of topics for each conversation must be maintained in a centralized store. Moreover, subtopics may complete in entirely different instances (and extended timeframes), making it impossible to utilize traditional completion handlers.
 
 *Topical* models traditional object-oriented programming in a distributed system:
 
@@ -75,9 +75,9 @@ Each topic defines and maintains its own state, including any notion of heirarch
 
 It's up to you, but the idea is that each Topic maps to a topic of conversation (thus the name). For instance, a *Travel* topic would handle general conversations about travel, but when the user is ready to book a flight it would spin up a child *Flight* topic, and start dispatching incoming messages to that child. Furthermore *Flight* might delegate messages to an *Airport Picker* topic.
 
-An important detail is that delegation doesn't have to be all or nothing -- Travel could continue answering specific questions it recognizes, e.g. "Is it safe to travel to Ohio?", and pass the rest on to Flight. This is why each message travels down from the top of the topic heirarchy.
+An important detail is that delegation doesn't have to be all or nothing -- *Travel* could continue answering specific questions it recognizes, e.g. "Is it safe to travel to Ohio?", and pass the rest on to *Flight*. This is why each message travels down from the top of the topic heirarchy.
 
-Midway through booking a flight, a user might want to look into hotels. *Travel* could recognize that question and spin up a *Hotel* topic. How does *Travel* know where to send subsequent messages? That is the interesting part. *Topical* provides the structure, you provide the logic.
+Midway through booking a flight, a user might want to look into hotels. *Travel* could recognize that question and spin up a *Hotel* topic. It could end the *Flight* topic, or keep them both active. How does *Travel* know where to send subsequent messages? That is the interesting part. *Topical* provides the structure, you provide the logic.
 
 ## Do you have samples?
 
@@ -102,7 +102,7 @@ Please do! [SimpleForm](/src/forms.ts) is a (simple) example of a Topic that is 
 
 ### TopicContext
 
-Each Topic method is provided a `Topic*Context` (each method has a slightly different type) object with properties and methods relevant to the topic. Here are the common values:
+Each Topic method is provided a `Topic*Context` (each method has a slightly different type) object with properties and methods relevant to the topic and method. Here are the common values:
 
 ### `topicContext.instance`
 
@@ -116,7 +116,7 @@ Each instance of a topic has its own state. This will ultimately be persisted as
 
 The id of the instance. This is the key used to retrieve and save the instance in the store.
 
-#### `topicContext.instance.name`
+#### `topicContext.instance.topicName`
 
 The name of the Topic of which this is an instance. This is the key used to corrolate Topic classes across all app instances.
 
@@ -124,12 +124,9 @@ The name of the Topic of which this is an instance. This is the key used to corr
 
 The id of the parent's instance. Only the root topic has no `parentInstanceName`.
 
-#### `topicContext.instance.parentInstanceName`
-
 #### `topicContext.createTopicInstance(topicClass: TopicClass, args?): Promise<string>`
 
 Creates an instance of `topicClass` and returns its instance id. Typically you would store this somewhere in the topic state for later use in dispatching messages. You may optionally pass an object which will be provided to the topic's `.init()` method. 
-
 
 #### `topicContext.dispatchToInstance (instanceName: string): Promise<void>`
 
