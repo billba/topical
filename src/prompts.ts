@@ -1,16 +1,16 @@
 import { TopicClass } from './topics';
 
 export interface PromptState {
-    name: string;
+    name?: string;
 }
 
 export interface PromptInitArgs {
-    name: string;
+    name?: string;
     prompt: string;
 }
 
 export interface PromptCallbackArgs {
-    name: string;
+    name?: string;
     value: string;
 }
 

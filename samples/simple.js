@@ -64,5 +64,5 @@ const rootTopicClass = new TopicClass('rootTopic')
     })
     .onChildReturn(childTopicClass, (context, topicContext) => {
         context.reply(`13 * ${topicContext.args["num"]} = ${13 * topicContext.args["num"]}`);
-        topicContext.instance.state["child"]
+        topicContext.instance.state["child"] = undefined;
     });
