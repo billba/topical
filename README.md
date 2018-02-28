@@ -2,7 +2,7 @@
 
 The *Topics* pattern models conversations as a dynamic heirarchy of independent conversational topics. Messages pass down through the heirarchy, each topic handling the message and/or passing it on to one or more child topics as it sees fit.
 
-*Topical* is a framework for modeling conversations using the Topics pattern in [Microsoft BotBuilder 4.x](https://github.com/microsoft/botbuilder-js).
+*Topical* is a framework for modeling conversations in [Microsoft BotBuilder 4.x](https://github.com/microsoft/botbuilder-js) using the Topics pattern.
 
 ***Topical* is an experimental framework, not a supported Microsoft product. Use at your own risk.**
 
