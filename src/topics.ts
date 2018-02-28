@@ -1,6 +1,5 @@
-import { Promiseable, isPromised } from 'botbuilder';
-
-const toPromise = <T> (t: Promiseable<T>) => isPromised(t) ? t : Promise.resolve(t);
+import { Promiseable } from 'botbuilder';
+import { toPromise } from './helpers';
 
 declare global {
     interface ConversationState {
