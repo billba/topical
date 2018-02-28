@@ -1,5 +1,4 @@
-import { TopicClass } from './topics';
-import { StringPrompt } from './prompts';
+import { TopicClass, StringPrompt } from './topical';
 
 export interface SimpleFormMetadata {
     type: 'string';
@@ -24,11 +23,11 @@ export interface SimpleFormInitArgs {
     schema: SimpleFormSchema
 }
 
-export interface SimpleFormCallbackArgs {
+export interface SimpleFormReturnArgs {
     form: SimpleFormData;
 }
 
-export class SimpleForm extends TopicClass<SimpleFormInitArgs, SimpleFormState, SimpleFormCallbackArgs> {
+export class SimpleForm extends TopicClass<SimpleFormInitArgs, SimpleFormState, SimpleFormReturnArgs> {
     constructor (
         name: string
     ) {

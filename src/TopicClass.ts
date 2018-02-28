@@ -37,7 +37,7 @@ export type TopicInit <
 export enum TopicMethods {
     next,
     returnToParent,
-    dispatch,
+    dispatchToSelf,
 }
 
 export type TopicMethod <
@@ -90,7 +90,7 @@ export class TopicContext <State, ReturnArgs> {
         if (this.data.topicMethod)
             throw "you may only call one of next(), dispatchToSelf(), or returnToParent()";
         
-        this.data.topicMethod = TopicMethods.dispatch;
+        this.data.topicMethod = TopicMethods.dispatchToSelf;
     }
 
     dispatchToInstance (
@@ -180,34 +180,37 @@ export class TopicClass <
         
         await toPromise(this._init(context, new TopicInitContext(context, instance, data, args)));
 
-        if (data.topicMethod === TopicMethods.returnToParent) {
-            await TopicClass.returnToParent(context, instance, data.args);
+        switch (data.topicMethod) {
+            case TopicMethods.returnToParent:
+                await TopicClass.returnToParent(context, instance, data.args);
+                return undefined;
 
-            return undefined;
-        } else {
-            if (data.topicMethod === TopicMethods.next) {
+            case TopicMethods.next:
                 await TopicClass.next(context, instance.name);
-            } else if (data.topicMethod === TopicMethods.dispatch) {
-                await TopicClass.dispatch(context, instance.name);
-            }
+                break;
 
-            return instance.name;
+            case TopicMethods.dispatchToSelf: 
+                await TopicClass.dispatch(context, instance.name);
+                break;
         }
+
+        return instance.name;
     }
 
     static async do (
         context: BotContext,
         getRootInstanceName: () => Promise<string>
     ) {
-        if (context.state.conversation.topical)
-            return TopicClass.dispatch(context, context.state.conversation.topical.rootInstanceName);
-        
-        context.state.conversation.topical = {
-            instances: {},
-            rootInstanceName: undefined
+        if (!context.state.conversation.topical) {
+            context.state.conversation.topical = {
+                instances: {},
+                rootInstanceName: undefined
+            }
+    
+            context.state.conversation.topical.rootInstanceName = await getRootInstanceName();    
         }
-
-        context.state.conversation.topical.rootInstanceName = await getRootInstanceName();
+            
+        await TopicClass.dispatch(context, context.state.conversation.topical.rootInstanceName);
     }
 
     static async next (
@@ -232,12 +235,17 @@ export class TopicClass <
 
         await topic._next(context, new TopicContext(context, instance, data));
 
-        if (data.topicMethod === TopicMethods.next) {
-            await TopicClass.next(context, instanceName);
-        } else if (data.topicMethod === TopicMethods.returnToParent) {
-            await TopicClass.returnToParent(context, instance, data.args);
-        } else {
-            throw "you may not call dispatchToSelf() here"
+        switch (data.topicMethod) {
+            case TopicMethods.next:
+                await TopicClass.next(context, instanceName);
+                break;
+
+            case TopicMethods.returnToParent:
+                await TopicClass.returnToParent(context, instance, data.args);
+                break;
+
+            case TopicMethods.dispatchToSelf:
+                throw "you may not call dispatchToSelf() here"
         }
     }
 
@@ -263,12 +271,17 @@ export class TopicClass <
 
         await topic._onReceive(context, new TopicContext(context, instance, data));
 
-        if (data.topicMethod === TopicMethods.next) {
-            await TopicClass.next(context, instanceName);
-        } else if (data.topicMethod === TopicMethods.returnToParent) {
-            await TopicClass.returnToParent(context, instance, data.args);
-        } else {
-            throw "you may not call dispatchToSelf() here"
+        switch (data.topicMethod) {
+            case TopicMethods.next:
+                await TopicClass.next(context, instanceName);
+                break;
+
+            case TopicMethods.returnToParent:
+                await TopicClass.returnToParent(context, instance, data.args);
+                break;
+
+            case TopicMethods.dispatchToSelf:
+                throw "you may not call dispatchToSelf() here"
         }
     }
 
@@ -303,12 +316,17 @@ export class TopicClass <
 
         await topic._onChildReturnHandlers[instance.topicName](context, topicOnChildReturnContext);
 
-        if (data.topicMethod === TopicMethods.next) {
-            await TopicClass.next(context, parentInstance.name);
-        } else if (data.topicMethod === TopicMethods.returnToParent) {
-            await TopicClass.returnToParent(context, parentInstance, data.args);
-        } else {
-            throw "you may not call dispatchToSelf() here"
+        switch (data.topicMethod) {
+            case TopicMethods.next:
+                await TopicClass.next(context, parentInstance.name);
+                break;
+
+            case TopicMethods.returnToParent:
+                await TopicClass.returnToParent(context, parentInstance, data.args);
+                break;
+
+            case TopicMethods.dispatchToSelf:
+                throw "you may not call dispatchToSelf() here"
         }
     }
 
@@ -343,7 +361,7 @@ export class TopicClass <
     
     afterChildReturn (
         cleanup: TopicOnChildReturn<State, any, any, Promiseable<void>>,
-    ) {
+    ): this {
         this._afterChildReturn = (context, topic) => toPromise(cleanup(context, topic));
 
         return this;

@@ -55,13 +55,13 @@ interface DeleteAlarmState {
     child: string;
 }
 
-interface DeleteAlarmCallbackArgs {
+interface DeleteAlarmReturnArgs {
     alarmName: string;
 }
 
 const stringPrompt = new StringPrompt('stringPrompt');
 
-const deleteAlarm = new TopicClass<DeleteAlarmInitArgs, DeleteAlarmState, DeleteAlarmCallbackArgs>('deleteAlarm')
+const deleteAlarm = new TopicClass<DeleteAlarmInitArgs, DeleteAlarmState, DeleteAlarmReturnArgs>('deleteAlarm')
     .init(async (c, t) => {
         if (t.args.alarms.length === 0) {
             c.reply(`You don't have any alarms.`);

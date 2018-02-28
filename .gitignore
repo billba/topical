@@ -2,3 +2,5 @@ lib
 node_modules
 
 src/todo.md
+
+.vscode/launch.json

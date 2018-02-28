@@ -53,6 +53,7 @@
     "files": [
       "src/topical.ts",
       "samples/alarmBot",
+      "samples/simpleAlarmBot",
     ]
   }
   

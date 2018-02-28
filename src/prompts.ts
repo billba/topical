@@ -1,4 +1,4 @@
-import { TopicClass } from './topics';
+import { TopicClass } from './topical';
 
 export interface PromptState {
     name?: string;
@@ -9,12 +9,12 @@ export interface PromptInitArgs {
     prompt: string;
 }
 
-export interface PromptCallbackArgs {
+export interface PromptReturnArgs {
     name?: string;
     value: string;
 }
 
-export class StringPrompt extends TopicClass<PromptInitArgs, PromptState, PromptCallbackArgs> {
+export class StringPrompt extends TopicClass<PromptInitArgs, PromptState, PromptReturnArgs> {
     constructor(
         name: string,
     ) {
