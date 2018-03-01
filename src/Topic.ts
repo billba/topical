@@ -31,7 +31,7 @@ export abstract class Topic <
     ) {
     }
 
-    public static rootTopic: Topic;
+    static rootTopic: Topic;
 
     static async do (
         context: BotContext,
