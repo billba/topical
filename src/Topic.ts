@@ -37,10 +37,10 @@ export abstract class Topic <
         context: BotContext,
         getRootTopic: () => Promise<Topic>
     ) {
-        if (!Topic.rootTopic)
+        if (Topic.rootTopic)
+            await Topic.rootTopic.onReceive(context);
+        else
             Topic.rootTopic = await getRootTopic();
-        
-        await Topic.rootTopic.onReceive(context);
     }
 }
 

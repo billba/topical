@@ -51,7 +51,7 @@
       // "emitDecoratorMetadata": true,         /* Enables experimental support for emitting type metadata for decorators. */
     },
     "files": [
-      "src/topical.ts",
+      "src/topical",
       "samples/alarmBot",
       "samples/simpleAlarmBot",
     ]

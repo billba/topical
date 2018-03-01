@@ -201,7 +201,9 @@ export class TopicClass <
         context: BotContext,
         getRootInstanceName: () => Promise<string>
     ) {
-        if (!context.state.conversation.topical) {
+        if (context.state.conversation.topical)
+            await TopicClass.dispatch(context, context.state.conversation.topical.rootInstanceName);
+        else {
             context.state.conversation.topical = {
                 instances: {},
                 rootInstanceName: undefined
@@ -210,7 +212,6 @@ export class TopicClass <
             context.state.conversation.topical.rootInstanceName = await getRootInstanceName();    
         }
             
-        await TopicClass.dispatch(context, context.state.conversation.topical.rootInstanceName);
     }
 
     static async next (
