@@ -74,7 +74,7 @@ class SimpleForm extends Topic<SimpleFormState> {
         await this.next(context);
     }
 
-    protected async next (
+    async next (
         context: BotContext,
     ) {
         for (let name of Object.keys(this.state.schema)) {
@@ -139,11 +139,6 @@ interface ShowAlarmInitArgs {
 }
 
 class ShowAlarms extends Topic {
-    constructor(
-    ) {
-        super();
-    }
-
     async init(
         c: BotContext,
         args: ShowAlarmInitArgs,
@@ -268,7 +263,9 @@ class AlarmBot extends Topic<AlarmBotState> {
                     }
                 });
             } else if (/show|list/i.test(c.request.text)) {
-                this.state.child = await new ShowAlarms();
+                this.state.child = await new ShowAlarms(async (c, args) => {
+                    this.state.child = undefined;
+                });
 
                 await this.state.child.init(c, {
                     alarms: this.state.alarms
