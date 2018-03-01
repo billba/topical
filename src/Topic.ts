@@ -26,12 +26,12 @@ export abstract class Topic <
     ) {
     }
 
-    protected async next (
+    async next (
         context: BotContext,
     ) {
     }
 
-    private static rootTopic: Topic;
+    public static rootTopic: Topic;
 
     static async do (
         context: BotContext,

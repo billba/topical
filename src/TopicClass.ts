@@ -62,6 +62,8 @@ export class TopicContext <State, ReturnArgs> {
     ) {
     }
 
+    rootInstanceName = TopicClass.rootInstanceName(this.context);
+
     createTopicInstance <_InitArgs> (
         topic: TopicClass<_InitArgs>,
         args?: _InitArgs,
@@ -195,6 +197,12 @@ export class TopicClass <
         }
 
         return instance.name;
+    }
+
+    static rootInstanceName(context) {
+        return context.state.conversation.topical
+            ? context.state.conversation.topical.rootInstanceName
+            : undefined;
     }
 
     static async do (
