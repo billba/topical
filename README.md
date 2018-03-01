@@ -61,7 +61,7 @@ In this way, each turn can be very efficiently executed on a given instance of y
 The *Topical* version of the above code reads:
 
 ```ts
-const intranetTopicClass = new TopicClass('intranet')
+const rootTopicClass = new TopicClass('root')
     .init(async (context) => {
         context.reply("How can I help you today?");
     })
@@ -73,7 +73,7 @@ const intranetTopicClass = new TopicClass('intranet')
             topicContext.instance.state.child = await topicContext.createTopicInstance(travelTopicClass);
     })
     .onChildReturn(travelTopicClass, async (context, topicContext) => {
-        context.reply(`Welcome back to the Intranet bot!`);
+        context.reply(`Welcome back to the Root!`);
         topicContext.instance.state.child = undefined;
     });
 ```
