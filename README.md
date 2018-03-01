@@ -1,44 +1,59 @@
 # Topical
 
-The *Topics* pattern models conversations as a dynamic heirarchy of independent conversational topics. Messages pass down through the heirarchy, each topic handling the message and/or passing it on to one or more child topics as it sees fit.
-
-*Topical* is a framework for modeling conversations in [Microsoft BotBuilder 4.x](https://github.com/microsoft/botbuilder-js) using the Topics pattern.
+*Topical* is a framework for modeling conversations in [Microsoft BotBuilder 4.x](https://github.com/microsoft/botbuilder-js) using the *Topics* pattern.
 
 ***Topical* is an experimental framework, not a supported Microsoft product. Use at your own risk.**
+
+**Like BotBuilder 4.x, *Topical* is in rapid development, and every aspect is subject to change in upcoming versions.**
 
 ## How do I install *Topical*?
 
 `npm install -S botbuilder-topical`
 
-## Why *Topical*?
+## The *Topics* pattern
 
-For single-user in-process applications, something like *Topical* could easily be built with traditional object-oriented programming, with each `Topic` defined as a class with an asynchronous completion handler and methods for starting and handling each message. A given topic creates children and/or dispatches messages to them, as appropriate, e.g.:
+The Topics pattern models conversations as a dynamic heirarchy of independent conversational topics. Messages pass down through the heirarchy, each topic handling the message and/or passing it on to a child topic as it sees fit. A child topic notifies its parent when it's done.
+
+![Topics](/Topics.gif)
+
+The Topical library is simply meant to provide low-level support for this pattern. Classes are provided for two kinds of applications: standard applications and scaleable web services.
+
+## Standard applications
+
+For single-user in-process applications, the Topics pattern is easily implemented with traditional object-oriented programming.
+
+Topical supplies a [`Topic`](/src/Topic.ts) class. Here's a simple version of the Root topic illustrated above: 
 
 ```ts
-class IntranetTopic extends Topic {
+class RootTopic extends Topic {
+    async init(context) {
+        context.reply("How can I help you today?");
+    }
     async onReceive(context) {
-        if (this.child)
-            return this.child.onReceive(context);
+        if (this.state.child)
+            return this.state.child.onReceive(context);
 
         if (context.request.text === "book travel") {
-            this.child = await new TravelTopic(context, async () => {
-                context.reply(`Welcome back to the Intranet bot!`);
-                this.child = undefined;
-            })
-            .init();
+            this.state.child = await new TravelTopic(context, async () => {
+                context.reply(`Welcome back to the Root!`);
+                this.state.child = undefined;
+            });
+            
+            await this.state.child.init();
         }
     }
 }
 ```
 
-However this won't work for many-users-to-many-instances web apps. The heirarchy of topics for each conversation must be maintained in a centralized store. Moreover, subtopics may complete in entirely different instances (and extended timeframes), making it impossible to utilize traditional completion handlers.
+## Scaleable web services
 
-*Topical* models traditional object-oriented programming in a distributed system:
+Traditional object-oriented programming won't work for many-users-to-many-instances web apps. The heirarchy of topics for each conversation must be maintained in a centralized store. Moreover, child topics may complete in entirely different instances (and in extended timeframes), making it impossible to utilize traditional completion handlers.
 
-* Each Topic "class" is created on each instance of your app, just once at startup, by calling `new TopicClass('id')`
-* "methods" are added to a class using a fluent interface.
-* Each class is created with a unique id. This corrolates the classes (and thus their methods) across every instance of your app.
-* Each "instance" of a class (along with its state) is created in the centralized store, each referencing the id of its class.
+Topical supplies a [`TopicClass`](/src/TopicClass.ts) class, which models traditional object-oriented programming in a distributed system:
+
+* Each topic "class" is created just once per application instance at startup, using a unique id to correlate the same topic class across application instances.
+* "Methods" are added to a class using a fluent interface.
+* Each "instance" of a class is created in the centralized store, each referencing the id of its class.
 * Completion handlers are implemented as listener methods.
 
 In this way, each turn can be very efficiently executed on a given instance of your application.
@@ -47,6 +62,9 @@ The *Topical* version of the above code reads:
 
 ```ts
 const intranetTopicClass = new TopicClass('intranet')
+    .init(async (context) => {
+        context.reply("How can I help you today?");
+    })
     .onReceive(async (context, topicContext) => {
         if (topicContext.instance.state.child)
             return topicContext.dispatchToInstance(topicContext.instance.state.child);
@@ -74,11 +92,15 @@ Each topic defines and maintains its own state, including any notion of heirarch
 
 ## What goes into a Topic?
 
-It's up to you, but the idea is that each Topic maps to a topic of conversation (thus the name). For instance, a *Travel* topic would handle general conversations about travel, but when the user is ready to book a flight it would spin up a child *Flight* topic, and start dispatching incoming messages to that child. Furthermore *Flight* might delegate messages to an *Airport Picker* topic.
+It's up to you, but the idea is that each Topic maps to a specific topic of conversation (thus the name).
+
+For instance, the *Travel* topic could handle general questions about travel, but when the user is ready to book a flight it would spin up a child *Flight* topic, and start dispatching incoming messages to that child. Furthermore, when no airport has been defined, *Flight* spins up the *Airport Picker* topic and dispatches messages to it.
+
+Topics can be written independently of one another and composed together.
 
 An important detail is that delegation doesn't have to be all or nothing -- *Travel* could continue answering specific questions it recognizes, e.g. "Is it safe to travel to Ohio?", and pass the rest on to *Flight*. This is why each message travels down from the top of the topic heirarchy.
 
-Midway through booking a flight, a user might want to look into hotels. *Travel* could recognize that question and spin up a *Hotel* topic. It could end the *Flight* topic, or keep them both active. How does *Travel* know where to send subsequent messages? That is the interesting part. *Topical* provides the structure, you provide the logic.
+Midway through booking a flight, as illustrated above, a user might want to look into hotels. *Travel* could recognize that question and spin up a *Hotel* topic. It could end the *Flight* topic, or keep them both active. How does *Travel* know where to send subsequent messages? That is the hard part. *Topical* provides the structure, you provide the logic.
 
 ## Do you have samples?
 
@@ -94,14 +116,24 @@ The [alarm bot](/samples/alarmBot.ts) is a TypeScript bot with a little more dep
 * `npm run build`
 * `node lib/samples/alarmBot.js`
 
+The [simple alarm bot](/samples/simpleAlarmBot.ts) is the identical bot implemented as a simple application. To run it:
+
+* clone this repo
+* `npm install`
+* `npm run build`
+* `node lib/samples/alarmBot.js`
+
 ## Can I publish my own Topics?
 
 Please do! [SimpleForm](/src/forms.ts) is a (simple) example of a Topic that is of general use (it's used by the alarm bot). It demonstrates how to use another Topic (StringPrompt) without topic id namespace collisions.
 
-## Overly Quick Reference
+## Overly Quick Reference for `Topic`
 
+Honestly it's really very straightforward.
 
-### TopicContext
+## Overly Quick Reference for `TopicClass`
+
+### Topic*Context
 
 Each Topic method is provided a `Topic*Context` (each method has a slightly different type) object with properties and methods relevant to the topic and method. Here are the common values:
 
@@ -132,6 +164,10 @@ Creates an instance of `topicClass` and returns its instance id. Typically you w
 #### `topicContext.dispatchToInstance (instanceName: string): Promise<void>`
 
 Calls the `.onReceive()` method of the instance named. Note that you do not pass `context` yourself -- it is passed automatically.
+
+#### `topicContext.rootInstanceName`
+
+The id of the instance for the root topic. Useful for calling the `.next()` method of the root topic.
 
 ### TopicClass Methods
 
