@@ -25,12 +25,3 @@ export const prettyConsole = {
         return next();
     }
 }
-
-export const getCleanup = <S> (
-    cleanup: TopicOnChildReturn<S, any, any, Promiseable<void>>
-) => <I, O> (
-    onChildReturn: TopicOnChildReturn<S, I, O, Promiseable<void>>
-): TopicOnChildReturn<S, I, O, Promise<void>> => async (c, t) => {
-    await toPromise(onChildReturn(c, t));
-    await toPromise(cleanup(c, t));
-}
