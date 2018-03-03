@@ -69,9 +69,31 @@ export class Topic <
     ) {
     }
 
+    async dispatch (
+        context: BotContext,
+        topic?: Topic,
+    ): Promise<boolean> {
+        if (!topic)
+            return false;
+    
+        await topic.onReceive(context);
+        return true;
+    }
+
     async onReceive (
         context: BotContext,
     ) {
+    }
+
+    async doNext (
+        context: BotContext,
+        topic: Topic,
+    ): Promise<boolean> {
+        if (!topic)
+            return false;
+
+        await topic.next(context);
+        return false;
     }
 
     async next (

@@ -97,10 +97,8 @@ class SimpleForm extends Topic<SimpleFormInitArgs, SimpleFormState, SimpleFormRe
     async onReceive (
         context: BotContext,
     ) {
-        if (!this.state.prompt)
+        if (!await this.dispatch(context, this.state.prompt))
             throw "a prompt should always be active"
-
-        await this.state.prompt.onReceive(context);
     }
 }
 
@@ -186,8 +184,7 @@ class DeleteAlarm extends Topic<DeleteAlarmInitArgs, DeleteAlarmState, DeleteAla
     async onReceive (
         c: BotContext,
     ) {
-        if (this.state.child)
-            await this.state.child.onReceive(c);
+        await this.dispatch(c, this.state.child);
     }
 }
 
@@ -199,7 +196,7 @@ interface AlarmBotState {
 const helpText = `I know how to set, show, and delete alarms.`;
 
 class AlarmBot extends Topic<undefined, AlarmBotState, undefined> {
-    async init(
+    protected async init(
         c: BotContext,
         args?: any,
     ) {
@@ -210,8 +207,8 @@ class AlarmBot extends Topic<undefined, AlarmBotState, undefined> {
     async onReceive (
         c: BotContext,
     ) {
-        if (this.state.child)
-            return this.state.child.onReceive(c);
+        if (await this.dispatch(c, this.state.child))
+            return;
 
         if (c.request.type === 'message') {
             if (/set|add|create/i.test(c.request.text)) {
