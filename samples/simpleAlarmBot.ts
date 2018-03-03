@@ -11,11 +11,7 @@ const bot = new Bot(adapter);
 bot
     .use(prettyConsole)
     .onReceive(async c => {
-        await Topic.do(c, async () => {
-            const alarmBot = new AlarmBot();
-            await alarmBot.init(c);
-            return alarmBot;
-        });
+        await Topic.do(c, () => new AlarmBot().createTopicInstance(c))
     });
 
 
