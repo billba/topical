@@ -29,14 +29,8 @@ interface PromptReturnArgs {
     value: string;
 }
 
-class StringPrompt extends Topic<PromptState> {
-    constructor(
-        protected returnToParent: (context: BotContext, args: PromptReturnArgs) => Promise<void>
-    ) {
-        super(returnToParent);
-    }
-
-    async init(
+class StringPrompt extends Topic<PromptState, PromptState, PromptReturnArgs> {
+    protected async init(
         context: BotContext,
         args: PromptState,
     ) {
@@ -58,14 +52,8 @@ interface SimpleFormState {
     prompt: Topic;
 }
 
-class SimpleForm extends Topic<SimpleFormState> {
-    constructor (
-        returnToParent: (context: BotContext, args: SimpleFormReturnArgs) => Promise<void>
-    ) {
-        super(returnToParent);
-    }
-
-    async init(
+class SimpleForm extends Topic<SimpleFormInitArgs, SimpleFormState, SimpleFormReturnArgs> {
+    protected async init(
         context: BotContext,
         args: SimpleFormInitArgs,
     ) {
@@ -84,21 +72,21 @@ class SimpleForm extends Topic<SimpleFormState> {
                 if (metadata.type !== 'string')
                     throw `not expecting type "${metadata.type}"`;
 
-                this.state.prompt = await new StringPrompt (async (context, args) => {
-                    const metadata = this.state.schema[name];
+                this.state.prompt = await new StringPrompt().createTopicInstance(
+                    context, {
+                        prompt: metadata.prompt,
+                    }, async (context, args) => {
+                        const metadata = this.state.schema[name];
 
-                    if (metadata.type !== 'string')
-                        throw `not expecting type "${metadata.type}"`;
+                        if (metadata.type !== 'string')
+                            throw `not expecting type "${metadata.type}"`;
 
-                    this.state.form[name] = args.value;
-                    this.state.prompt = undefined;
+                        this.state.form[name] = args.value;
+                        this.state.prompt = undefined;
 
-                    await this.next(context);
-                });
+                        await this.next(context);
+                    });
 
-                await this.state.prompt.init(context, {
-                    prompt: metadata.prompt,
-                });
                 break;
             }
         }
@@ -167,13 +155,7 @@ interface DeleteAlarmReturnArgs {
     alarmName: string;
 }
 
-class DeleteAlarm extends Topic<DeleteAlarmState> {
-    constructor(
-        protected returnToParent: (c: BotContext, args?: DeleteAlarmReturnArgs) => Promise<void>
-    ) {
-        super(returnToParent);
-    }
-
+class DeleteAlarm extends Topic<DeleteAlarmInitArgs, DeleteAlarmState, DeleteAlarmReturnArgs> {
     async init(
         c: BotContext,
         args: DeleteAlarmInitArgs,
@@ -186,25 +168,23 @@ class DeleteAlarm extends Topic<DeleteAlarmState> {
 
         this.state.alarms = args.alarms;
 
-        this.state.child = await new StringPrompt(async (c, args) => {
-            this.state.alarmName = args.value;
-            this.state.child = await new StringPrompt(async (c, args) => {
-                this.returnToParent(c, args.value === 'yes'
-                    ? {
-                        alarmName: this.state.alarmName
-                    }
-                    : undefined
-                )
+        this.state.child = await new StringPrompt().createTopicInstance(
+            c, {
+                prompt: `Which alarm do you want to delete?\n${listAlarms(this.state.alarms)}`,
+            }, async (c, args) => {
+                this.state.alarmName = args.value;
+                this.state.child = await new StringPrompt().createTopicInstance(
+                    c, {
+                        prompt: `Are you sure you want to delete alarm "${args.value}"? (yes/no)"`,
+                    }, async (c, args) => {
+                        this.returnToParent(c, args.value === 'yes'
+                            ? {
+                                alarmName: this.state.alarmName
+                            }
+                            : undefined
+                        );
+                });
             });
-        
-            await this.state.child.init(c, {
-                prompt: `Are you sure you want to delete alarm "${args.value}"? (yes/no)"`,
-            });
-        });
-
-        await this.state.child.init(c, {
-            prompt: `Which alarm do you want to delete?\n${listAlarms(this.state.alarms)}`,
-        });
     }
 
     async onReceive (
@@ -222,12 +202,7 @@ interface AlarmBotState {
 
 const helpText = `I know how to set, show, and delete alarms.`;
 
-class AlarmBot extends Topic<AlarmBotState> {
-    constructor(
-    ) {
-        super();
-    }
-
+class AlarmBot extends Topic<undefined, AlarmBotState, undefined> {
     async init(
         c: BotContext,
         args?: any,
@@ -244,48 +219,45 @@ class AlarmBot extends Topic<AlarmBotState> {
 
         if (c.request.type === 'message') {
             if (/set|add|create/i.test(c.request.text)) {
-                this.state.child = await new SimpleForm(async (c, args) => {
-                    this.state.alarms.push({ ... args.form } as any as Alarm);
-                    this.state.child = undefined;
-                    c.reply(`Alarm successfully added!`);
-                });
-
-                await this.state.child.init(c, {
-                    schema: {
-                        name: {
-                            type: 'string',
-                            prompt: 'What do you want to call it?'
-                        },
-                        when: {
-                            type: 'string',
-                            prompt: 'For when do you want to set it?'
+                this.state.child = await new SimpleForm().createTopicInstance(
+                    c, {
+                        schema: {
+                            name: {
+                                type: 'string',
+                                prompt: 'What do you want to call it?'
+                            },
+                            when: {
+                                type: 'string',
+                                prompt: 'For when do you want to set it?'
+                            }
                         }
-                    }
-                });
+                    }, async (c, args) => {
+                        this.state.alarms.push({ ... args.form } as any as Alarm);
+                        this.state.child = undefined;
+                        c.reply(`Alarm successfully added!`);
+                    });
             } else if (/show|list/i.test(c.request.text)) {
-                this.state.child = await new ShowAlarms(async (c, args) => {
-                    this.state.child = undefined;
-                });
-
-                await this.state.child.init(c, {
-                    alarms: this.state.alarms
-                });
+                this.state.child = await new ShowAlarms().createTopicInstance(
+                    c, {
+                        alarms: this.state.alarms
+                    }, async (c, args) => {
+                        this.state.child = undefined;
+                    });
             } else if (/delete|remove/i.test(c.request.text)) {
-                this.state.child = await new DeleteAlarm(async (c, args) => {
-                    if (args) {
-                        this.state.alarms = this.state.alarms
-                            .filter(alarm => alarm.name !== args.alarmName);
-            
-                        c.reply(`Alarm "${args.alarmName}" has been deleted.`)
-                    } else {
-                        c.reply(`Okay, the status quo has been preserved.`)
-                    }
-                    this.state.child = undefined;
-                });
-
-                await this.state.child.init(c, {
-                    alarms: this.state.alarms
-                });
+                this.state.child = await new DeleteAlarm().createTopicInstance(
+                    c, {
+                        alarms: this.state.alarms
+                    }, async (c, args) => {
+                        if (args) {
+                            this.state.alarms = this.state.alarms
+                                .filter(alarm => alarm.name !== args.alarmName);
+                
+                            c.reply(`Alarm "${args.alarmName}" has been deleted.`)
+                        } else {
+                            c.reply(`Okay, the status quo has been preserved.`)
+                        }
+                        this.state.child = undefined;
+                    });
             } else {
                 c.reply(helpText);
             }
