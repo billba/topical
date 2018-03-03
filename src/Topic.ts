@@ -1,8 +1,13 @@
 import { Bot } from 'botbuilder'; // so that we get BotContext
 
-const returnsPromiseVoid: ReturnToParent<any> = () => Promise.resolve();
+const returnsPromiseVoid: TopicReturnToParent<any> = () => Promise.resolve();
 
-type ReturnToParent <Args> = (
+type TopicInit <InitArgs> = (
+    context: BotContext,
+    args?: InitArgs,
+) => Promise<void>;
+
+type TopicReturnToParent <Args> = (
     context: BotContext,
     args?: Args
 ) => Promise<void>;
@@ -14,20 +19,25 @@ export class Topic <
 > {
     protected state = {} as State;
     protected returned;
+
+    constructor(
+        private init: TopicInit<InitArgs> = returnsPromiseVoid,
+    ) {
+    }
     
-    returnToParent: ReturnToParent<ReturnArgs> = () => {
+    returnToParent: TopicReturnToParent<ReturnArgs> = () => {
         throw "You must call createTopicInstance";
     }
 
     async createTopicInstance (
         context: BotContext,
-        returnToParent?: ReturnToParent<ReturnArgs>
+        returnToParent?: TopicReturnToParent<ReturnArgs>
     ): Promise<this>;
 
     async createTopicInstance (
         context: BotContext,
         args: InitArgs,
-        returnToParent?: ReturnToParent<ReturnArgs>
+        returnToParent?: TopicReturnToParent<ReturnArgs>
     ): Promise<this>;
 
     async createTopicInstance (
@@ -61,12 +71,6 @@ export class Topic <
         return this.returned
             ? undefined
             : this;
-    }
-
-    protected async init(
-        context: BotContext,
-        args?: InitArgs,
-    ) {
     }
 
     async dispatch (
