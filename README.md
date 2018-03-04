@@ -164,25 +164,21 @@ If the `init()` method calls `returnToParent()`, `createTopicInstance()` will re
 
 ### `Topic.dispatch(context: BotContext, topic: Topic): Promise<boolean>`
 
-A very common piece of code is 
+A common piece of code is 
 
 ```ts
 if (this.state.child)
-    await this.state.child.onReceive(context);
+    return this.state.child.onReceive(context);
 ```
 
-You can save the extra check by calling `dispatch()`, which checks to see if the supplied topic is `undefined` before calling its `onReceive()` method.
+You can save the extra check by calling `dispatch()`, which checks to see if the supplied topic is `undefined` before calling its `onReceive()` method. `dispatch()` returns a boolean which says whether the dispatch happened, so now you can do:
 
 ```ts
-await this.dispatch(context, this.state.child);
-```
-
-`dispatch()` returns a boolean which says whether the dispatch happened, so it's very common to see:
-
-```ts
-if (!await this.dispatch(context, this.state.child))
+if (await this.dispatch(context, this.state.child))
     return;
 ```
+
+By not duplicating the instance there's one less bug that can be introduced.
 
 ### `Topic.doNext(context: BotContext, topic: Topic): Promise<boolean>`
 
@@ -205,6 +201,7 @@ bot.onReceive(async context => {
 `getRootInstanceName()` will be called just once for each conversation.
 
 Creating the root topic instance is typically the only time you will create a Topic instance by calling that topic's `createTopicInstance()` method. Within the root topic, and all other topics, it's easier and more bulletproof to call `topic.createTopicInstance(topicClass)`, which automatically passes `context` and also the parent's instance name.
+
 
 ### Topic*Context
 
@@ -234,9 +231,29 @@ The id of the parent's instance. Only the root topic has no `parentInstanceName`
 
 Creates an instance of `topicClass` and returns its instance id. Typically you would store this somewhere in the topic state for later use in dispatching messages. You may optionally pass an object which will be provided to the topic's `.init()` method. 
 
-#### `topicContext.dispatchToInstance (instanceName: string): Promise<void>`
+### `topicContext.dispatch(instanceName: string): Promise<boolean>`
 
 Calls the `.onReceive()` method of the instance named. Note that you do not pass `context` yourself -- it is passed automatically.
+
+This is a common piece of code:
+
+```ts
+if (topicContext.instance.state.child)
+    return topicContext.dispatch(this.instance.state.child);
+```
+
+`dispatch()` checks to see if the supplied topic is `undefined` before calling its `onReceive()` method. `dispatch()` returns a boolean which says whether the dispatch happened, so now you can do:
+
+```ts
+if (await topicContext.dispatch(context, topicContext.instance.state.child))
+    return;
+```
+
+By not duplicating the instance there's one less bug that can be introduced.
+
+### `topicContext.doNext(instanceName: string): Promise<boolean>`
+
+`doNext()` is to `next()` what `dispatch()` is to `onReceive()`
 
 #### `topicContext.rootInstanceName`
 
@@ -256,21 +273,9 @@ The `topicContext` passed to `.init()` provides the follow additional functional
 
 These are optional arguments passed via `topicContext.createTopicInstance()`. These will typically be used to set up the initial state of the instance. `args` are not available after `.init()` is run, so make sure you put anything you might need into the instance state.
 
-*As your last action in `.init()`, you may optionally call **one** of the following three methods:*
-
 ##### `topicContext.returnToParent(response)`
 
-deletes the instance and sends `response` to the parent topic's `onChildReturn()` handler.
-
-##### `topicContext.dispatchToSelf()`
- 
-Calls the `.onReceive()` method of the current instance. Note that you do not pass `context` yourself -- it is passed automatically.
-
-This is useful when you want your `onReceive()` logic to act on the same message that was used to create the instance.
-
-##### `topicContext.next()`
- 
-Calls the `.next()` method of the current instance. Note that you do not pass `context` yourself -- it is passed automatically.
+After `init()`, finishes, deletes the instance and sends `response` to the parent topic's `onChildReturn()` handler.
 
 #### `TopicClass.next()`
 
@@ -280,10 +285,9 @@ This is useful when you want to share "next action" logic between your `.init()`
 
 Run for each activity dispatched to the topic instance.
 
-*As your last action in `.onReceive()`, you may optionally call **one** of the following two methods (as documented above)*
-
 ##### `topicContext.returnToParent(response)`
-##### `topicContext.next()`
+
+After `onReceive()` finishes, deletes the instance and sends `response` to the parent topic's `onChildReturn()` handler.
 
 #### `TopicClass.onChildReturn(topicClass: TopicClass, (context: BotContext, topicContext: TopicContext) => void | Promise<void>)`
 
@@ -307,10 +311,9 @@ This is the id of the child instance. By this point the actual instance has been
     delete topicContext.instance.state.children[topicContext.childInstanceName]
 })
 ```
-*As your last action in `.onReceive()`, you may optionally call **one** of the following two methods (as documented above)*
-
 ##### `topicContext.returnToParent(response)`
-##### `topicContext.next()`
+
+After `onChildReturn()` finishes, deletes the instance and sends `response` to the parent topic's `onChildReturn()` handler. You will experience a cascade of calls to `returnToParent` when a given topic's completion is tied to the completion of its child topic(s).
 
 #### `TopicClass.afterChildReturn(topicClass: TopicClass, (context: BotContext, topicContext: TopicContext) => void | Promise<void>)`
 

@@ -36,11 +36,11 @@ export class SimpleForm extends TopicClass<SimpleFormInitArgs, SimpleFormState, 
         const stringPrompt = new StringPrompt(name + ".stringPrompt");
 
         this
-            .init((context, topic) => {
+            .init(async (context, topic) => {
                 topic.instance.state.schema = topic.args.schema;
                 topic.instance.state.form = {}
 
-                topic.next();
+                await topic.doNext(topic.instance.name);
             })
             .next(async (context, topic) => {
                 for (let name of Object.keys(topic.instance.state.schema)) {
@@ -65,12 +65,10 @@ export class SimpleForm extends TopicClass<SimpleFormInitArgs, SimpleFormState, 
                 }
             })
             .onReceive(async (context, topic) => {
-                if (!topic.instance.state.prompt)
-                    throw "a prompt should always be active"
-
-                await topic.dispatchToInstance(topic.instance.state.prompt);
+                if (!await topic.dispatch(topic.instance.state.prompt))
+                    throw "a prompt should always be active";
             })
-            .onChildReturn(stringPrompt, (context, topic) => {
+            .onChildReturn(stringPrompt, async (context, topic) => {
                 const metadata = topic.instance.state.schema[topic.args.name];
 
                 if (metadata.type !== 'string')
@@ -79,7 +77,7 @@ export class SimpleForm extends TopicClass<SimpleFormInitArgs, SimpleFormState, 
                 topic.instance.state.form[topic.args.name] = topic.args.value;
                 topic.instance.state.prompt = undefined;
 
-                topic.next();
+                await topic.doNext(topic.instance.name);
             });
         }
     }

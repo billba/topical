@@ -34,12 +34,6 @@ export type TopicInit <
     topic: TopicInitContext<InitArgs, State, ReturnArgs>,
 ) => T;
 
-export enum TopicMethods {
-    next,
-    returnToParent,
-    dispatchToSelf,
-}
-
 export type TopicMethod <
     State,
     ReturnArgs,
@@ -50,7 +44,7 @@ export type TopicMethod <
 ) => T;
 
 export interface TopicContextData <ReturnArgs> {
-    topicMethod?: TopicMethods;
+    returned?: boolean;
     args?: ReturnArgs;
 }
 
@@ -58,7 +52,7 @@ export class TopicContext <State, ReturnArgs> {
     constructor(
         protected context: BotContext,
         public instance: TopicInstance<State>,
-        protected data: TopicContextData <ReturnArgs>,
+        protected data: TopicContextData<ReturnArgs>,
     ) {
     }
 
@@ -67,38 +61,38 @@ export class TopicContext <State, ReturnArgs> {
     createTopicInstance <_InitArgs> (
         topic: TopicClass<_InitArgs>,
         args?: _InitArgs,
-    ) {
+    ): Promise<string> {
         return topic.createInstance(this.context, this.instance.name, args);
     }
 
-    next () {
-        if (this.data.topicMethod)
-            throw "you may only call one of next(), dispatchToSelf(), or returnToParent()";
-        
-        this.data.topicMethod = TopicMethods.next;
+    async doNext (
+        instanceName: string,
+    ): Promise<boolean> {
+        if (!instanceName)
+            return false;
+
+        await TopicClass.next(this.context, this.instance.name);
+        return true;
     }
 
     returnToParent (
         args?: ReturnArgs,
     ) {
-        if (this.data.topicMethod)
-            throw "you may only call one of next(), dispatchToSelf(), or returnToParent()";
+        if (this.data.returned)
+            throw "this instance already returned";
         
-        this.data.topicMethod = TopicMethods.returnToParent;
+        this.data.returned = true;
         this.data.args = args;
     }
 
-    dispatchToSelf () {
-        if (this.data.topicMethod)
-            throw "you may only call one of next(), dispatchToSelf(), or returnToParent()";
+    async dispatch (
+        instanceName: string,
+    ): Promise<boolean> {
+        if (!instanceName)
+            return false;
         
-        this.data.topicMethod = TopicMethods.dispatchToSelf;
-    }
-
-    dispatchToInstance (
-        instanceName: string
-    ) {
-        return TopicClass.dispatch(this.context, instanceName);
+        await TopicClass.dispatch(this.context, instanceName);
+        return true;
     }
 }
 
@@ -158,6 +152,9 @@ export class TopicClass <
     protected _next: TopicMethod<State, ReturnArgs, Promise<void>> = returnsPromiseVoid;
     protected _onReceive: TopicMethod<State, ReturnArgs, Promise<void>> = returnsPromiseVoid;
     protected _afterChildReturn: TopicOnChildReturn<State, any, any, Promise<void>> = returnsPromiseVoid;
+    protected _onChildReturnHandlers: {
+        [topicName: string]: TopicOnChildReturn<any, any, any, Promise<void>>;
+    } = {};
 
     constructor (
         public name: string,
@@ -182,24 +179,17 @@ export class TopicClass <
         
         await toPromise(this._init(context, new TopicInitContext(context, instance, data, args)));
 
-        switch (data.topicMethod) {
-            case TopicMethods.returnToParent:
-                await TopicClass.returnToParent(context, instance, data.args);
-                return undefined;
-
-            case TopicMethods.next:
-                await TopicClass.next(context, instance.name);
-                break;
-
-            case TopicMethods.dispatchToSelf: 
-                await TopicClass.dispatch(context, instance.name);
-                break;
+        if (data.returned) {
+            await TopicClass.returnToParent(context, instance, data.args);
+            return undefined;
         }
 
         return instance.name;
     }
 
-    static rootInstanceName(context) {
+    static rootInstanceName(
+        context: BotContext,
+    ) {
         return context.state.conversation.topical
             ? context.state.conversation.topical.rootInstanceName
             : undefined;
@@ -207,7 +197,7 @@ export class TopicClass <
 
     static async do (
         context: BotContext,
-        getRootInstanceName: () => Promise<string>
+        getRootInstanceName: () => Promise<string>,
     ) {
         if (context.state.conversation.topical)
             await TopicClass.dispatch(context, context.state.conversation.topical.rootInstanceName);
@@ -218,11 +208,10 @@ export class TopicClass <
             }
     
             context.state.conversation.topical.rootInstanceName = await getRootInstanceName();    
-        }
-            
+        }    
     }
 
-    static async next (
+    private static getInstanceFromName (
         context: BotContext,
         instanceName: string,
     ) {
@@ -233,6 +222,13 @@ export class TopicClass <
             return;
         }
 
+        return instance;
+    }
+
+    private static getTopicFromInstance (
+        context: BotContext,
+        instance: TopicInstance<any>,
+    ) {
         const topic = TopicClass.topicClasses[instance.topicName];
         
         if (!topic) {
@@ -240,82 +236,49 @@ export class TopicClass <
             return;
         }
 
+        return topic;
+    }
+
+    static async next (
+        context: BotContext,
+        instanceName: string,
+    ): Promise<void> {
+        const instance = TopicClass.getInstanceFromName(context, instanceName);
+        const topic = TopicClass.getTopicFromInstance(context, instance);
+
         const data = {} as TopicContextData<any>;
 
         await topic._next(context, new TopicContext(context, instance, data));
 
-        switch (data.topicMethod) {
-            case TopicMethods.next:
-                await TopicClass.next(context, instanceName);
-                break;
-
-            case TopicMethods.returnToParent:
-                await TopicClass.returnToParent(context, instance, data.args);
-                break;
-
-            case TopicMethods.dispatchToSelf:
-                throw "you may not call dispatchToSelf() here"
-        }
+        if (data.returned)
+            await TopicClass.returnToParent(context, instance, data.args);
     }
 
     static async dispatch (
         context: BotContext,
         instanceName: string,
     ): Promise<void> {
-        const instance = context.state.conversation.topical.instances[instanceName];
-
-        if (!instance) {
-            console.warn(`Unknown instance ${instanceName}`);
-            return;
-        }
-
-        const topic = TopicClass.topicClasses[instance.topicName];
-        
-        if (!topic) {
-            console.warn(`Unknown topic ${instance.topicName}`);
-            return;
-        }
+        const instance = TopicClass.getInstanceFromName(context, instanceName);
+        const topic = TopicClass.getTopicFromInstance(context, instance);
 
         const data = {} as TopicContextData<any>;
 
         await topic._onReceive(context, new TopicContext(context, instance, data));
 
-        switch (data.topicMethod) {
-            case TopicMethods.next:
-                await TopicClass.next(context, instanceName);
-                break;
-
-            case TopicMethods.returnToParent:
-                await TopicClass.returnToParent(context, instance, data.args);
-                break;
-
-            case TopicMethods.dispatchToSelf:
-                throw "you may not call dispatchToSelf() here"
-        }
+        if (data.returned)
+            await TopicClass.returnToParent(context, instance, data.args);
     }
 
     static async returnToParent <ReturnArgs = any> (
         context: BotContext,
         instance: TopicInstance<any>,
         args: ReturnArgs,
-    ) {
+    ): Promise<void> {
         if (!instance.parentInstanceName) {
             return;
         }
-                
-        const parentInstance = context.state.conversation.topical.instances[instance.parentInstanceName];
-
-        if (!parentInstance) {
-            console.warn(`Unknown parent instance ${instance.parentInstanceName}`);
-            return;
-        }
-
-        const topic = TopicClass.topicClasses[parentInstance.topicName];
-
-        if (!topic) {
-            console.warn(`Unknown topic ${parentInstance.topicName}`);
-            return;
-        }
+        const parentInstance = TopicClass.getInstanceFromName(context, instance.parentInstanceName);
+        const topic = TopicClass.getTopicFromInstance(context, parentInstance);
 
         const data = {} as TopicContextData<any>;
     
@@ -325,18 +288,8 @@ export class TopicClass <
 
         await topic._onChildReturnHandlers[instance.topicName](context, topicOnChildReturnContext);
 
-        switch (data.topicMethod) {
-            case TopicMethods.next:
-                await TopicClass.next(context, parentInstance.name);
-                break;
-
-            case TopicMethods.returnToParent:
-                await TopicClass.returnToParent(context, parentInstance, data.args);
-                break;
-
-            case TopicMethods.dispatchToSelf:
-                throw "you may not call dispatchToSelf() here"
-        }
+        if (data.returned)
+            await TopicClass.returnToParent(context, parentInstance, data.args);
     }
 
     init (
@@ -363,11 +316,6 @@ export class TopicClass <
         return this;
     }
 
-    private _onChildReturnHandlers: {
-        [topicName: string]: TopicOnChildReturn<any, any, any, Promise<void>>;
-    } = {}
-
-    
     afterChildReturn (
         cleanup: TopicOnChildReturn<State, any, any, Promiseable<void>>,
     ): this {

@@ -77,8 +77,7 @@ const deleteAlarm = new TopicClass<DeleteAlarmInitArgs, DeleteAlarmState, Delete
         });
     })
     .onReceive(async (c, t) => {
-        if (t.instance.state.child)
-            await t.dispatchToInstance(t.instance.state.child);
+        await t.dispatch(t.instance.state.child);
     })
     .onChildReturn(stringPrompt, async (c, t) => {
         switch (t.args.name) {
@@ -115,8 +114,8 @@ const alarmBot = new TopicClass<undefined, AlarmBotState, undefined>('alarmBot')
         t.instance.state.alarms = [];
     })
     .onReceive(async (c, t) => {
-        if (t.instance.state.child)
-            return t.dispatchToInstance(t.instance.state.child);
+        if (await t.dispatch(t.instance.state.child))
+            return;
 
         if (c.request.type === 'message') {
             if (/set|add|create/i.test(c.request.text)) {
