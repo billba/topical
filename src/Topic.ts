@@ -2,12 +2,7 @@ import { Bot } from 'botbuilder'; // so that we get BotContext
 
 const returnsPromiseVoid: TopicReturnToParent<any> = () => Promise.resolve();
 
-type TopicInit <InitArgs> = (
-    context: BotContext,
-    args?: InitArgs,
-) => Promise<void>;
-
-type TopicReturnToParent <Args> = (
+export type TopicReturnToParent <Args> = (
     context: BotContext,
     args?: Args
 ) => Promise<void>;
@@ -21,7 +16,10 @@ export class Topic <
     protected returned;
 
     constructor(
-        private init: TopicInit<InitArgs> = returnsPromiseVoid,
+        private init: (
+            context: BotContext,
+            args?: InitArgs,
+        ) => Promise<void> = returnsPromiseVoid,
     ) {
     }
     
@@ -63,6 +61,7 @@ export class Topic <
             if (this.returned)
                 throw "This topic has already returned";
             this.returned = true;
+
             await returnToParent(c, args);
         }
 
