@@ -110,9 +110,7 @@ export class Topic <
         context: BotContext,
         getRootTopic: () => Promise<Topic>
     ) {
-        if (Topic.rootTopic)
-            await Topic.rootTopic.onReceive(context);
-        else
+        if (!await Topic.rootTopic.dispatch(context, Topic.rootTopic))
             Topic.rootTopic = await getRootTopic();
     }
 }
