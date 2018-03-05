@@ -14,7 +14,6 @@ bot
         await Topic.do(c, () => new AlarmBot().createTopicInstance(c))
     });
 
-
 import { SimpleFormInitArgs, SimpleFormData, SimpleFormSchema, SimpleFormReturnArgs } from '../src/topical';
 
 interface PromptState {
@@ -26,10 +25,11 @@ interface PromptReturnArgs {
 }
 
 class StringPrompt extends Topic<PromptState, PromptState, PromptReturnArgs> {
-    constructor () {
-        super(async (context, args) => {
-            context.reply(args.prompt);
-        });
+    async init (
+        context: BotContext,
+        args: PromptState,
+    ) {
+        context.reply(args.prompt);
     }
 
     async onReceive (
@@ -48,12 +48,13 @@ interface SimpleFormState {
 }
 
 class SimpleForm extends Topic<SimpleFormInitArgs, SimpleFormState, SimpleFormReturnArgs> {
-    constructor () {
-        super(async (context, args) => {
-            this.state.schema = args.schema;
-            this.state.form = {}
-            await this.next(context);
-        });
+    async init (
+        context: BotContext,
+        args: SimpleFormInitArgs,
+    ) {
+        this.state.schema = args.schema;
+        this.state.form = {}
+        await this.doNext(context, this);
     }
 
     async next (
@@ -78,7 +79,7 @@ class SimpleForm extends Topic<SimpleFormInitArgs, SimpleFormState, SimpleFormRe
                         this.state.form[name] = args.value;
                         this.state.prompt = undefined;
 
-                        await this.next(context);
+                        await this.doNext(context, this);
                     });
 
                 break;
@@ -119,15 +120,16 @@ interface ShowAlarmInitArgs {
 }
 
 class ShowAlarms extends Topic<ShowAlarmInitArgs> {
-    constructor () {
-        super(async (c, args) => {
-            if (args.alarms.length === 0)
-                c.reply(`You haven't set any alarms.`);
-            else
-                c.reply(`You have the following alarms set:\n${listAlarms(args.alarms)}`);
+    async init(
+        c: BotContext,
+        args: ShowAlarmInitArgs,
+    ) {
+        if (args.alarms.length === 0)
+            c.reply(`You haven't set any alarms.`);
+        else
+            c.reply(`You have the following alarms set:\n${listAlarms(args.alarms)}`);
 
-            await this.returnToParent(c);
-        });
+        await this.returnToParent(c);
     }
 }
 
@@ -147,34 +149,35 @@ interface DeleteAlarmReturnArgs {
 }
 
 class DeleteAlarm extends Topic<DeleteAlarmInitArgs, DeleteAlarmState, DeleteAlarmReturnArgs> {
-    constructor () {
-        super(async (c, args) => {
-            if (args.alarms.length === 0) {
-                c.reply(`You don't have any alarms.`);
-                this.returnToParent(c);
-                return;
-            }
+    async init (
+        c: BotContext,
+        args: DeleteAlarmInitArgs,
+    ) {
+        if (args.alarms.length === 0) {
+            c.reply(`You don't have any alarms.`);
+            this.returnToParent(c);
+            return;
+        }
 
-            this.state.alarms = args.alarms;
+        this.state.alarms = args.alarms;
 
-            this.state.child = await new StringPrompt().createTopicInstance(
-                c, {
-                    prompt: `Which alarm do you want to delete?\n${listAlarms(this.state.alarms)}`,
-                }, async (c, args) => {
-                    this.state.alarmName = args.value;
-                    this.state.child = await new StringPrompt().createTopicInstance(
-                        c, {
-                            prompt: `Are you sure you want to delete alarm "${args.value}"? (yes/no)"`,
-                        }, async (c, args) => {
-                            this.returnToParent(c, args.value === 'yes'
-                                ? {
-                                    alarmName: this.state.alarmName
-                                }
-                                : undefined
-                            );
-                    });
+        this.state.child = await new StringPrompt().createTopicInstance(
+            c, {
+                prompt: `Which alarm do you want to delete?\n${listAlarms(this.state.alarms)}`,
+            }, async (c, args) => {
+                this.state.alarmName = args.value;
+                this.state.child = await new StringPrompt().createTopicInstance(
+                    c, {
+                        prompt: `Are you sure you want to delete alarm "${args.value}"? (yes/no)"`,
+                    }, async (c, args) => {
+                        this.returnToParent(c, args.value === 'yes'
+                            ? {
+                                alarmName: this.state.alarmName
+                            }
+                            : undefined
+                        );
                 });
-        });
+            });
     }
 
     async onReceive (
@@ -192,11 +195,11 @@ interface AlarmBotState {
 const helpText = `I know how to set, show, and delete alarms.`;
 
 class AlarmBot extends Topic<undefined, AlarmBotState, undefined> {
-    constructor () {
-        super(async (c, args) => {
-            c.reply(`Welcome to Alarm Bot!\n${helpText}`);
-            this.state.alarms = [];
-        });
+    async init (
+        c: BotContext,
+    ) {
+        c.reply(`Welcome to Alarm Bot!\n${helpText}`);
+        this.state.alarms = [];
     }
 
     async onReceive (

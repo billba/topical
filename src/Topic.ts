@@ -14,14 +14,6 @@ export class Topic <
 > {
     protected state = {} as State;
     protected returned;
-
-    constructor(
-        private init: (
-            context: BotContext,
-            args?: InitArgs,
-        ) => Promise<void> = returnsPromiseVoid,
-    ) {
-    }
     
     returnToParent: TopicReturnToParent<ReturnArgs> = () => {
         throw "You must call createTopicInstance";
@@ -83,11 +75,6 @@ export class Topic <
         return true;
     }
 
-    async onReceive (
-        context: BotContext,
-    ) {
-    }
-
     async doNext (
         context: BotContext,
         topic: Topic,
@@ -99,10 +86,22 @@ export class Topic <
         return false;
     }
 
+    async init (
+        context: BotContext,
+        args?: InitArgs,
+    ) {
+    }
+
     async next (
         context: BotContext,
     ) {
     }
+
+    async onReceive (
+        context: BotContext,
+    ) {
+    }
+
 
     static rootTopic: Topic;
 
@@ -110,7 +109,9 @@ export class Topic <
         context: BotContext,
         getRootTopic: () => Promise<Topic>
     ) {
-        if (!await Topic.rootTopic.dispatch(context, Topic.rootTopic))
+        if (Topic.rootTopic)
+            await Topic.rootTopic.dispatch(context, Topic.rootTopic);
+        else
             Topic.rootTopic = await getRootTopic();
     }
 }
