@@ -1,5 +1,5 @@
 import { Promiseable } from 'botbuilder';
-import { toPromise } from './helpers';
+import { toPromise, returnsPromiseVoid } from './helpers';
 
 declare global {
     interface ConversationState {
@@ -136,8 +136,6 @@ export class TopicOnChildReturnContext <
         super(context, instance, data, args);
     }
 }
-
-const returnsPromiseVoid = () => Promise.resolve(); // a little more efficient than creating a new one every time
 
 export class TopicClass <
     InitArgs extends {} = {},

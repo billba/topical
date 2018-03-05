@@ -25,3 +25,5 @@ export const prettyConsole = {
         return next();
     }
 }
+
+export const returnsPromiseVoid = () => Promise.resolve();

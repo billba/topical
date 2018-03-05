@@ -1,6 +1,5 @@
 import { Bot } from 'botbuilder'; // so that we get BotContext
-
-const returnsPromiseVoid: TopicReturnToParent<any> = () => Promise.resolve();
+import { returnsPromiseVoid } from './helpers';
 
 export type TopicReturnToParent <Args> = (
     context: BotContext,
