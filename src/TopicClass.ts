@@ -31,6 +31,12 @@ export class TopicInstance <State = any, ReturnArgs = any> {
     }
 }
 
+export type TopicClassOnChildReturnHandler <State, ReturnArgs, ChildReturnArgs> = (
+    context: BotContext,
+    instance: TopicInstance<State, ReturnArgs>,
+    childInstance: TopicInstance<undefined, ChildReturnArgs>,
+) => Promise<void>;
+
 export class TopicClass <
     InitArgs extends {} = {},
     State extends {} = {},
@@ -161,7 +167,7 @@ export class TopicClass <
         return true;
     }
 
-    protected async returnedToParent (
+    private async returnedToParent (
         context: BotContext,
         instance: TopicInstance<any>,
     ): Promise<boolean> {
@@ -173,8 +179,14 @@ export class TopicClass <
 
         delete context.state.conversation.topical.instances[instance.name];
         instance.return = TopicReturn.succeeded;
+        instance.state = undefined; // to stop parents from peaking at the implementation details of their children.
 
-        await topic.onChildReturn(context, parentInstance, instance);
+        const handler = topic._onChildReturnHandlers[instance.topicName];
+        if (!handler)
+            throw `No onChildReturn() for topic ${instance.topicName}`;
+
+        await handler(context, parentInstance, instance);
+        await topic._afterChildReturn(context, parentInstance, instance);
         await topic.returnedToParent(context, parentInstance);
 
         return true;
@@ -199,40 +211,31 @@ export class TopicClass <
     ) {
     }
 
-    async onChildReturn <C, S> (
-        context: BotContext,
-        instance: TopicInstance<State, ReturnArgs>,
-        childInstance: TopicInstance<S, C>,
+    protected _onChildReturnHandlers: {
+        [topicName: string]: TopicClassOnChildReturnHandler<any, any, any>;
+    } = {};
+    
+    protected onChildReturn <ChildReturnArgs> (
+        topic: TopicClass<any, any, ChildReturnArgs>,
+        handler: TopicClassOnChildReturnHandler<State, ReturnArgs, ChildReturnArgs> = returnsPromiseVoid
     ) {
+        if (this._onChildReturnHandlers[topic.name])
+            throw new Error(`An attempt was made to call onChildReturn for topic ${topic.name}. This topic is already handled.`);
+
+        this._onChildReturnHandlers[topic.name] = handler;
+
+        return this;
     }
+
+    protected _afterChildReturn: TopicClassOnChildReturnHandler<any, any, any> = returnsPromiseVoid;
+    
+    protected afterChildReturn <ChildReturnArgs> (
+        handler: TopicClassOnChildReturnHandler<State, ReturnArgs, any>
+    ) {
+        if (this._afterChildReturn !== returnsPromiseVoid)
+            throw new Error(`You can only set up one afterChildReturn handler.`);
+
+        this._afterChildReturn = handler;
+    }
+
 }
-
-// const fromTopic = async <S, I, C> (
-//     childTopic: TopicClass<S, I, C>,
-//     childInstance: TopicInstance<any, any>,
-//     handler: (childInstance: TopicInstance<S, C>) => Promise<void>,
-// ) => {
-//     if (childInstance.topicName !== childTopic.name)
-//         return false;
-
-//     await handler(childInstance);
-//     return true;
-// }
-
-// class Bar extends TopicClass<undefined, undefined, { cat: string }> {}
-
-// const bar = new Bar('bar');
-
-// class Foo extends TopicClass {
-//     async onChildReturn(
-//         context: BotContext,
-//         instance: TopicInstance,
-//         childInstance: TopicInstance,
-//     ) {
-//         if (await fromTopic(bar, instance, async instance => {
-//         }))
-//             return;
-//         if (await fromTopic(bar, instance, async instance => {
-//         }))
-//     }
-// }

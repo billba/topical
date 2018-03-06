@@ -44,6 +44,19 @@ export class SimpleForm extends TopicClass<SimpleFormInitArgs, SimpleFormState, 
             .prompt(async (context, instance, result) => {
                 context.reply(instance.state.promptState.prompt);
             });
+
+        this
+            .onChildReturn(this.textPromptClass, async (context, instance, childInstance) => {
+                const metadata = instance.state.schema[childInstance.returnArgs.name];
+        
+                if (metadata.type !== 'string')
+                    throw `not expecting type "${metadata.type}"`;
+        
+                instance.state.form[childInstance.returnArgs.name] = childInstance.returnArgs.result.value;
+                instance.state.prompt = undefined;
+
+                await this.doNext(context, instance.name);
+            });
     }
 
     async init(
@@ -94,21 +107,5 @@ export class SimpleForm extends TopicClass<SimpleFormInitArgs, SimpleFormState, 
     ) {
         if (!await this.dispatch(context, instance.state.prompt))
             throw "a prompt should always be active";
-    }
-
-    async onChildReturn(
-        context: BotContext,
-        instance: TopicInstance<SimpleFormState, SimpleFormReturnArgs>,
-        childInstance: TopicInstance<any, any>,
-    ) {
-        const metadata = instance.state.schema[childInstance.returnArgs.name];
-
-        if (metadata.type !== 'string')
-            throw `not expecting type "${metadata.type}"`;
-
-        instance.state.form[childInstance.returnArgs.name] = childInstance.returnArgs.result.value;
-        instance.state.prompt = undefined;
-
-        await this.doNext(context, instance.name);
     }
 }

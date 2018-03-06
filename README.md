@@ -62,6 +62,14 @@ Here's the scalable web service version of the above code:
 
 ```ts
 class RootTopicClass extends TopicClass {
+    constructor(name) {
+        super(name);
+
+        this.onChildReturn(travelTopicClass, (context, instance, childInstance) => {
+            context.reply(`Welcome back to the Root!`);
+            instance.state.child = undefined;
+        });
+    }
     async init(context, instance, args) {
         context.reply("How can I help you today?");
     }
@@ -71,10 +79,6 @@ class RootTopicClass extends TopicClass {
 
         if (context.request.text === "book travel")
             instance.state.child = await travelTopicClass.createInstance(context, instance);
-    }
-    async onChildReturn(context, instance, childInstance) => {
-        context.reply(`Welcome back to the Root!`);
-        instance.state.child = undefined;
     }
 }
 ```
@@ -190,6 +194,32 @@ By not duplicating the reference to the target instance there's one less bug tha
 
 ## Overly Quick Reference for `TopicClass`
 
+### `constructor(name: string)`
+
+You don't need to have a constructor. It's there for any operations you want to do once, when the topic class is created, as opposed to `init()` which is called on each instance.
+
+If you dispatch to any child topics, this is where you set up handlers for them to return their arguments.
+
+```ts
+constructor(name) {
+    super(name);
+
+    this
+        .onChildReturn(childTopic1, async (context, instance, childInstance) => {...})
+        .onChildReturn(childTopic2, async (context, instance, childInstance) => {...})
+        .onChildReturn(childTopic3, async (context, instance, childInstance) => {...})
+        .afterChildReturn(async (context, instance, childInstance) => {...});
+}
+```
+
+Each `onChildReturn()` handler is the other side of a call to `this.returnToParent(returnArgs)`. The reference to the instance has been deleted, and the instance (with the state cleared and the returnArgs set in `.returnArgs`), is sent via `childInstance`.
+
+If you have multiple children that are instances of the same topic (common for prompts) then you will have to disambiguate the responses. `TextPromptTopicClass`, for example, carries a `name` property for this purpose.
+
+If you call `this.returnToParent(returnArgs)`, after `onChildReturn()` ends, the reference to this instance will be deleted and the `returnArgs` will be sent to the *parent* topic's `onChildReturn()` handler.
+
+The use of `afterChildReturn()` is purely optional - a convenient place to do unified cleanup, typically this is where the reference to a `childInstance.name` is removed.
+
 ### `TopicClass.do(context: BotContext, getRootInstanceName: () => Promise<Topic>): Promise<void>`
 
 This bootstraps your topic heirarchy with a designated root topic:
@@ -275,15 +305,6 @@ If you call `this.returnToParent(returnArgs)`, after `next()` ends, the referenc
 Run for each activity dispatched via `topicClass.dispatch()` to the topic instance.
 
 If you call `this.returnToParent(returnArgs)`, after `onReceive()` ends, the reference to this instance will be deleted and the `returnArgs` will be sent to the parent topic's `onChildReturn()` handler.
-
-
-#### `TopicClass.onChildReturn(context: BotContext, instance: TopicInstance, childInstance; TopicInstance)`
-
-This is the other side of a call to `this.returnToParent(returnArgs)`. The reference to the instance deleted, and the instance (with the returnArgs set in `.returnArgs`), is sent via `childInstance`.
-
-You will need to examine `childInstance.topicName` to determine which child topic is returning. If you have multiple children that are instances of the same topic (common for prompts) then you will have to disambiguate the responses. `TextPromptTopicClass`, for example, carries a `name` property for this purpose.
-
-If you call `this.returnToParent(returnArgs)`, after `onChildReturn()` ends, the reference to this instance will be deleted and the `returnArgs` will be sent to the parent topic's `onChildReturn()` handler.
 
 ### TopicClass typing
 
