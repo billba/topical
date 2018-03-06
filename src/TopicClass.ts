@@ -211,7 +211,7 @@ export class TopicClass <
     ) {
     }
 
-    protected _onChildReturnHandlers: {
+    private _onChildReturnHandlers: {
         [topicName: string]: TopicClassOnChildReturnHandler<any, any, any>;
     } = {};
     
@@ -227,7 +227,7 @@ export class TopicClass <
         return this;
     }
 
-    protected _afterChildReturn: TopicClassOnChildReturnHandler<any, any, any> = returnsPromiseVoid;
+    private _afterChildReturn: TopicClassOnChildReturnHandler<any, any, any> = returnsPromiseVoid;
     
     protected afterChildReturn <ChildReturnArgs> (
         handler: TopicClassOnChildReturnHandler<State, ReturnArgs, any>
