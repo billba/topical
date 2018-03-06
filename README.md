@@ -329,8 +329,7 @@ class YourTopic extends Topic<YourState>('yourTopic')
             });
     })
     async onReceive(context: BotContext) {
-        if (this.state.child)
-            return this.state.child.onReceive(context);
+        await this.dispatch(context, this.state.child);
     });
 
 // Scalable web services
@@ -342,9 +341,10 @@ class MyTopic extends TopicClass<InitArgs, State, ReturnArgs> {
             bar: 15                                 // error
         }
         this.returnToParent({
-            foo: this.state.bar                     // error
+            foo: instance.state.bar                     // error
         })
-    });
+    }
+}
 
 class myTopic = new MyTopic('myTopic');
 
@@ -353,12 +353,12 @@ class YourTopic extends Topic {
         instance.state.child = await myTopic.createInstance(context, instance, {
             bar: "hey"                              // error
         });
-    })
+    }
     async onReceive(context: BotContext) {
         await this.dispatch(context, instance.state.child);
-    });
+    }
     async onChildReturn(context: BotContext, instance: TopicInstance, childInstance: TopicInstance) {
         context.reply(args.bar);                    // should be an error, but currently is not
     }
-
+}
 ``
