@@ -18,18 +18,18 @@ export class Topic <
         throw "You must call createTopicInstance";
     }
 
-    async createTopicInstance (
+    async createInstance (
         context: BotContext,
         returnToParent?: TopicReturnToParent<ReturnArgs>
     ): Promise<this>;
 
-    async createTopicInstance (
+    async createInstance (
         context: BotContext,
         args: InitArgs,
         returnToParent?: TopicReturnToParent<ReturnArgs>
     ): Promise<this>;
 
-    async createTopicInstance (
+    async createInstance (
         context: BotContext,
         ... params,
     ) {

@@ -1,4 +1,3 @@
-import { TopicOnChildReturnContext, TopicOnChildReturn } from "./topical";
 import { Promiseable, isPromised } from "botbuilder";
 
 export const toPromise = <T> (t: Promiseable<T>) => isPromised(t) ? t : Promise.resolve(t);

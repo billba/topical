@@ -1,5 +1,5 @@
 import { Promiseable, Activity } from 'botbuilder';
-import { TopicClass, TopicContext, TopicInstance, TopicContextData, toPromise, returnsPromiseVoid } from "./topical";
+import { TopicClass, TopicInstance, toPromise, returnsPromiseVoid } from "./topical";
 import { Validator, ValidatorResult } from './Validator';
 
 interface PromptTopicClassInitArgs <S> {
@@ -18,42 +18,49 @@ interface PromptTopicClassReturnArgs <V> {
     result: ValidatorResult<V>;
 }
 
-export class PromptTopicClass <V, S = any> extends TopicClass<PromptTopicClassInitArgs<S>, PromptTopicClassState<S>, PromptTopicClassReturnArgs <V>> {
-    constructor (
-        name: string
+type PromptTopicClassPrompt <V, S = any> = (
+    context: BotContext,
+    instance: TopicInstance<PromptTopicClassState<S>, PromptTopicClassReturnArgs<V>>,
+    result?: ValidatorResult<V>
+) => Promise<void>;
+
+export class PromptTopicClass <V, S = any> extends TopicClass<PromptTopicClassInitArgs<S>, PromptTopicClassState<S>, PromptTopicClassReturnArgs<V>> {
+    async init (
+        context: BotContext,
+        instance: TopicInstance<PromptTopicClassState<S>, PromptTopicClassReturnArgs<V>>,
+        args: PromptTopicClassInitArgs<S>,
     ) {
-        super(name);
+         instance.state = {
+            name: args.name,
+            turns: 0,
+            promptState: args.promptState,
+        }
+            await this._prompt(context, instance);
+    }
 
-        this
-            .init(async (context, topicContext) => {
-                topicContext.instance.state = {
-                    name: topicContext.args.name,
-                    turns: 0,
-                    promptState: topicContext.args.promptState
-                }
-                await this._prompt(context, topicContext);
-            })
-            .onReceive (async (context, topicContext) => {
-                const result = await this._validator.validate(context.request as Activity);
-        
-                if (!result.reason)
-                    return await topicContext.returnToParent({
-                        name: topicContext.instance.state.name,
-                        result
-                    });
+    async onReceive (
+        context: BotContext,
+        instance: TopicInstance<PromptTopicClassState<S>, PromptTopicClassReturnArgs<V>>,
+    ) {
+        const result = await this._validator.validate(context.request as Activity);
 
-                if (++ topicContext.instance.state.turns === this._maxTurns) {
-                    return topicContext.returnToParent({
-                        name: topicContext.instance.state.name,
-                        result: {
-                            value: result.value,
-                            reason: 'too_many_attempts',
-                        }
-                    });
-                }
-
-                return this._prompt(context, topicContext);
+        if (!result.reason)
+            return this.returnToParent(instance, {
+                name: instance.state.name,
+                result
             });
+
+        if (++ instance.state.turns === this._maxTurns) {
+            return this.returnToParent(instance, {
+                name: instance.state.name,
+                result: {
+                    value: result.value,
+                    reason: 'too_many_attempts',
+                }
+            });
+        }
+
+        return this._prompt(context, instance, result);
     }
 
     protected _maxTurns: number = 2;
@@ -64,15 +71,19 @@ export class PromptTopicClass <V, S = any> extends TopicClass<PromptTopicClassIn
         return this;
     }
 
-    protected _prompt?: (context: BotContext, topicContext: TopicContext<PromptTopicClassState<S>, PromptTopicClassReturnArgs <V>>) => Promise<void>;
+    protected _prompt?: PromptTopicClassPrompt<V, S> = () => {
+        throw "You must provide a prompt function";
+    }
     
-    public prompt(prompt: (context: BotContext, topicContext: TopicContext<PromptTopicClassState<S>, PromptTopicClassReturnArgs <V>>) => Promiseable<void>) {
-        this._prompt = (context, topicContext) => toPromise(prompt(context, topicContext));
+    public prompt(prompt: PromptTopicClassPrompt<V, S>) {
+        this._prompt = (context, instance, result) => toPromise(prompt(context, instance, result));
 
         return this;
     }
 
-    protected _validator: Validator<V>;
+    protected _validator: Validator<V> = new Validator(() => {
+        throw "You must provide a validator";
+    })
 
     public validator(validator: Validator<V>) {
         this._validator = validator;

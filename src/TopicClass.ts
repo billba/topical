@@ -12,128 +12,22 @@ declare global {
     }
 }
 
-export class TopicInstance <State = any> {
+enum TopicReturn {
+    signalled,
+    succeeded,
+}
+
+export class TopicInstance <State = any, ReturnArgs = any> {
     public name: string;
     public state = {} as State;
+    public return: TopicReturn;
+    public returnArgs: ReturnArgs;
 
     constructor(
         public topicName: string,
         public parentInstanceName?: string,
     ) {
         this.name = `instance of "${topicName}"(${Date.now().toString()}${Math.random().toString().substr(1)})`;
-    }
-}
-
-export type TopicInit <
-    InitArgs,
-    State,
-    ReturnArgs,
-    T
-> = (
-    context: BotContext,
-    topic: TopicInitContext<InitArgs, State, ReturnArgs>,
-) => T;
-
-export type TopicMethod <
-    State,
-    ReturnArgs,
-    T
-> = (
-    context: BotContext,
-    topic: TopicContext<State, ReturnArgs>,
-) => T;
-
-export interface TopicContextData <ReturnArgs> {
-    returned?: boolean;
-    args?: ReturnArgs;
-}
-
-export class TopicContext <State, ReturnArgs> {
-    constructor(
-        protected context: BotContext,
-        public instance: TopicInstance<State>,
-        protected data: TopicContextData<ReturnArgs>,
-    ) {
-    }
-
-    rootInstanceName = TopicClass.rootInstanceName(this.context);
-
-    createTopicInstance <_InitArgs> (
-        topic: TopicClass<_InitArgs>,
-        args?: _InitArgs,
-    ): Promise<string> {
-        return topic.createInstance(this.context, this.instance.name, args);
-    }
-
-    async doNext (
-        instanceName: string,
-    ): Promise<boolean> {
-        if (!instanceName)
-            return false;
-
-        await TopicClass.next(this.context, this.instance.name);
-        return true;
-    }
-
-    returnToParent (
-        args?: ReturnArgs,
-    ) {
-        if (this.data.returned)
-            throw "this instance already returned";
-        
-        this.data.returned = true;
-        this.data.args = args;
-    }
-
-    async dispatch (
-        instanceName: string,
-    ): Promise<boolean> {
-        if (!instanceName)
-            return false;
-        
-        await TopicClass.dispatch(this.context, instanceName);
-        return true;
-    }
-}
-
-export class TopicInitContext <
-    InitArgs,
-    State,
-    ReturnArgs,
-> extends TopicContext<State, ReturnArgs> {
-    constructor(
-        context: BotContext,
-        instance: TopicInstance<State>,
-        data: TopicContextData <ReturnArgs>,
-        public args: InitArgs,
-    ) {
-        super(context, instance, data);
-    }
-}
-
-export type TopicOnChildReturn <
-    State,
-    IncomingReturnArgs,
-    OutgoingReturnArgs,
-    T
-> = (
-    context: BotContext,
-    topicOnChildReturnHelper: TopicOnChildReturnContext<State, IncomingReturnArgs, OutgoingReturnArgs>,
-) => T;
-
-export class TopicOnChildReturnContext <
-    State,
-    IncomingReturnArgs,
-    OutgoingReturnArgs,
-> extends TopicInitContext<IncomingReturnArgs, State, OutgoingReturnArgs> {
-    constructor(
-        context: BotContext,
-        instance: TopicInstance<State>,
-        data: TopicContextData<OutgoingReturnArgs>,
-        args: IncomingReturnArgs,
-        public childInstanceName: string,
-    ) {
-        super(context, instance, data, args);
     }
 }
 
@@ -146,43 +40,41 @@ export class TopicClass <
         [name: string]: TopicClass;
     } = {}
 
-    protected _init: TopicInit<InitArgs, State, ReturnArgs, Promise<void>> = returnsPromiseVoid;
-    protected _next: TopicMethod<State, ReturnArgs, Promise<void>> = returnsPromiseVoid;
-    protected _onReceive: TopicMethod<State, ReturnArgs, Promise<void>> = returnsPromiseVoid;
-    protected _afterChildReturn: TopicOnChildReturn<State, any, any, Promise<void>> = returnsPromiseVoid;
-    protected _onChildReturnHandlers: {
-        [topicName: string]: TopicOnChildReturn<any, any, any, Promise<void>>;
-    } = {};
-
     constructor (
         public name: string,
     ) {
         if (TopicClass.topicClasses[name]) {
             throw new Error(`An attempt was made to create a topic with existing name "${name}".`);
         }
-        
+
         TopicClass.topicClasses[name] = this;
+    }
+
+    returnToParent(
+        instance: TopicInstance<State>,
+        args?: ReturnArgs,
+    ) {
+        if (instance.return)
+            throw "already returned";
+        instance.return = TopicReturn.signalled;
+        instance.returnArgs = args;
     }
 
     async createInstance (
         context: BotContext,
-        parentInstanceName?: string,
+        parentInstance?: TopicInstance,
         args?: InitArgs,
     ) {
-        const instance = new TopicInstance<State>(this.name, parentInstanceName);
+        const newInstance = new TopicInstance(this.name, parentInstance && parentInstance.name);
 
-        context.state.conversation.topical.instances[instance.name] = instance;
+        context.state.conversation.topical.instances[newInstance.name] = newInstance;
 
-        const data = {} as TopicContextData<ReturnArgs>;
-        
-        await toPromise(this._init(context, new TopicInitContext(context, instance, data, args)));
+        await toPromise(this.init(context, newInstance, args));
 
-        if (data.returned) {
-            await TopicClass.returnToParent(context, instance, data.args);
+        if (await this.returnedToParent(context, newInstance))
             return undefined;
-        }
 
-        return instance.name;
+        return newInstance.name;
     }
 
     static rootInstanceName(
@@ -197,9 +89,10 @@ export class TopicClass <
         context: BotContext,
         getRootInstanceName: () => Promise<string>,
     ) {
-        if (context.state.conversation.topical)
-            await TopicClass.dispatch(context, context.state.conversation.topical.rootInstanceName);
-        else {
+        if (context.state.conversation.topical) {
+            await TopicClass.getTopicFromInstance(TopicClass.getInstanceFromName(context, context.state.conversation.topical.rootInstanceName))
+                .dispatch(context, context.state.conversation.topical.rootInstanceName);
+        } else {
             context.state.conversation.topical = {
                 instances: {},
                 rootInstanceName: undefined
@@ -224,8 +117,7 @@ export class TopicClass <
     }
 
     private static getTopicFromInstance (
-        context: BotContext,
-        instance: TopicInstance<any>,
+        instance: TopicInstance,
     ) {
         const topic = TopicClass.topicClasses[instance.topicName];
         
@@ -237,103 +129,110 @@ export class TopicClass <
         return topic;
     }
 
-    static async next (
+    async doNext (
         context: BotContext,
         instanceName: string,
-    ): Promise<void> {
+    ) {
+        if (!instanceName)
+            return false;
+
         const instance = TopicClass.getInstanceFromName(context, instanceName);
-        const topic = TopicClass.getTopicFromInstance(context, instance);
+        const topic = TopicClass.getTopicFromInstance(instance);
 
-        const data = {} as TopicContextData<any>;
+        await topic.next(context, instance);
+        await this.returnedToParent(context, instance);
 
-        await topic._next(context, new TopicContext(context, instance, data));
-
-        if (data.returned)
-            await TopicClass.returnToParent(context, instance, data.args);
+        return true;
     }
 
-    static async dispatch (
+    async dispatch (
         context: BotContext,
         instanceName: string,
-    ): Promise<void> {
+    ) {
+        if (!instanceName)
+            return false;
+
         const instance = TopicClass.getInstanceFromName(context, instanceName);
-        const topic = TopicClass.getTopicFromInstance(context, instance);
+        const topic = TopicClass.getTopicFromInstance(instance);
 
-        const data = {} as TopicContextData<any>;
-
-        await topic._onReceive(context, new TopicContext(context, instance, data));
-
-        if (data.returned)
-            await TopicClass.returnToParent(context, instance, data.args);
+        await topic.onReceive(context, instance);
+        await this.returnedToParent(context, instance);
+        
+        return true;
     }
 
-    static async returnToParent <ReturnArgs = any> (
+    protected async returnedToParent (
         context: BotContext,
         instance: TopicInstance<any>,
-        args: ReturnArgs,
-    ): Promise<void> {
-        if (!instance.parentInstanceName) {
-            return;
-        }
-        const parentInstance = TopicClass.getInstanceFromName(context, instance.parentInstanceName);
-        const topic = TopicClass.getTopicFromInstance(context, parentInstance);
+    ): Promise<boolean> {
+        if (instance.return !== TopicReturn.signalled || !instance.parentInstanceName)
+            return false;
 
-        const data = {} as TopicContextData<any>;
-    
-        const topicOnChildReturnContext = new TopicOnChildReturnContext(context, parentInstance, data, args, instance.name);
+        const parentInstance = TopicClass.getInstanceFromName(context, instance.parentInstanceName);
+        const topic = TopicClass.getTopicFromInstance(parentInstance);
 
         delete context.state.conversation.topical.instances[instance.name];
+        instance.return = TopicReturn.succeeded;
 
-        await topic._onChildReturnHandlers[instance.topicName](context, topicOnChildReturnContext);
+        await topic.onChildReturn(context, parentInstance, instance);
+        await topic.returnedToParent(context, parentInstance);
 
-        if (data.returned)
-            await TopicClass.returnToParent(context, parentInstance, data.args);
+        return true;
     }
 
-    init (
-        init: TopicInit<InitArgs, State, ReturnArgs, Promiseable<void>>,
-    ): this {
-        this._init = (context, topic) => toPromise(init(context, topic));
-    
-        return this;
+    async init (
+        context: BotContext,
+        instance: TopicInstance<State, ReturnArgs>,
+        args?: InitArgs,
+    ) {
     }
 
-    next (
-        next: TopicMethod<State, ReturnArgs, Promiseable<void>>,
-    ): this {
-        this._next = (context, topic) => toPromise(next(context, topic));
-
-        return this;
+    async next (
+        context: BotContext,
+        instance: TopicInstance<State, ReturnArgs>,
+    ) {
     }
 
-    onReceive (
-        onReceive: TopicMethod<State, ReturnArgs, Promiseable<void>>,
-    ): this {
-        this._onReceive = (context, instance) => toPromise(onReceive(context, instance));
-
-        return this;
+    async onReceive (
+        context: BotContext,
+        instance: TopicInstance<State, ReturnArgs>,
+    ) {
     }
 
-    afterChildReturn (
-        cleanup: TopicOnChildReturn<State, any, any, Promiseable<void>>,
-    ): this {
-        this._afterChildReturn = (context, topic) => toPromise(cleanup(context, topic));
-
-        return this;
-    }
-
-    onChildReturn <C> (
-        topic: TopicClass<any, any, C>,
-        onChildReturnHandler: TopicOnChildReturn<State, C, ReturnArgs, Promiseable<void>> = returnsPromiseVoid,
-    ): this {
-        if (this._onChildReturnHandlers[topic.name])
-            throw new Error(`An attempt was made to call onChildReturn for topic ${topic.name}. This topic is already handled.`);
-
-        this._onChildReturnHandlers[topic.name] = async (context, topic) => {
-            await toPromise(onChildReturnHandler(context, topic));
-            await this._afterChildReturn(context, topic);
-        }
-
-        return this;
+    async onChildReturn <C, S> (
+        context: BotContext,
+        instance: TopicInstance<State, ReturnArgs>,
+        childInstance: TopicInstance<S, C>,
+    ) {
     }
 }
+
+// const fromTopic = async <S, I, C> (
+//     childTopic: TopicClass<S, I, C>,
+//     childInstance: TopicInstance<any, any>,
+//     handler: (childInstance: TopicInstance<S, C>) => Promise<void>,
+// ) => {
+//     if (childInstance.topicName !== childTopic.name)
+//         return false;
+
+//     await handler(childInstance);
+//     return true;
+// }
+
+// class Bar extends TopicClass<undefined, undefined, { cat: string }> {}
+
+// const bar = new Bar('bar');
+
+// class Foo extends TopicClass {
+//     async onChildReturn(
+//         context: BotContext,
+//         instance: TopicInstance,
+//         childInstance: TopicInstance,
+//     ) {
+//         if (await fromTopic(bar, instance, async instance => {
+//         }))
+//             return;
+//         if (await fromTopic(bar, instance, async instance => {
+//         }))
+//     }
+// }

@@ -11,7 +11,7 @@ const bot = new Bot(adapter);
 bot
     .use(prettyConsole)
     .onReceive(async c => {
-        await Topic.do(c, () => new AlarmBot().createTopicInstance(c))
+        await Topic.do(c, () => new AlarmBot().createInstance(c))
     });
 
 import { SimpleFormInitArgs, SimpleFormData, SimpleFormSchema, SimpleFormReturnArgs } from '../src/topical';
@@ -47,7 +47,7 @@ class SimpleForm extends Topic<SimpleFormInitArgs, SimpleFormState, SimpleFormRe
                     .prompt(context=> {
                         context.reply(metadata.prompt);
                     })
-                    .createTopicInstance(
+                    .createInstance(
                         context,
                         async (context, result) => {
                             const metadata = this.state.schema[name];
@@ -146,14 +146,14 @@ class DeleteAlarm extends Topic<DeleteAlarmInitArgs, DeleteAlarmState, DeleteAla
             .prompt(context=> {
                 context.reply(`Which alarm do you want to delete?\n${listAlarms(this.state.alarms)}`);
             })
-            .createTopicInstance(c, async (c, args) => {
+            .createInstance(c, async (c, args) => {
                 this.state.alarmName = args.value;
                 this.state.child = await new TextPromptTopic()
                     .maxTurns(100)
                     .prompt(context=> {
                         context.reply(`Are you sure you want to delete alarm "${args.value}"? (yes/no)`);
                     })
-                    .createTopicInstance(c, async (c, args) => {
+                    .createInstance(c, async (c, args) => {
                         this.returnToParent(c, args.value === 'yes'
                             ? {
                                 alarmName: this.state.alarmName
@@ -194,7 +194,7 @@ class AlarmBot extends Topic<undefined, AlarmBotState, undefined> {
 
         if (c.request.type === 'message') {
             if (/set|add|create/i.test(c.request.text)) {
-                this.state.child = await new SimpleForm().createTopicInstance(
+                this.state.child = await new SimpleForm().createInstance(
                     c, {
                         schema: {
                             name: {
@@ -212,14 +212,14 @@ class AlarmBot extends Topic<undefined, AlarmBotState, undefined> {
                         c.reply(`Alarm successfully added!`);
                     });
             } else if (/show|list/i.test(c.request.text)) {
-                this.state.child = await new ShowAlarms().createTopicInstance(
+                this.state.child = await new ShowAlarms().createInstance(
                     c, {
                         alarms: this.state.alarms
                     }, async (c, args) => {
                         this.state.child = undefined;
                     });
             } else if (/delete|remove/i.test(c.request.text)) {
-                this.state.child = await new DeleteAlarm().createTopicInstance(
+                this.state.child = await new DeleteAlarm().createInstance(
                     c, {
                         alarms: this.state.alarms
                     }, async (c, args) => {

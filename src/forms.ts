@@ -1,5 +1,4 @@
-import { TopicClass } from './topical';
-import { TextPromptTopicClass } from './topicClassPrompts';
+import { TopicClass, TopicInstance, TextPromptTopicClass } from './topical';
 
 export interface SimpleFormMetadata {
     type: 'string';
@@ -28,68 +27,88 @@ export interface SimpleFormReturnArgs {
     form: SimpleFormData;
 }
 
-
 interface SimpleFormPromptState {
     prompt: string;
 }
 
 export class SimpleForm extends TopicClass<SimpleFormInitArgs, SimpleFormState, SimpleFormReturnArgs> {
+    private textPromptClass: TextPromptTopicClass<SimpleFormPromptState>;
+
     constructor (
         name: string
     ) {
         super(name);
 
-        const textPromptClass = new TextPromptTopicClass<SimpleFormPromptState>(name + ".stringPrompt")
+        this.textPromptClass = new TextPromptTopicClass<SimpleFormPromptState>(name + ".stringPrompt")
             .maxTurns(100)
-            .prompt((context, topicContext) => {
-                context.reply(topicContext.instance.state.promptState.prompt);
-            })
+            .prompt(async (context, instance, result) => {
+                context.reply(instance.state.promptState.prompt);
+            });
+    }
 
-        this
-            .init(async (context, topic) => {
-                topic.instance.state.schema = topic.args.schema;
-                topic.instance.state.form = {}
+    async init(
+        context: BotContext,
+        instance: TopicInstance<SimpleFormState, SimpleFormReturnArgs>,
+        args: SimpleFormInitArgs
+    ) {
+        instance.state = {
+            schema: args.schema,
+            form: {},
+            prompt: undefined,
+        }
 
-                await topic.doNext(topic.instance.name);
-            })
-            .next(async (context, topic) => {
-                for (let name of Object.keys(topic.instance.state.schema)) {
-                    if (!topic.instance.state.form[name]) {
-                        const metadata = topic.instance.state.schema[name];
+        await this.doNext(context, instance.name);
+    }
 
-                        if (metadata.type !== 'string')
-                            throw `not expecting type "${metadata.type}"`;
-
-                        topic.instance.state.prompt = await topic.createTopicInstance(textPromptClass, {
-                            name,
-                            promptState: {
-                                prompt: metadata.prompt,
-                            },
-                        });
-                        break;
-                    }
-                }
-
-                if (!topic.instance.state.prompt) {
-                    topic.returnToParent({
-                        form: topic.instance.state.form
-                    });
-                }
-            })
-            .onReceive(async (context, topic) => {
-                if (!await topic.dispatch(topic.instance.state.prompt))
-                    throw "a prompt should always be active";
-            })
-            .onChildReturn(textPromptClass, async (context, topic) => {
-                const metadata = topic.instance.state.schema[topic.args.name];
+    async next(
+        context: BotContext,
+        instance: TopicInstance<SimpleFormState, SimpleFormReturnArgs>,
+    ) {
+        for (let name of Object.keys(instance.state.schema)) {
+            if (!instance.state.form[name]) {
+                const metadata = instance.state.schema[name];
 
                 if (metadata.type !== 'string')
                     throw `not expecting type "${metadata.type}"`;
 
-                topic.instance.state.form[topic.args.name] = topic.args.result.value;
-                topic.instance.state.prompt = undefined;
+                instance.state.prompt = await this.textPromptClass.createInstance(context, instance, {
+                    name,
+                    promptState: {
+                        prompt: metadata.prompt,
+                    },
+                });
+                break;
+            }
+        }
 
-                await topic.doNext(topic.instance.name);
+        if (!instance.state.prompt) {
+            this.returnToParent(instance, {
+                form: instance.state.form
             });
         }
     }
+
+    async onReceive(
+        context: BotContext,
+        instance: TopicInstance<SimpleFormState, SimpleFormReturnArgs>,
+    ) {
+        if (!await this.dispatch(context, instance.state.prompt))
+            throw "a prompt should always be active";
+    }
+
+    async onChildReturn(
+        context: BotContext,
+        instance: TopicInstance<SimpleFormState, SimpleFormReturnArgs>,
+        childInstance: TopicInstance<any, any>,
+    ) {
+        const metadata = instance.state.schema[childInstance.returnArgs.name];
+
+        if (metadata.type !== 'string')
+            throw `not expecting type "${metadata.type}"`;
+
+        instance.state.form[childInstance.returnArgs.name] = childInstance.returnArgs.result.value;
+        instance.state.prompt = undefined;
+
+        await this.doNext(context, instance.name);
+    }
+}

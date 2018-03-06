@@ -1,6 +1,6 @@
 import { ConsoleAdapter } from 'botbuilder-node';
 import { Bot, MemoryStorage, BotStateManager } from 'botbuilder';
-import { TopicClass, SimpleForm, TextPromptTopicClass, prettyConsole } from '../src/topical';
+import { TopicClass, SimpleForm, TextPromptTopicClass, prettyConsole, TopicInstance } from '../src/topical';
 
 const adapter = new ConsoleAdapter();
 
@@ -34,15 +34,22 @@ interface ShowAlarmInitArgs {
     alarms: Alarm[]
 }
 
-const showAlarms = new TopicClass<any, ShowAlarmInitArgs>('showAlarms')
-    .init((c, t) => {
-        if (t.args.alarms.length === 0)
-            c.reply(`You haven't set any alarms.`);
+class ShowAlarms extends TopicClass<ShowAlarmInitArgs> {
+    async init (
+        context: BotContext,
+        instance: TopicInstance,
+        args: ShowAlarmInitArgs,
+    ) {
+        if (args.alarms.length === 0)
+            context.reply(`You haven't set any alarms.`);
         else
-            c.reply(`You have the following alarms set:\n${listAlarms(t.args.alarms)}`);
+            context.reply(`You have the following alarms set:\n${listAlarms(args.alarms)}`);
 
-        t.returnToParent();
-    });
+        this.returnToParent(instance);
+    }
+}
+
+const showAlarms = new ShowAlarms('showAlarms');
 
 interface DeleteAlarmInitArgs {
     alarms: Alarm[];
@@ -65,51 +72,66 @@ interface SimpleFormPromptState {
 
 const textPromptClass = new TextPromptTopicClass('stringPrompt')
     .maxTurns(100)
-    .prompt((context, topicContext) => {
-        context.reply(topicContext.instance.state.promptState.prompt);
+    .prompt(async (context, instance) => {
+        context.reply(instance.state.promptState.prompt);
     });
 
-const deleteAlarmClass = new TopicClass<DeleteAlarmInitArgs, DeleteAlarmState, DeleteAlarmReturnArgs>('deleteAlarm')
-    .init(async (c, t) => {
-        if (t.args.alarms.length === 0) {
-            c.reply(`You don't have any alarms.`);
-            t.returnToParent();
-            return;
+class DeleteAlarmClass extends TopicClass<DeleteAlarmInitArgs, DeleteAlarmState, DeleteAlarmReturnArgs> {
+    async init (
+        context: BotContext,
+        instance: TopicInstance<DeleteAlarmState, DeleteAlarmReturnArgs>,
+        args: DeleteAlarmInitArgs,
+    ) {
+        if (args.alarms.length === 0) {
+            context.reply(`You don't have any alarms.`);
+            return this.returnToParent(instance);
         }
 
-        t.instance.state.alarms = t.args.alarms;
+        instance.state.alarms = args.alarms;
 
-        t.instance.state.child = await t.createTopicInstance(textPromptClass, {
+        instance.state.child = await textPromptClass.createInstance(context, instance, {
             name: 'whichAlarm',
             promptState: {
-                prompt: `Which alarm do you want to delete?\n${listAlarms(t.instance.state.alarms)}`,
+                prompt: `Which alarm do you want to delete?\n${listAlarms(instance.state.alarms)}`,
             },
         });
-    })
-    .onReceive(async (c, t) => {
-        await t.dispatch(t.instance.state.child);
-    })
-    .onChildReturn(textPromptClass, async (c, t) => {
-        switch (t.args.name) {
+    }
+
+    async onReceive (
+        context: BotContext,
+        instance: TopicInstance<DeleteAlarmState, DeleteAlarmReturnArgs>,
+    ) {
+        await this.dispatch(context, instance.state.child);
+    }
+
+    async onChildReturn (
+        context: BotContext,
+        instance: TopicInstance<DeleteAlarmState, DeleteAlarmReturnArgs>,
+        childInstance: TopicInstance,
+    ) {
+        switch (childInstance.returnArgs.name) {
             case 'whichAlarm':
-                t.instance.state.alarmName = t.args.result.value;
-                t.instance.state.child = await t.createTopicInstance(textPromptClass, {
+                instance.state.alarmName = childInstance.returnArgs.result.value;
+                instance.state.child = await textPromptClass.createInstance(context, instance, {
                     name: 'confirm',
                     promptState: {
-                        prompt: `Are you sure you want to delete alarm "${t.args.result.value}"? (yes/no)"`,
+                        prompt: `Are you sure you want to delete alarm "${childInstance.returnArgs.result.value}"? (yes/no)"`,
                     },
                 });
                 break;
             case 'confirm':
-                t.returnToParent(t.args.result.value === 'yes'
+                this.returnToParent(instance, childInstance.returnArgs.result.value === 'yes'
                     ? {
-                        alarmName: t.instance.state.alarmName
+                        alarmName: instance.state.alarmName
                     }
                     : undefined
                 )
                 break;
         }
-    });
+    }
+}
+
+const deleteAlarmClass = new DeleteAlarmClass('deleteAlarm');
 
 interface AlarmBotState {
     child: string;
@@ -120,18 +142,28 @@ const simpleForm = new SimpleForm('simpleForm');
 
 const helpText = `I know how to set, show, and delete alarms.`;
 
-const alarmBotClass = new TopicClass<undefined, AlarmBotState, undefined>('alarmBot')
-    .init((c, t) => {
-        c.reply(`Welcome to Alarm Bot!\n${helpText}`);
-        t.instance.state.alarms = [];
-    })
-    .onReceive(async (c, t) => {
-        if (await t.dispatch(t.instance.state.child))
+class AlarmBotClass extends TopicClass<undefined, AlarmBotState, undefined> {
+    async init (
+        context: BotContext,
+        instance: TopicInstance,
+    ) {
+        context.reply(`Welcome to Alarm Bot!\n${helpText}`);
+        instance.state = {
+            alarms: [],
+            child: undefined
+        }
+    }
+
+    async onReceive (
+        context: BotContext,
+        instance: TopicInstance<AlarmBotState>,
+    ) {
+        if (await this.dispatch(context, instance.state.child))
             return;
 
-        if (c.request.type === 'message') {
-            if (/set|add|create/i.test(c.request.text)) {
-                t.instance.state.child = await t.createTopicInstance(simpleForm, {
+        if (context.request.type === 'message') {
+            if (/set|add|create/i.test(context.request.text)) {
+                instance.state.child = await simpleForm.createInstance(context, instance, {
                     schema: {
                         name: {
                             type: 'string',
@@ -143,35 +175,46 @@ const alarmBotClass = new TopicClass<undefined, AlarmBotState, undefined>('alarm
                         }
                     }
                 });
-            } else if (/show|list/i.test(c.request.text)) {
-                t.instance.state.child = await t.createTopicInstance(showAlarms, {
-                    alarms: t.instance.state.alarms
+            } else if (/show|list/i.test(context.request.text)) {
+                instance.state.child = await showAlarms.createInstance(context, instance, {
+                    alarms: instance.state.alarms
                 });
-            } else if (/delete|remove/i.test(c.request.text)) {
-                t.instance.state.child = await t.createTopicInstance(deleteAlarmClass, {
-                    alarms: t.instance.state.alarms
+            } else if (/delete|remove/i.test(context.request.text)) {
+                instance.state.child = await deleteAlarmClass.createInstance(context, instance, {
+                    alarms: instance.state.alarms
                 });
             } else {
-                c.reply(helpText);
+                context.reply(helpText);
             }
         }
-    })
-    .onChildReturn(simpleForm, (c, t) => {
-        t.instance.state.alarms.push({ ... t.args.form } as any as Alarm);
+    }
 
-        c.reply(`Alarm successfully added!`);
-    })
-    .onChildReturn(showAlarms)
-    .onChildReturn(deleteAlarmClass, (c, t) => {
-        if (t.args) {
-            t.instance.state.alarms = t.instance.state.alarms
-                .filter(alarm => alarm.name !== t.args.alarmName);
+    async onChildReturn (
+        context: BotContext,
+        instance: TopicInstance<AlarmBotState>,
+        childInstance: TopicInstance,
+    ) {
+        switch (childInstance.topicName) {
+            case 'simpleForm':
+                instance.state.alarms.push({ ... childInstance.returnArgs.form } as any as Alarm);
+                context.reply(`Alarm successfully added!`);
+                break;
+            case 'showAlarms':
+                break;
+            case 'deleteAlarm':
+                if (childInstance.returnArgs) {
+                    instance.state.alarms = instance.state.alarms
+                        .filter(alarm => alarm.name !== childInstance.returnArgs.alarmName);
 
-            c.reply(`Alarm "${t.args.alarmName}" has been deleted.`)
-        } else {
-            c.reply(`Okay, the status quo has been preserved.`)
+                    context.reply(`Alarm "${childInstance.returnArgs.alarmName}" has been deleted.`)
+                } else {
+                    context.reply(`Okay, the status quo has been preserved.`)
+                }
+                break;
         }
-    })
-    .afterChildReturn((c, t) => {
-        t.instance.state.child = undefined;
-    });
+
+        instance.state.child = undefined;
+    }
+}
+
+const alarmBotClass = new AlarmBotClass('alarmBot');
