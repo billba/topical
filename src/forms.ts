@@ -1,4 +1,5 @@
-import { TopicClass, StringPrompt } from './topical';
+import { TopicClass } from './topical';
+import { TextPromptTopicClass } from './topicClassPrompts';
 
 export interface SimpleFormMetadata {
     type: 'string';
@@ -27,13 +28,22 @@ export interface SimpleFormReturnArgs {
     form: SimpleFormData;
 }
 
+
+interface SimpleFormPromptState {
+    prompt: string;
+}
+
 export class SimpleForm extends TopicClass<SimpleFormInitArgs, SimpleFormState, SimpleFormReturnArgs> {
     constructor (
         name: string
     ) {
         super(name);
 
-        const stringPrompt = new StringPrompt(name + ".stringPrompt");
+        const textPromptClass = new TextPromptTopicClass<SimpleFormPromptState>(name + ".stringPrompt")
+            .maxTurns(100)
+            .prompt((context, topicContext) => {
+                context.reply(topicContext.instance.state.promptState.prompt);
+            })
 
         this
             .init(async (context, topic) => {
@@ -50,9 +60,11 @@ export class SimpleForm extends TopicClass<SimpleFormInitArgs, SimpleFormState, 
                         if (metadata.type !== 'string')
                             throw `not expecting type "${metadata.type}"`;
 
-                        topic.instance.state.prompt = await topic.createTopicInstance(stringPrompt, {
+                        topic.instance.state.prompt = await topic.createTopicInstance(textPromptClass, {
                             name,
-                            prompt: metadata.prompt,
+                            promptState: {
+                                prompt: metadata.prompt,
+                            },
                         });
                         break;
                     }
@@ -68,13 +80,13 @@ export class SimpleForm extends TopicClass<SimpleFormInitArgs, SimpleFormState, 
                 if (!await topic.dispatch(topic.instance.state.prompt))
                     throw "a prompt should always be active";
             })
-            .onChildReturn(stringPrompt, async (context, topic) => {
+            .onChildReturn(textPromptClass, async (context, topic) => {
                 const metadata = topic.instance.state.schema[topic.args.name];
 
                 if (metadata.type !== 'string')
                     throw `not expecting type "${metadata.type}"`;
 
-                topic.instance.state.form[topic.args.name] = topic.args.value;
+                topic.instance.state.form[topic.args.name] = topic.args.result.value;
                 topic.instance.state.prompt = undefined;
 
                 await topic.doNext(topic.instance.name);

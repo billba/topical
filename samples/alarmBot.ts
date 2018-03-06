@@ -1,6 +1,6 @@
 import { ConsoleAdapter } from 'botbuilder-node';
 import { Bot, MemoryStorage, BotStateManager } from 'botbuilder';
-import { TopicClass, SimpleForm, StringPrompt, prettyConsole } from '../src/topical';
+import { TopicClass, SimpleForm, TextPromptTopicClass, prettyConsole } from '../src/topical';
 
 const adapter = new ConsoleAdapter();
 
@@ -13,7 +13,7 @@ bot
     .use(new BotStateManager())
     .use(prettyConsole)
     .onReceive(async c => {
-        await TopicClass.do(c, () => alarmBot.createInstance(c));
+        await TopicClass.do(c, () => alarmBotClass.createInstance(c));
     });
 
 interface Alarm {
@@ -59,9 +59,17 @@ interface DeleteAlarmReturnArgs {
     alarmName: string;
 }
 
-const stringPrompt = new StringPrompt('stringPrompt');
+interface SimpleFormPromptState {
+    prompt: string;
+}
 
-const deleteAlarm = new TopicClass<DeleteAlarmInitArgs, DeleteAlarmState, DeleteAlarmReturnArgs>('deleteAlarm')
+const textPromptClass = new TextPromptTopicClass('stringPrompt')
+    .maxTurns(100)
+    .prompt((context, topicContext) => {
+        context.reply(topicContext.instance.state.promptState.prompt);
+    });
+
+const deleteAlarmClass = new TopicClass<DeleteAlarmInitArgs, DeleteAlarmState, DeleteAlarmReturnArgs>('deleteAlarm')
     .init(async (c, t) => {
         if (t.args.alarms.length === 0) {
             c.reply(`You don't have any alarms.`);
@@ -71,25 +79,29 @@ const deleteAlarm = new TopicClass<DeleteAlarmInitArgs, DeleteAlarmState, Delete
 
         t.instance.state.alarms = t.args.alarms;
 
-        t.instance.state.child = await t.createTopicInstance(stringPrompt, {
+        t.instance.state.child = await t.createTopicInstance(textPromptClass, {
             name: 'whichAlarm',
-            prompt: `Which alarm do you want to delete?\n${listAlarms(t.instance.state.alarms)}`,
+            promptState: {
+                prompt: `Which alarm do you want to delete?\n${listAlarms(t.instance.state.alarms)}`,
+            },
         });
     })
     .onReceive(async (c, t) => {
         await t.dispatch(t.instance.state.child);
     })
-    .onChildReturn(stringPrompt, async (c, t) => {
+    .onChildReturn(textPromptClass, async (c, t) => {
         switch (t.args.name) {
             case 'whichAlarm':
-                t.instance.state.alarmName = t.args.value;
-                t.instance.state.child = await t.createTopicInstance(stringPrompt, {
+                t.instance.state.alarmName = t.args.result.value;
+                t.instance.state.child = await t.createTopicInstance(textPromptClass, {
                     name: 'confirm',
-                    prompt: `Are you sure you want to delete alarm "${t.args.value}"? (yes/no)"`,
+                    promptState: {
+                        prompt: `Are you sure you want to delete alarm "${t.args.result.value}"? (yes/no)"`,
+                    },
                 });
                 break;
             case 'confirm':
-                t.returnToParent(t.args.value === 'yes'
+                t.returnToParent(t.args.result.value === 'yes'
                     ? {
                         alarmName: t.instance.state.alarmName
                     }
@@ -108,7 +120,7 @@ const simpleForm = new SimpleForm('simpleForm');
 
 const helpText = `I know how to set, show, and delete alarms.`;
 
-const alarmBot = new TopicClass<undefined, AlarmBotState, undefined>('alarmBot')
+const alarmBotClass = new TopicClass<undefined, AlarmBotState, undefined>('alarmBot')
     .init((c, t) => {
         c.reply(`Welcome to Alarm Bot!\n${helpText}`);
         t.instance.state.alarms = [];
@@ -136,7 +148,7 @@ const alarmBot = new TopicClass<undefined, AlarmBotState, undefined>('alarmBot')
                     alarms: t.instance.state.alarms
                 });
             } else if (/delete|remove/i.test(c.request.text)) {
-                t.instance.state.child = await t.createTopicInstance(deleteAlarm, {
+                t.instance.state.child = await t.createTopicInstance(deleteAlarmClass, {
                     alarms: t.instance.state.alarms
                 });
             } else {
@@ -150,7 +162,7 @@ const alarmBot = new TopicClass<undefined, AlarmBotState, undefined>('alarmBot')
         c.reply(`Alarm successfully added!`);
     })
     .onChildReturn(showAlarms)
-    .onChildReturn(deleteAlarm, (c, t) => {
+    .onChildReturn(deleteAlarmClass, (c, t) => {
         if (t.args) {
             t.instance.state.alarms = t.instance.state.alarms
                 .filter(alarm => alarm.name !== t.args.alarmName);

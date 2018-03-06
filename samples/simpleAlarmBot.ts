@@ -1,6 +1,6 @@
 import { ConsoleAdapter } from 'botbuilder-node';
 import { Bot } from 'botbuilder';
-import { Topic, prettyConsole } from '../src/topical';
+import { Topic, prettyConsole, TextPromptTopic } from '../src/topical';
 
 const adapter = new ConsoleAdapter();
 
@@ -15,31 +15,6 @@ bot
     });
 
 import { SimpleFormInitArgs, SimpleFormData, SimpleFormSchema, SimpleFormReturnArgs } from '../src/topical';
-
-interface PromptState {
-    prompt: string;
-}
-
-interface PromptReturnArgs {
-    value: string;
-}
-
-class StringPrompt extends Topic<PromptState, PromptState, PromptReturnArgs> {
-    async init (
-        context: BotContext,
-        args: PromptState,
-    ) {
-        context.reply(args.prompt);
-    }
-
-    async onReceive (
-        context: BotContext,
-    ) {
-        await this.returnToParent(context, {
-            value: context.request.text
-        });
-    }
-}
 
 interface SimpleFormState {
     form: SimpleFormData;
@@ -67,20 +42,25 @@ class SimpleForm extends Topic<SimpleFormInitArgs, SimpleFormState, SimpleFormRe
                 if (metadata.type !== 'string')
                     throw `not expecting type "${metadata.type}"`;
 
-                this.state.prompt = await new StringPrompt().createTopicInstance(
-                    context, {
-                        prompt: metadata.prompt,
-                    }, async (context, args) => {
-                        const metadata = this.state.schema[name];
+                this.state.prompt = await new TextPromptTopic()
+                    .maxTurns(100)
+                    .prompt(context=> {
+                        context.reply(metadata.prompt);
+                    })
+                    .createTopicInstance(
+                        context,
+                        async (context, result) => {
+                            const metadata = this.state.schema[name];
 
-                        if (metadata.type !== 'string')
-                            throw `not expecting type "${metadata.type}"`;
+                            if (metadata.type !== 'string')
+                                throw `not expecting type "${metadata.type}"`;
 
-                        this.state.form[name] = args.value;
-                        this.state.prompt = undefined;
+                            this.state.form[name] = result.value;
+                            this.state.prompt = undefined;
 
-                        await this.doNext(context, this);
-                    });
+                            await this.doNext(context, this);
+                        }
+                    );
 
                 break;
             }
@@ -161,22 +141,26 @@ class DeleteAlarm extends Topic<DeleteAlarmInitArgs, DeleteAlarmState, DeleteAla
 
         this.state.alarms = args.alarms;
 
-        this.state.child = await new StringPrompt().createTopicInstance(
-            c, {
-                prompt: `Which alarm do you want to delete?\n${listAlarms(this.state.alarms)}`,
-            }, async (c, args) => {
+        this.state.child = await new TextPromptTopic()
+            .maxTurns(100)
+            .prompt(context=> {
+                context.reply(`Which alarm do you want to delete?\n${listAlarms(this.state.alarms)}`);
+            })
+            .createTopicInstance(c, async (c, args) => {
                 this.state.alarmName = args.value;
-                this.state.child = await new StringPrompt().createTopicInstance(
-                    c, {
-                        prompt: `Are you sure you want to delete alarm "${args.value}"? (yes/no)"`,
-                    }, async (c, args) => {
+                this.state.child = await new TextPromptTopic()
+                    .maxTurns(100)
+                    .prompt(context=> {
+                        context.reply(`Are you sure you want to delete alarm "${args.value}"? (yes/no)`);
+                    })
+                    .createTopicInstance(c, async (c, args) => {
                         this.returnToParent(c, args.value === 'yes'
                             ? {
                                 alarmName: this.state.alarmName
                             }
                             : undefined
                         );
-                });
+                    });
             });
     }
 

@@ -34,7 +34,7 @@ export class Topic <
         ... params,
     ) {
         let args = {} as InitArgs;
-        let returnToParent = returnsPromiseVoid;
+        let returnToParent: TopicReturnToParent<ReturnArgs> = returnsPromiseVoid;
 
         if (params.length > 0) {
             if (typeof params[0] === 'function') {

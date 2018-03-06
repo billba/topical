@@ -17,11 +17,11 @@ export class Validator <V> {
         this.validate = async (activity) => {
             const result = await toPromise(validate(activity))
 
-            if (!result)
+            if (result === undefined)
                 return {
                     reason: 'none'
                 }
-
+            
             if (typeof result === 'object') {
                 if ((result as any).reason || (result as any).value)
                     return result as ValidatorResult<V>;
@@ -46,24 +46,3 @@ export class Validator <V> {
         })
     }
 }
-
-const isMessage = new Validator<Partial<Activity>>(activity => activity.type === 'message'
-    ? {
-        value: activity
-    } : {
-        reason: 'not_a_message'
-    }
-);
-
-const hasText = isMessage
-    .and<string>((activity, value) => {
-        const text = value.text.trim();
-
-        return text.length
-            ? {
-                value: text
-            }
-            : {
-                reason: 'empty_text'
-            }
-    });
