@@ -1,12 +1,14 @@
 import { ConsoleAdapter } from 'botbuilder-node';
 import { Bot, MemoryStorage, BotStateManager } from 'botbuilder';
-import { TopicClass, SimpleForm, TextPromptTopicClass, prettyConsole, TopicInstance } from '../src/topical';
+import { TopicClass, SimpleForm, TextPromptTopicClass, prettyConsole, TopicInstance, TopicClassWithChild } from '../src/topical';
 
 const adapter = new ConsoleAdapter();
 
 adapter.listen();
 
 const bot = new Bot(adapter);
+
+// TopicClass.telemetry = async (context, event) => console.log(`**${event.name}:${event.event}(${event.children.join(',')})**`);
 
 bot
     .use(new MemoryStorage())
@@ -58,7 +60,6 @@ interface DeleteAlarmInitArgs {
 interface DeleteAlarmState {
     alarms: Alarm[];
     alarmName: string;
-    confirm: boolean;
     child: string;
 }
 
@@ -76,7 +77,7 @@ const textPromptClass = new TextPromptTopicClass('stringPrompt')
         context.reply(instance.state.promptState.prompt);
     });
 
-class DeleteAlarmClass extends TopicClass<DeleteAlarmInitArgs, DeleteAlarmState, DeleteAlarmReturnArgs> {
+class DeleteAlarmClass extends TopicClassWithChild<DeleteAlarmInitArgs, DeleteAlarmState, DeleteAlarmReturnArgs> {
     constructor (name: string) {
         super(name);
 
@@ -145,7 +146,7 @@ const simpleForm = new SimpleForm('simpleForm');
 
 const helpText = `I know how to set, show, and delete alarms.`;
 
-class AlarmBotClass extends TopicClass<undefined, AlarmBotState, undefined> {
+class AlarmBotClass extends TopicClassWithChild<undefined, AlarmBotState, undefined> {
     constructor (name: string) {
         super(name);
 
@@ -175,10 +176,7 @@ class AlarmBotClass extends TopicClass<undefined, AlarmBotState, undefined> {
         instance: TopicInstance,
     ) {
         context.reply(`Welcome to Alarm Bot!\n${helpText}`);
-        instance.state = {
-            alarms: [],
-            child: undefined
-        }
+        instance.state.alarms = [];
     }
 
     async onReceive (

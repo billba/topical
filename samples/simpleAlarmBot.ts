@@ -15,14 +15,15 @@ bot
     });
 
 import { SimpleFormInitArgs, SimpleFormData, SimpleFormSchema, SimpleFormReturnArgs } from '../src/topical';
+import { TopicWithChild } from '../src/parentTopics';
 
 interface SimpleFormState {
     form: SimpleFormData;
     schema: SimpleFormSchema;
-    prompt: Topic;
+    child: Topic;
 }
 
-class SimpleForm extends Topic<SimpleFormInitArgs, SimpleFormState, SimpleFormReturnArgs> {
+class SimpleForm extends TopicWithChild<SimpleFormInitArgs, SimpleFormState, SimpleFormReturnArgs> {
     async init (
         context: BotContext,
         args: SimpleFormInitArgs,
@@ -42,7 +43,7 @@ class SimpleForm extends Topic<SimpleFormInitArgs, SimpleFormState, SimpleFormRe
                 if (metadata.type !== 'string')
                     throw `not expecting type "${metadata.type}"`;
 
-                this.state.prompt = await new TextPromptTopic()
+                this.state.child = await new TextPromptTopic()
                     .maxTurns(100)
                     .prompt(context=> {
                         context.reply(metadata.prompt);
@@ -56,7 +57,7 @@ class SimpleForm extends Topic<SimpleFormInitArgs, SimpleFormState, SimpleFormRe
                                 throw `not expecting type "${metadata.type}"`;
 
                             this.state.form[name] = result.value;
-                            this.state.prompt = undefined;
+                            this.state.child = undefined;
 
                             await this.doNext(context, this);
                         }
@@ -66,7 +67,7 @@ class SimpleForm extends Topic<SimpleFormInitArgs, SimpleFormState, SimpleFormRe
             }
         }
 
-        if (!this.state.prompt) {
+        if (!this.state.child) {
             await this.returnToParent(context, {
                 form: this.state.form
             });
@@ -76,7 +77,7 @@ class SimpleForm extends Topic<SimpleFormInitArgs, SimpleFormState, SimpleFormRe
     async onReceive (
         context: BotContext,
     ) {
-        if (!await this.dispatch(context, this.state.prompt))
+        if (!await this.dispatch(context, this.state.child))
             throw "a prompt should always be active"
     }
 }
@@ -128,7 +129,7 @@ interface DeleteAlarmReturnArgs {
     alarmName: string;
 }
 
-class DeleteAlarm extends Topic<DeleteAlarmInitArgs, DeleteAlarmState, DeleteAlarmReturnArgs> {
+class DeleteAlarm extends TopicWithChild<DeleteAlarmInitArgs, DeleteAlarmState, DeleteAlarmReturnArgs> {
     async init (
         c: BotContext,
         args: DeleteAlarmInitArgs,
@@ -178,7 +179,7 @@ interface AlarmBotState {
 
 const helpText = `I know how to set, show, and delete alarms.`;
 
-class AlarmBot extends Topic<undefined, AlarmBotState, undefined> {
+class AlarmBot extends TopicWithChild<undefined, AlarmBotState, undefined> {
     async init (
         c: BotContext,
     ) {

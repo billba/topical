@@ -113,4 +113,10 @@ export abstract class Topic <
         else
             Topic.rootTopic = await getRootTopic();
     }
+
+    async listChildren(
+        context: BotContext,
+    ) {
+        return [];
+    }
 }

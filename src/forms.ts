@@ -1,4 +1,4 @@
-import { TopicClass, TopicInstance, TextPromptTopicClass } from './topical';
+import { TopicClass, TopicInstance, TextPromptTopicClass, TopicClassWithChild } from './topical';
 
 export interface SimpleFormMetadata {
     type: 'string';
@@ -16,7 +16,7 @@ export interface SimpleFormData {
 export interface SimpleFormState {
     form: SimpleFormData;
     schema: SimpleFormSchema;
-    prompt: string;
+    child: string;
 }
 
 export interface SimpleFormInitArgs {
@@ -31,7 +31,7 @@ interface SimpleFormPromptState {
     prompt: string;
 }
 
-export class SimpleForm extends TopicClass<SimpleFormInitArgs, SimpleFormState, SimpleFormReturnArgs> {
+export class SimpleForm extends TopicClassWithChild<SimpleFormInitArgs, SimpleFormState, SimpleFormReturnArgs> {
     private textPromptClass: TextPromptTopicClass<SimpleFormPromptState>;
 
     constructor (
@@ -53,7 +53,7 @@ export class SimpleForm extends TopicClass<SimpleFormInitArgs, SimpleFormState, 
                     throw `not expecting type "${metadata.type}"`;
         
                 instance.state.form[childInstance.returnArgs.name] = childInstance.returnArgs.result.value;
-                instance.state.prompt = undefined;
+                instance.state.child = undefined;
 
                 await this.doNext(context, instance.name);
             });
@@ -64,11 +64,8 @@ export class SimpleForm extends TopicClass<SimpleFormInitArgs, SimpleFormState, 
         instance: TopicInstance<SimpleFormState, SimpleFormReturnArgs>,
         args: SimpleFormInitArgs
     ) {
-        instance.state = {
-            schema: args.schema,
-            form: {},
-            prompt: undefined,
-        }
+        instance.state.schema = args.schema;
+        instance.state.form = {};
 
         await this.doNext(context, instance.name);
     }
@@ -84,7 +81,7 @@ export class SimpleForm extends TopicClass<SimpleFormInitArgs, SimpleFormState, 
                 if (metadata.type !== 'string')
                     throw `not expecting type "${metadata.type}"`;
 
-                instance.state.prompt = await this.textPromptClass.createInstance(context, instance, {
+                instance.state.child = await this.textPromptClass.createInstance(context, instance, {
                     name,
                     promptState: {
                         prompt: metadata.prompt,
@@ -94,7 +91,7 @@ export class SimpleForm extends TopicClass<SimpleFormInitArgs, SimpleFormState, 
             }
         }
 
-        if (!instance.state.prompt) {
+        if (!instance.state.child) {
             this.returnToParent(instance, {
                 form: instance.state.form
             });
@@ -105,7 +102,7 @@ export class SimpleForm extends TopicClass<SimpleFormInitArgs, SimpleFormState, 
         context: BotContext,
         instance: TopicInstance<SimpleFormState, SimpleFormReturnArgs>,
     ) {
-        if (!await this.dispatch(context, instance.state.prompt))
+        if (!await this.dispatch(context, instance.state.child))
             throw "a prompt should always be active";
     }
 }
