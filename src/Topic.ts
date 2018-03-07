@@ -6,7 +6,7 @@ export type TopicReturnToParent <Args> = (
     args?: Args
 ) => Promise<void>;
 
-export class Topic <
+export abstract class Topic <
     InitArgs extends {} = {},
     State extends {} = {},
     ReturnArgs extends {} = {},

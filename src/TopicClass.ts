@@ -37,7 +37,7 @@ export type TopicClassOnChildReturnHandler <State, ReturnArgs, ChildReturnArgs> 
     childInstance: TopicInstance<undefined, ChildReturnArgs>,
 ) => Promise<void>;
 
-export class TopicClass <
+export abstract class TopicClass <
     InitArgs extends {} = {},
     State extends {} = {},
     ReturnArgs extends {} = {},
@@ -237,5 +237,4 @@ export class TopicClass <
 
         this._afterChildReturn = handler;
     }
-
 }
