@@ -1,4 +1,4 @@
-import { Promiseable } from 'botbuilder';
+import { Promiseable, Activity } from 'botbuilder';
 import { toPromise, returnsPromiseVoid, Telemetry } from './topical';
 
 declare global {
@@ -14,15 +14,19 @@ declare global {
 
 export type Telemetry = (
     context: BotContext,
-    event: TelemetryEvent,
+    event: TelemetryAction,
 ) => Promise<void>;
 
-export interface TelemetryEvent {
-    event: string,
-    name: string,
-    instance: TopicInstance,
-    children: string[],
-    data: any,
+export interface TelemetryAction {
+    type: string,
+    activity: Activity,
+    instance: {
+        instanceName: string,
+        parentInstanceName: string,
+        className: string,
+        topicName: string,
+        children: string[],
+    }
 }
 
 enum TopicReturn {
@@ -60,7 +64,7 @@ export abstract class TopicClass <
     } = {}
 
     constructor (
-        public name?: string,
+        public name: string,
     ) {
         if (TopicClass.topicClasses[name]) {
             throw new Error(`An attempt was made to create a topic with existing name "${name}".`);
@@ -258,7 +262,7 @@ export abstract class TopicClass <
     }
 
     private _afterChildReturn: TopicClassOnChildReturnHandler<any, any, any> = returnsPromiseVoid;
-    
+
     protected afterChildReturn <ChildReturnArgs> (
         handler: TopicClassOnChildReturnHandler<State, ReturnArgs, any> = returnsPromiseVoid
     ) {
@@ -270,18 +274,21 @@ export abstract class TopicClass <
     private async sendTelemetry (
         context: BotContext,
         instance: TopicInstance,
-        event: string,
-        data?: any,
+        type: string,
     ) {
         if (!TopicClass.telemetry)
             return;
 
         await TopicClass.telemetry(context, {
-            event,
-            name: this.name,
-            instance,
-            children: await this.listChildren(context, instance),
-            data,
+            type,
+            activity: context.request as Activity,
+            instance: {
+                instanceName: instance.name,
+                parentInstanceName: instance.parentInstanceName,
+                className: this.constructor.name,
+                topicName: this.name,
+                children: await this.listChildren(context, instance),
+            },
         });
     }
 

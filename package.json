@@ -12,7 +12,9 @@
   "author": "Bill Barnes",
   "license": "MIT",
   "devDependencies": {
-    "typescript": "^2.7.2"
+    "@types/ws": "^4.0.1",
+    "typescript": "^2.7.2",
+    "ws": "^5.0.0"
   },
   "dependencies": {
     "botbuilder": "^4.0.0-m1.4",
