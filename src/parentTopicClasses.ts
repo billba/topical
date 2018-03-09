@@ -33,7 +33,7 @@ export class TopicClassWithChild <
         context: BotContext,
         instance: TopicInstance<State>,
     ) {
-        return [instance.state.child];
+        return instance.state.child ? [instance.state.child] : [];
     }
 }
 

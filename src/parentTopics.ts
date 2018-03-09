@@ -30,7 +30,7 @@ export class TopicWithChild <
     async listChildren(
         context: BotContext,
     ) {
-        return [this.state.child];
+        return this.state.child ? [this.state.child] : [];
     }
 }
 
