@@ -2,11 +2,11 @@ import { Promiseable, Activity } from 'botbuilder';
 import { Topic, toPromise, returnsPromiseVoid } from "./topical";
 import { Validator, ValidatorResult } from './Validator';
 
-interface PromptTopicInitArgs <S> {
+export interface PromptTopicInitArgs <S> {
     promptState: S;
 }
 
-interface PromptTopicState <S> {
+export interface PromptTopicState <S> {
     turns: number;
     promptState: S;
 }
