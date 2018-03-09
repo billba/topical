@@ -51,7 +51,7 @@ class ShowAlarmsClass extends TopicClass<ShowAlarmInitArgs> {
     }
 }
 
-const showAlarmsClass = new ShowAlarmsClass('showAlarms');
+const showAlarmsClass = new ShowAlarmsClass();
 
 interface DeleteAlarmInitArgs {
     alarms: Alarm[];
@@ -71,14 +71,14 @@ interface SimpleFormPromptState {
     prompt: string;
 }
 
-const textPromptClass = new TextPromptTopicClass('stringPrompt')
+const textPromptClass = new TextPromptTopicClass()
     .maxTurns(100)
     .prompt(async (context, instance) => {
         context.reply(instance.state.promptState.prompt);
     });
 
 class DeleteAlarmClass extends TopicClassWithChild<DeleteAlarmInitArgs, DeleteAlarmState, DeleteAlarmReturnArgs> {
-    constructor (name: string) {
+    constructor (name?: string) {
         super(name);
 
         this
@@ -135,19 +135,19 @@ class DeleteAlarmClass extends TopicClassWithChild<DeleteAlarmInitArgs, DeleteAl
     }
 }
 
-const deleteAlarmClass = new DeleteAlarmClass('deleteAlarm');
+const deleteAlarmClass = new DeleteAlarmClass();
 
 interface AlarmBotState {
     child: string;
     alarms: Alarm[];
 }
 
-const simpleForm = new SimpleForm('simpleForm');
+const simpleForm = new SimpleForm();
 
 const helpText = `I know how to set, show, and delete alarms.`;
 
 class AlarmBotClass extends TopicClassWithChild<undefined, AlarmBotState, undefined> {
-    constructor (name: string) {
+    constructor (name?: string) {
         super(name);
 
         this
@@ -215,4 +215,4 @@ class AlarmBotClass extends TopicClassWithChild<undefined, AlarmBotState, undefi
     }
 }
 
-const alarmBotClass = new AlarmBotClass('alarmBot');
+const alarmBotClass = new AlarmBotClass();

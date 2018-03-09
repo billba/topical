@@ -64,15 +64,15 @@ export abstract class TopicClass <
     } = {}
 
     constructor (
-        public name: string,
+        public name?: string,
     ) {
-        this.name = name || this.constructor.name;
+        this.name = this.constructor.name + (name ? '.' + name : '');
 
-        if (TopicClass.topicClasses[name]) {
-            throw new Error(`An attempt was made to create a topic with existing name "${name}".`);
+        if (TopicClass.topicClasses[this.name]) {
+            throw new Error(`An attempt was made to create a topic with existing name "${this.name}".`);
         }
 
-        TopicClass.topicClasses[name] = this;
+        TopicClass.topicClasses[this.name] = this;
     }
 
     returnToParent(

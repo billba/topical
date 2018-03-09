@@ -51,7 +51,7 @@ Traditional object-oriented programming won't work for many-users-to-many-instan
 Topical supplies a [`TopicClass`](/src/TopicClass.ts) class, which models traditional object-oriented programming in a distributed system:
 
 * `FooClass` is created by extending `TopicClass`.
-* An instance of this (which we call the "topic class") is created by calling `const fooClass = new FooClass(`fooClass`). This happens justonce per application instance at startup, using the provided unique id to correlate the same topic class across application instances.
+* An instance of this (which we call the "topic class") is created by calling `const fooClass = new FooClass(). This happens just once per application instance at startup. A unique ID (defaults to the class name) is used to correlate the same topic class across application instances.
 * Each "instance" of `fooClass` is created in the centralized store, each referencing the id of its class, by calling `topicClass.createInstance()`.
 * Almost every method in `topicClass` takes an `instance` parameter. This is where state is stored.
 * Completion handlers are implemented as a listener method.
@@ -194,7 +194,9 @@ By not duplicating the reference to the target instance there's one less bug tha
 
 ## Overly Quick Reference for `TopicClass`
 
-### `constructor(name: string)`
+### `constructor(name?: string)`
+
+Every Topic class needs a unique ID. By default this is the class name, but you can provide more disambugation by passing your own name, which will be appended to the class name.
 
 You don't need to have a constructor. It's there for any operations you want to do once, when the topic class is created, as opposed to `init()` which is called on each instance.
 
@@ -362,14 +364,21 @@ class MyTopic extends TopicClass<InitArgs, State, ReturnArgs> {
             bar: 15                                 // error
         }
         this.returnToParent({
-            foo: instance.state.bar                     // error
+            foo: instance.state.bar                 // error
         })
     }
 }
 
-class myTopic = new MyTopic('myTopic');
+class myTopic = new MyTopic();
 
 class YourTopic extends Topic {
+    constructor (name?: string) {
+        super(name);
+
+        this.onChildReturn(myTopic, (context, instance, childInstance) => {
+            context.reply(childInstance.returnArgs.bar);                // error
+        })
+    }
     async init(context: BotContext, instance: TopicInstance) {
         instance.state.child = await myTopic.createInstance(context, instance, {
             bar: "hey"                              // error
@@ -377,9 +386,6 @@ class YourTopic extends Topic {
     }
     async onReceive(context: BotContext) {
         await this.dispatch(context, instance.state.child);
-    }
-    async onChildReturn(context: BotContext, instance: TopicInstance, childInstance: TopicInstance) {
-        context.reply(args.bar);                    // should be an error, but currently is not
     }
 }
 ``
