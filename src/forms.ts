@@ -35,11 +35,11 @@ export class SimpleForm extends TopicClassWithChild<SimpleFormInitArgs, SimpleFo
     private textPromptClass: TextPromptTopicClass<SimpleFormPromptState>;
 
     constructor (
-        name: string
+        name?: string
     ) {
         super(name);
 
-        this.textPromptClass = new TextPromptTopicClass<SimpleFormPromptState>(name + ".stringPrompt")
+        this.textPromptClass = new TextPromptTopicClass<SimpleFormPromptState>(this.name + ".stringPrompt")
             .maxTurns(100)
             .prompt(async (context, instance, result) => {
                 context.reply(instance.state.promptState.prompt);

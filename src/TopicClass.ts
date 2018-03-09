@@ -62,6 +62,8 @@ export abstract class TopicClass <
     constructor (
         public name?: string,
     ) {
+        this.name = name || this.constructor.name;
+
         if (TopicClass.topicClasses[name]) {
             throw new Error(`An attempt was made to create a topic with existing name "${name}".`);
         }
