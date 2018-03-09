@@ -15,6 +15,8 @@
     "typescript": "^2.7.2"
   },
   "dependencies": {
+    "@microsoft/recognizers-text-number": "^1.0.0",
+    "@microsoft/recognizers-text-suite": "^1.0.0",
     "botbuilder": "^4.0.0-m1.4",
     "botbuilder-node": "^4.0.0-m1.7"
   }
