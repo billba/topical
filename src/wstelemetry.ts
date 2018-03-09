@@ -14,6 +14,5 @@ ws.on('close', () => {
 
 export const wstelemetry = async (context, action) => {
     if (open)
-        // console.log(action);
         ws.send(JSON.stringify(action));
 }
