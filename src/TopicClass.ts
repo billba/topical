@@ -12,7 +12,7 @@ declare global {
     }
 }
 
-enum TopicReturn {
+export enum TopicReturn {
     signalled,
     succeeded,
 }

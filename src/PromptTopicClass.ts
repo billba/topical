@@ -2,23 +2,23 @@ import { Promiseable, Activity } from 'botbuilder';
 import { TopicClass, TopicInstance, toPromise, returnsPromiseVoid } from "./topical";
 import { Validator, ValidatorResult } from './Validator';
 
-interface PromptTopicClassInitArgs <S> {
+export interface PromptTopicClassInitArgs <S> {
     name: string;
     promptState: S;
 }
 
-interface PromptTopicClassState <S> {
+export interface PromptTopicClassState <S> {
     name: string;
     turns: number;
     promptState: S;
 }
 
-interface PromptTopicClassReturnArgs <V> {
+export interface PromptTopicClassReturnArgs <V> {
     name: string;
     result: ValidatorResult<V>;
 }
 
-type PromptTopicClassPrompt <V, S = any> = (
+export type PromptTopicClassPrompt <V, S = any> = (
     context: BotContext,
     instance: TopicInstance<PromptTopicClassState<S>, PromptTopicClassReturnArgs<V>>,
     result?: ValidatorResult<V>
