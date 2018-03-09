@@ -11,6 +11,9 @@ export abstract class Topic <
     State extends {} = {},
     ReturnArgs extends {} = {},
 > {
+    public topicName = this.constructor.name;
+    public instanceName = `${this.topicName}"(${Date.now().toString()}${Math.random().toString().substr(1)})`;
+
     protected state = {} as State;
     protected returned;
     
@@ -100,7 +103,6 @@ export abstract class Topic <
         context: BotContext,
     ) {
     }
-
 
     static rootTopic: Topic;
 
