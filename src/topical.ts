@@ -1,4 +1,5 @@
 export * from './helpers';
+export * from './Telemetry';
 
 export * from './Topic';
 export * from './PromptTopic';

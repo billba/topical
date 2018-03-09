@@ -1,5 +1,6 @@
-import { Bot } from 'botbuilder'; // so that we get BotContext
+import { Bot, Activity } from 'botbuilder'; // so that we get BotContext
 import { returnsPromiseVoid } from './helpers';
+import { Telemetry } from './topical';
 
 export type TopicReturnToParent <Args> = (
     context: BotContext,
@@ -12,7 +13,7 @@ export abstract class Topic <
     ReturnArgs extends {} = {},
 > {
     public topicName = this.constructor.name;
-    public instanceName = `${this.topicName}"(${Date.now().toString()}${Math.random().toString().substr(1)})`;
+    public instanceName = `${this.topicName}(${Date.now().toString()}${Math.random().toString().substr(1)})`;
 
     protected state = {} as State;
     protected returned;
@@ -56,10 +57,16 @@ export abstract class Topic <
                 throw "This topic has already returned";
             this.returned = true;
 
+            await this.sendTelemetry(context, 'onChildReturn.begin');
             await returnToParent(c, args);
+            await this.sendTelemetry(context, 'onChildReturn.end');
         }
 
+        await this.sendTelemetry(context, 'init.begin');
+
         await this.init(context, args);
+
+        await this.sendTelemetry(context, 'init.end');
 
         return this.returned
             ? undefined
@@ -72,8 +79,11 @@ export abstract class Topic <
     ): Promise<boolean> {
         if (!topic)
             return false;
-    
+        
+        await this.sendTelemetry(context, 'onReceive.begin');
         await topic.onReceive(context);
+        await this.sendTelemetry(context, 'onReceive.begin');
+
         return true;
     }
 
@@ -84,7 +94,10 @@ export abstract class Topic <
         if (!topic)
             return false;
 
+        await this.sendTelemetry(context, 'next.begin');
         await topic.next(context);
+        await this.sendTelemetry(context, 'next.end');
+
         return false;
     }
 
@@ -112,13 +125,35 @@ export abstract class Topic <
     ) {
         if (Topic.rootTopic)
             await Topic.rootTopic.dispatch(context, Topic.rootTopic);
-        else
+        else {
             Topic.rootTopic = await getRootTopic();
+            await Topic.rootTopic.sendTelemetry(context, 'assignRootTopic');
+        }
     }
 
     async listChildren(
         context: BotContext,
-    ) {
+    ): Promise<Topic[]> {
         return [];
+    }
+
+    static telemetry: Telemetry;
+
+    private async sendTelemetry (
+        context: BotContext,
+        type: string,
+    ) {
+        if (!Topic.telemetry)
+            return;
+
+        await Topic.telemetry(context, {
+            type,
+            activity: context.request as Activity,
+            instance: {
+                instanceName: this.instanceName,
+                topicName: this.topicName,
+                children: (await this.listChildren(context)).map(topic => topic.instanceName),
+            },
+        });
     }
 }

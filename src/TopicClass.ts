@@ -1,5 +1,5 @@
 import { Promiseable, Activity } from 'botbuilder';
-import { toPromise, returnsPromiseVoid, Telemetry } from './topical';
+import { toPromise, returnsPromiseVoid, Telemetry, TelemetryAction } from './topical';
 
 declare global {
     interface ConversationState {
@@ -9,23 +9,6 @@ declare global {
             }
             rootInstanceName: string;
         },
-    }
-}
-
-export type Telemetry = (
-    context: BotContext,
-    event: TelemetryAction,
-) => Promise<void>;
-
-export interface TelemetryAction {
-    type: string,
-    activity: Activity,
-    instance: {
-        instanceName: string,
-        parentInstanceName: string,
-        className: string,
-        topicName: string,
-        children: string[],
     }
 }
 
@@ -44,7 +27,7 @@ export class TopicInstance <State = any, ReturnArgs = any> {
         public topicName: string,
         public parentInstanceName?: string,
     ) {
-        this.name = `instance of "${topicName}"(${Date.now().toString()}${Math.random().toString().substr(1)})`;
+        this.name = `${topicName}"(${Date.now().toString()}${Math.random().toString().substr(1)})`;
     }
 }
 
@@ -205,7 +188,6 @@ export abstract class TopicClass <
             return false;
 
         const topic = TopicClass.getTopicFromInstance(instance);
-        await topic.sendTelemetry(context, instance, 'returnToParent');
 
         const parentInstance = TopicClass.getInstanceFromName(context, instance.parentInstanceName);
         const parentTopic = TopicClass.getTopicFromInstance(parentInstance);
@@ -286,8 +268,6 @@ export abstract class TopicClass <
             activity: context.request as Activity,
             instance: {
                 instanceName: instance.name,
-                parentInstanceName: instance.parentInstanceName,
-                className: this.constructor.name,
                 topicName: this.name,
                 children: await this.listChildren(context, instance),
             },

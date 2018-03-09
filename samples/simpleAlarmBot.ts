@@ -1,6 +1,8 @@
 import { ConsoleAdapter } from 'botbuilder-node';
 import { Bot } from 'botbuilder';
 import { Topic, prettyConsole, TextPromptTopic } from '../src/topical';
+// import { wstelemetry } from './wstelemetry';
+// Topic.telemetry = wstelemetry;
 
 const adapter = new ConsoleAdapter();
 
