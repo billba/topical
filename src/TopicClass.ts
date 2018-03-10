@@ -102,8 +102,11 @@ export abstract class TopicClass <
         getRootInstanceName: () => Promise<string>,
     ) {
         if (context.state.conversation.topical) {
-            await TopicClass.getTopicFromInstance(TopicClass.getInstanceFromName(context, context.state.conversation.topical.rootInstanceName))
-                .dispatch(context, context.state.conversation.topical.rootInstanceName);
+            const instance = TopicClass.getInstanceFromName(context, context.state.conversation.topical.rootInstanceName);
+            const topic = TopicClass.getTopicFromInstance(instance);
+
+            await topic.dispatch(context, instance);
+            await topic.sendTelemetry(context, instance, 'endOfTurn');
         } else {
             context.state.conversation.topical = {
                 instances: {},
@@ -146,12 +149,25 @@ export abstract class TopicClass <
 
     async doNext (
         context: BotContext,
-        instanceName: string,
-    ) {
-        if (!instanceName)
-            return false;
+        instance: TopicInstance,
+    );
 
-        const instance = TopicClass.getInstanceFromName(context, instanceName);
+    async doNext (
+        context: BotContext,
+        instanceName: string,
+    );
+
+    async doNext (
+        context: BotContext,
+        arg: TopicInstance | string,
+    ) {
+        if (!arg)
+            return false;
+    
+        const instance = typeof arg === 'string'
+            ? TopicClass.getInstanceFromName(context, arg)
+            : arg;
+
         const topic = TopicClass.getTopicFromInstance(instance);
 
         await topic.sendTelemetry(context, instance, 'next.begin');
@@ -164,12 +180,25 @@ export abstract class TopicClass <
 
     async dispatch (
         context: BotContext,
-        instanceName: string,
-    ) {
-        if (!instanceName)
-            return false;
+        instance: TopicInstance,
+    );
 
-        const instance = TopicClass.getInstanceFromName(context, instanceName);
+    async dispatch (
+        context: BotContext,
+        instanceName: string,
+    );
+
+    async dispatch (
+        context: BotContext,
+        arg: TopicInstance | string,
+    ) {
+        if (!arg)
+            return false;
+    
+        const instance = typeof arg === 'string'
+            ? TopicClass.getInstanceFromName(context, arg)
+            : arg;
+
         const topic = TopicClass.getTopicFromInstance(instance);
 
         await topic.sendTelemetry(context, instance, 'onReceive.begin');

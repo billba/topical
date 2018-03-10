@@ -67,7 +67,7 @@ export class SimpleForm extends TopicClassWithChild<SimpleFormInitArgs, SimpleFo
         instance.state.schema = args.schema;
         instance.state.form = {};
 
-        await this.doNext(context, instance.name);
+        await this.doNext(context, instance);
     }
 
     async next(
