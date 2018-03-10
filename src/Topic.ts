@@ -131,9 +131,9 @@ export abstract class Topic <
         }
     }
 
-    async listChildren(
+    listChildren(
         context: BotContext,
-    ): Promise<Topic[]> {
+    ): Topic[] {
         return [];
     }
 
@@ -152,7 +152,7 @@ export abstract class Topic <
             instance: {
                 instanceName: this.instanceName,
                 topicName: this.topicName,
-                children: (await this.listChildren(context)).map(topic => topic.instanceName),
+                children: this.listChildren(context).map(topic => topic.instanceName),
             },
         });
     }

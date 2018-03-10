@@ -27,7 +27,7 @@ export class TopicWithChild <
         this.state.child = undefined;
     }
 
-    async listChildren(
+    listChildren(
         context: BotContext,
     ) {
         return this.state.child ? [this.state.child] : [];
@@ -56,7 +56,7 @@ export class TopicWithChildArray <
         this.state.children = [];
     }
 
-    async listChildren(
+    listChildren(
         context: BotContext,
     ) {
         return this.state.children;

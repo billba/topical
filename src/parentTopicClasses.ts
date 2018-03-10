@@ -4,7 +4,7 @@ export abstract class ParentTopicClass <
     InitArgs extends {} = {},
     State extends {} = {},
     ReturnArgs extends {} = {},
-> extends TopicClass <InitArgs, State, ReturnArgs> {
+> extends TopicClass<InitArgs, State, ReturnArgs> {
     abstract removeChild (
         context: BotContext,
         instance: TopicInstance<State>,
@@ -20,8 +20,8 @@ export class TopicClassWithChild <
     InitArgs extends {} = {},
     State extends TopicClassWithChildState = TopicClassWithChildState,
     ReturnArgs extends {} = {},
-> extends ParentTopicClass <InitArgs, State, ReturnArgs> {
-    async removeChild(
+> extends ParentTopicClass<InitArgs, State, ReturnArgs> {
+    async removeChild (
         context: BotContext,
         instance: TopicInstance<State>,
         childInstance: TopicInstance
@@ -29,7 +29,7 @@ export class TopicClassWithChild <
         instance.state.child = undefined;
     }
 
-    async listChildren(
+    listChildren (
         context: BotContext,
         instance: TopicInstance<State>,
     ) {
@@ -54,14 +54,14 @@ export class TopicClassWithChildArray <
         instance.state.children = instance.state.children.filter(child => child !== childInstance.name);
     }
 
-    async init(
+    async init (
         context: BotContext,
         instance: TopicInstance<State>,
     ) {
         instance.state.children = [];
     }
 
-    async listChildren(
+    listChildren (
         context: BotContext,
         instance: TopicInstance<State>,
     ) {

@@ -269,7 +269,7 @@ export abstract class TopicClass <
             instance: {
                 instanceName: instance.name,
                 topicName: this.name,
-                children: await this.listChildren(context, instance),
+                children: this.listChildren(context, instance),
             },
         });
     }
@@ -277,7 +277,7 @@ export abstract class TopicClass <
     listChildren (
         context: BotContext,
         instance: TopicInstance<State, ReturnArgs>
-    ): Promise<string[]> {
-        return Promise.resolve([]);
+    ): string[] {
+        return [];
     }
 }
