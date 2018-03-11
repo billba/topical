@@ -5,11 +5,6 @@ export abstract class ParentTopicClass <
     State extends {} = {},
     ReturnArgs extends {} = {},
 > extends TopicClass<InitArgs, State, ReturnArgs> {
-    abstract removeChild (
-        context: BotContext,
-        instance: TopicInstance<State>,
-        childInstance: TopicInstance
-    ): Promise<void>;
 }
 
 export interface TopicClassWithChildState {
@@ -21,12 +16,38 @@ export class TopicClassWithChild <
     State extends TopicClassWithChildState = TopicClassWithChildState,
     ReturnArgs extends {} = {},
 > extends ParentTopicClass<InitArgs, State, ReturnArgs> {
-    async removeChild (
+    clearChild (
         context: BotContext,
         instance: TopicInstance<State>,
-        childInstance: TopicInstance
     ) {
-        instance.state.child = undefined;
+        if (instance.state.child) {
+            TopicClass.deleteInstance(context, instance.state.child);
+            instance.state.child = undefined;
+        }
+    }
+
+    setChild (
+        context: BotContext,
+        instance: TopicInstance<State>,
+        childInstanceName: string,
+    ) {
+        if (instance.state.child)
+            this.clearChild(context, instance);
+        instance.state.child = childInstanceName;
+    }
+
+    hasChild (
+        context: BotContext,
+        instance: TopicInstance<State>,
+    ) {
+        return !!instance.state.child;
+    }
+
+    async dispatchToChild (
+        context: BotContext,
+        instance: TopicInstance<State>,
+    ) {
+        return this.dispatch(context, instance.state.child);
     }
 
     listChildren (
@@ -49,8 +70,9 @@ export class TopicClassWithChildArray <
     async removeChild (
         context: BotContext,
         instance: TopicInstance<State>,
-        childInstance: TopicInstance)
-    {
+        childInstance: TopicInstance
+    ) {
+        this.deleteInstance(context, childInstance.state.child);
         instance.state.children = instance.state.children.filter(child => child !== childInstance.name);
     }
 

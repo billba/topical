@@ -123,16 +123,16 @@ export abstract class Topic <
         context: BotContext,
         getRootTopic: () => Promise<Topic>
     ) {
-        if (Topic.rootTopic)
+        if (Topic.rootTopic) {
             await Topic.rootTopic.dispatch(context, Topic.rootTopic);
-        else {
+            await Topic.rootTopic.sendTelemetry(context, 'endOfTurn');
+         } else {
             Topic.rootTopic = await getRootTopic();
             await Topic.rootTopic.sendTelemetry(context, 'assignRootTopic');
         }
     }
 
     listChildren(
-        context: BotContext,
     ): Topic[] {
         return [];
     }
@@ -152,7 +152,7 @@ export abstract class Topic <
             instance: {
                 instanceName: this.instanceName,
                 topicName: this.topicName,
-                children: this.listChildren(context).map(topic => topic.instanceName),
+                children: this.listChildren().map(topic => topic.instanceName),
             },
         });
     }

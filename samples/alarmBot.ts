@@ -86,14 +86,15 @@ class DeleteAlarmClass extends TopicClassWithChild<DeleteAlarmInitArgs, DeleteAl
                 switch (childInstance.returnArgs.name) {
                     case 'whichAlarm':
                         instance.state.alarmName = childInstance.returnArgs.result.value;
-                        instance.state.child = await textPromptClass.createInstance(context, instance, {
+                        this.setChild(context, instance, await textPromptClass.createInstance(context, instance, {
                             name: 'confirm',
                             promptState: {
                                 prompt: `Are you sure you want to delete alarm "${childInstance.returnArgs.result.value}"? (yes/no)"`,
                             },
-                        });
+                        }));
                         break;
                     case 'confirm':
+                        this.clearChild(context, instance);
                         this.returnToParent(instance, childInstance.returnArgs.result.value === 'yes'
                             ? {
                                 alarmName: instance.state.alarmName
@@ -119,19 +120,19 @@ class DeleteAlarmClass extends TopicClassWithChild<DeleteAlarmInitArgs, DeleteAl
 
         instance.state.alarms = args.alarms;
 
-        instance.state.child = await textPromptClass.createInstance(context, instance, {
+        this.setChild(context, instance, await textPromptClass.createInstance(context, instance, {
             name: 'whichAlarm',
             promptState: {
                 prompt: `Which alarm do you want to delete?\n${listAlarms(instance.state.alarms)}`,
             },
-        });
+        }));
     }
 
     async onReceive (
         context: BotContext,
         instance: TopicInstance<DeleteAlarmState, DeleteAlarmReturnArgs>,
     ) {
-        await this.dispatch(context, instance.state.child);
+        await this.dispatchToChild(context, instance);
     }
 }
 
@@ -167,7 +168,7 @@ class AlarmBotClass extends TopicClassWithChild<undefined, AlarmBotState, undefi
                 }
             })
             .afterChildReturn(async (context, instance, childInstance) => {
-                instance.state.child = undefined;
+                this.clearChild(context, instance);
             });
     }
 
@@ -183,12 +184,16 @@ class AlarmBotClass extends TopicClassWithChild<undefined, AlarmBotState, undefi
         context: BotContext,
         instance: TopicInstance<AlarmBotState>,
     ) {
-        if (await this.dispatch(context, instance.state.child))
+        if (context.request.type === 'message' && context.request.text === '#orphan') {
+            instance.state.child = undefined;
+        }
+
+        if (await this.dispatchToChild(context, instance))
             return;
 
         if (context.request.type === 'message') {
             if (/set|add|create/i.test(context.request.text)) {
-                instance.state.child = await simpleForm.createInstance(context, instance, {
+                this.setChild(context, instance,  await simpleForm.createInstance(context, instance, {
                     schema: {
                         name: {
                             type: 'string',
@@ -199,15 +204,15 @@ class AlarmBotClass extends TopicClassWithChild<undefined, AlarmBotState, undefi
                             prompt: 'For when do you want to set it?'
                         }
                     }
-                });
+                }));
             } else if (/show|list/i.test(context.request.text)) {
-                instance.state.child = await showAlarmsClass.createInstance(context, instance, {
+                this.setChild(context, instance, await showAlarmsClass.createInstance(context, instance, {
                     alarms: instance.state.alarms
-                });
+                }));
             } else if (/delete|remove/i.test(context.request.text)) {
-                instance.state.child = await deleteAlarmClass.createInstance(context, instance, {
+                this.setChild(context, instance, await deleteAlarmClass.createInstance(context, instance, {
                     alarms: instance.state.alarms
-                });
+                }));
             } else {
                 context.reply(helpText);
             }

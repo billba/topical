@@ -27,7 +27,7 @@ export class TopicInstance <State = any, ReturnArgs = any> {
         public topicName: string,
         public parentInstanceName?: string,
     ) {
-        this.name = `${topicName}"(${Date.now().toString()}${Math.random().toString().substr(1)})`;
+        this.name = `${topicName}(${Date.now().toString()}${Math.random().toString().substr(1)})`;
     }
 }
 
@@ -89,6 +89,26 @@ export abstract class TopicClass <
         return newInstance.name;
     }
 
+    static deleteInstance (
+        context: BotContext,
+        instance: TopicInstance,
+    );
+
+    static deleteInstance (
+        context: BotContext,
+        instanceName: string,
+    );
+
+    static deleteInstance (
+        context: BotContext,
+        arg: TopicInstance | string,
+    ) {
+        delete context.state.conversation.topical.instances[typeof arg === 'string'
+            ? arg
+            : arg.name
+        ];
+    }
+
     static rootInstanceName(
         context: BotContext,
     ) {
@@ -102,10 +122,33 @@ export abstract class TopicClass <
         getRootInstanceName: () => Promise<string>,
     ) {
         if (context.state.conversation.topical) {
-            const instance = TopicClass.getInstanceFromName(context, context.state.conversation.topical.rootInstanceName);
+            const rootInstanceName = context.state.conversation.topical.rootInstanceName;
+            const instance = TopicClass.getInstanceFromName(context, rootInstanceName);
             const topic = TopicClass.getTopicFromInstance(instance);
 
             await topic.dispatch(context, instance);
+
+            // garbage collect orphaned instances
+
+            const orphans = { ... context.state.conversation.topical.instances };
+
+            const deorphanize = (instanceName: string) => {
+                const instance = orphans[instanceName];
+                const topic = TopicClass.getTopicFromInstance(instance);
+
+                delete orphans[instanceName];
+        
+                for (let child of topic.listChildren(context, instance))
+                    deorphanize(child);
+            }
+        
+            deorphanize(rootInstanceName);
+
+            for (let orphan of Object.keys(orphans)) {
+                console.warn(`Garbage collecting instance ${orphan} -- you should have called TopicClass.deleteInstance()`)
+                TopicClass.deleteInstance(context, orphan);
+            }
+
             await topic.sendTelemetry(context, instance, 'endOfTurn');
         } else {
             context.state.conversation.topical = {
@@ -150,12 +193,12 @@ export abstract class TopicClass <
     async doNext (
         context: BotContext,
         instance: TopicInstance,
-    );
+    ): Promise<boolean>;
 
     async doNext (
         context: BotContext,
         instanceName: string,
-    );
+    ): Promise<boolean>;
 
     async doNext (
         context: BotContext,
@@ -181,12 +224,12 @@ export abstract class TopicClass <
     async dispatch (
         context: BotContext,
         instance: TopicInstance,
-    );
+    ): Promise<boolean>;
 
     async dispatch (
         context: BotContext,
         instanceName: string,
-    );
+    ): Promise<boolean>;
 
     async dispatch (
         context: BotContext,
@@ -221,7 +264,7 @@ export abstract class TopicClass <
         const parentInstance = TopicClass.getInstanceFromName(context, instance.parentInstanceName);
         const parentTopic = TopicClass.getTopicFromInstance(parentInstance);
 
-        delete context.state.conversation.topical.instances[instance.name];
+        TopicClass.deleteInstance(context, instance);
         instance.return = TopicReturn.succeeded;
 
         const handler = parentTopic._onChildReturnHandlers[instance.topicName];

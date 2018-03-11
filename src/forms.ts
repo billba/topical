@@ -53,7 +53,7 @@ export class SimpleForm extends TopicClassWithChild<SimpleFormInitArgs, SimpleFo
                     throw `not expecting type "${metadata.type}"`;
         
                 instance.state.form[childInstance.returnArgs.name] = childInstance.returnArgs.result.value;
-                instance.state.child = undefined;
+                this.clearChild(context, instance);
 
                 await this.doNext(context, instance.name);
             });
@@ -81,17 +81,17 @@ export class SimpleForm extends TopicClassWithChild<SimpleFormInitArgs, SimpleFo
                 if (metadata.type !== 'string')
                     throw `not expecting type "${metadata.type}"`;
 
-                instance.state.child = await this.textPromptClass.createInstance(context, instance, {
+                this.setChild(context, instance, await this.textPromptClass.createInstance(context, instance, {
                     name,
                     promptState: {
                         prompt: metadata.prompt,
                     },
-                });
+                }));
                 break;
             }
         }
 
-        if (!instance.state.child) {
+        if (!this.hasChild(context, instance)) {
             this.returnToParent(instance, {
                 form: instance.state.form
             });
@@ -102,7 +102,7 @@ export class SimpleForm extends TopicClassWithChild<SimpleFormInitArgs, SimpleFo
         context: BotContext,
         instance: TopicInstance<SimpleFormState, SimpleFormReturnArgs>,
     ) {
-        if (!await this.dispatch(context, instance.state.child))
+        if (!await this.dispatchToChild(context, instance))
             throw "a prompt should always be active";
     }
 }
