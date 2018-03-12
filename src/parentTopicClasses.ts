@@ -72,7 +72,7 @@ export class TopicClassWithChildArray <
         instance: TopicInstance<State>,
         childInstance: TopicInstance
     ) {
-        this.deleteInstance(context, childInstance.state.child);
+        TopicClass.deleteInstance(context, childInstance.state.child);
         instance.state.children = instance.state.children.filter(child => child !== childInstance.name);
     }
 
