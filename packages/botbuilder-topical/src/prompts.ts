@@ -1,7 +1,6 @@
-import { PromptTopicClass } from './PromptTopicClass';
-import { hasText, hasNumber, Culture } from './validators';
+import { Prompt, hasText, hasNumber, Culture } from './topical';
 
-export class TextPromptTopicClass <State = any> extends PromptTopicClass<string, State> {
+export class TextPromptTopic <State = any> extends Prompt<string, State> {
     constructor (name?: string) {
         super(name);
 
@@ -9,7 +8,7 @@ export class TextPromptTopicClass <State = any> extends PromptTopicClass<string,
     }
 }
 
-export class NumberPromptTopicClass <State = any> extends PromptTopicClass<number, State> {
+export class NumberPromptTopic <State = any> extends Prompt<number, State> {
     constructor (name: string, culture: Culture);
     constructor (culture: Culture);
     constructor (... args) {

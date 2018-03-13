@@ -31,19 +31,19 @@ export class TopicInstance <State = any, ReturnArgs = any> {
     }
 }
 
-export type TopicClassOnChildReturnHandler <State, ReturnArgs, ChildReturnArgs> = (
+export type TopicOnChildReturnHandler <State, ReturnArgs, ChildReturnArgs> = (
     context: BotContext,
     instance: TopicInstance<State, ReturnArgs>,
     childInstance: TopicInstance<undefined, ChildReturnArgs>,
 ) => Promise<void>;
 
-export abstract class TopicClass <
+export abstract class Topic <
     InitArgs extends {} = {},
     State extends {} = {},
     ReturnArgs extends {} = {},
 > {
     private static topicClasses: {
-        [name: string]: TopicClass;
+        [name: string]: Topic;
     } = {}
 
     constructor (
@@ -51,11 +51,11 @@ export abstract class TopicClass <
     ) {
         this.name = this.constructor.name + (name ? '.' + name : '');
 
-        if (TopicClass.topicClasses[this.name]) {
+        if (Topic.topicClasses[this.name]) {
             throw new Error(`An attempt was made to create a topic with existing name "${this.name}".`);
         }
 
-        TopicClass.topicClasses[this.name] = this;
+        Topic.topicClasses[this.name] = this;
     }
 
     returnToParent(
@@ -123,8 +123,8 @@ export abstract class TopicClass <
     ) {
         if (context.state.conversation.topical) {
             const rootInstanceName = context.state.conversation.topical.rootInstanceName;
-            const instance = TopicClass.getInstanceFromName(context, rootInstanceName);
-            const topic = TopicClass.getTopicFromInstance(instance);
+            const instance = Topic.getInstanceFromName(context, rootInstanceName);
+            const topic = Topic.getTopicFromInstance(instance);
 
             await topic.dispatch(context, instance);
 
@@ -134,7 +134,7 @@ export abstract class TopicClass <
 
             const deorphanize = (instanceName: string) => {
                 const instance = orphans[instanceName];
-                const topic = TopicClass.getTopicFromInstance(instance);
+                const topic = Topic.getTopicFromInstance(instance);
 
                 delete orphans[instanceName];
         
@@ -145,8 +145,8 @@ export abstract class TopicClass <
             deorphanize(rootInstanceName);
 
             for (let orphan of Object.keys(orphans)) {
-                console.warn(`Garbage collecting instance ${orphan} -- you should have called TopicClass.deleteInstance()`)
-                TopicClass.deleteInstance(context, orphan);
+                console.warn(`Garbage collecting instance ${orphan} -- you should have called Topic.deleteInstance()`)
+                Topic.deleteInstance(context, orphan);
             }
 
             await topic.sendTelemetry(context, instance, 'endOfTurn');
@@ -157,8 +157,8 @@ export abstract class TopicClass <
             }
     
             context.state.conversation.topical.rootInstanceName = await getRootInstanceName();
-            const instance = TopicClass.getInstanceFromName(context, context.state.conversation.topical.rootInstanceName);
-            const topic = TopicClass.getTopicFromInstance(instance);
+            const instance = Topic.getInstanceFromName(context, context.state.conversation.topical.rootInstanceName);
+            const topic = Topic.getTopicFromInstance(instance);
             await topic.sendTelemetry(context, instance, 'assignRootTopic');
         }    
     }
@@ -180,7 +180,7 @@ export abstract class TopicClass <
     private static getTopicFromInstance (
         instance: TopicInstance,
     ) {
-        const topic = TopicClass.topicClasses[instance.topicName];
+        const topic = Topic.topicClasses[instance.topicName];
         
         if (!topic) {
             console.warn(`Unknown topic ${instance.topicName}`);
@@ -208,10 +208,10 @@ export abstract class TopicClass <
             return false;
     
         const instance = typeof arg === 'string'
-            ? TopicClass.getInstanceFromName(context, arg)
+            ? Topic.getInstanceFromName(context, arg)
             : arg;
 
-        const topic = TopicClass.getTopicFromInstance(instance);
+        const topic = Topic.getTopicFromInstance(instance);
 
         await topic.sendTelemetry(context, instance, 'next.begin');
         await topic.next(context, instance);
@@ -239,10 +239,10 @@ export abstract class TopicClass <
             return false;
     
         const instance = typeof arg === 'string'
-            ? TopicClass.getInstanceFromName(context, arg)
+            ? Topic.getInstanceFromName(context, arg)
             : arg;
 
-        const topic = TopicClass.getTopicFromInstance(instance);
+        const topic = Topic.getTopicFromInstance(instance);
 
         await topic.sendTelemetry(context, instance, 'onReceive.begin');
         await topic.onReceive(context, instance);
@@ -259,12 +259,12 @@ export abstract class TopicClass <
         if (instance.return !== TopicReturn.signalled || !instance.parentInstanceName)
             return false;
 
-        const topic = TopicClass.getTopicFromInstance(instance);
+        const topic = Topic.getTopicFromInstance(instance);
 
-        const parentInstance = TopicClass.getInstanceFromName(context, instance.parentInstanceName);
-        const parentTopic = TopicClass.getTopicFromInstance(parentInstance);
+        const parentInstance = Topic.getInstanceFromName(context, instance.parentInstanceName);
+        const parentTopic = Topic.getTopicFromInstance(parentInstance);
 
-        TopicClass.deleteInstance(context, instance);
+        Topic.deleteInstance(context, instance);
         instance.return = TopicReturn.succeeded;
 
         const handler = parentTopic._onChildReturnHandlers[instance.topicName];
@@ -302,12 +302,12 @@ export abstract class TopicClass <
     }
 
     private _onChildReturnHandlers: {
-        [topicName: string]: TopicClassOnChildReturnHandler<any, any, any>;
+        [topicName: string]: TopicOnChildReturnHandler<any, any, any>;
     } = {};
     
     protected onChildReturn <ChildReturnArgs> (
-        topic: TopicClass<any, any, ChildReturnArgs>,
-        handler: TopicClassOnChildReturnHandler<State, ReturnArgs, ChildReturnArgs> = returnsPromiseVoid
+        topic: Topic<any, any, ChildReturnArgs>,
+        handler: TopicOnChildReturnHandler<State, ReturnArgs, ChildReturnArgs> = returnsPromiseVoid
     ) {
         if (this._onChildReturnHandlers[topic.name])
             throw new Error(`An attempt was made to call onChildReturn for topic ${topic.name}. This topic is already handled.`);
@@ -317,10 +317,10 @@ export abstract class TopicClass <
         return this;
     }
 
-    private _afterChildReturn: TopicClassOnChildReturnHandler<any, any, any> = returnsPromiseVoid;
+    private _afterChildReturn: TopicOnChildReturnHandler<any, any, any> = returnsPromiseVoid;
 
     protected afterChildReturn <ChildReturnArgs> (
-        handler: TopicClassOnChildReturnHandler<State, ReturnArgs, any> = returnsPromiseVoid
+        handler: TopicOnChildReturnHandler<State, ReturnArgs, any> = returnsPromiseVoid
     ) {
         this._afterChildReturn = handler;
     }
@@ -332,10 +332,10 @@ export abstract class TopicClass <
         instance: TopicInstance,
         type: string,
     ) {
-        if (!TopicClass.telemetry)
+        if (!Topic.telemetry)
             return;
 
-        await TopicClass.telemetry(context, {
+        await Topic.telemetry({
             type,
             activity: context.request as Activity,
             instance: {

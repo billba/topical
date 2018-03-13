@@ -1,27 +1,27 @@
-import { TopicClass, TopicInstance } from './topical';
+import { Topic, TopicInstance } from './topical';
 
-export abstract class ParentTopicClass <
+export abstract class ParentTopic <
     InitArgs extends {} = {},
     State extends {} = {},
     ReturnArgs extends {} = {},
-> extends TopicClass<InitArgs, State, ReturnArgs> {
+> extends Topic<InitArgs, State, ReturnArgs> {
 }
 
-export interface TopicClassWithChildState {
+export interface TopicWithChildState {
     child: string;
 }
 
-export class TopicClassWithChild <
+export class TopicWithChild <
     InitArgs extends {} = {},
-    State extends TopicClassWithChildState = TopicClassWithChildState,
+    State extends TopicWithChildState = TopicWithChildState,
     ReturnArgs extends {} = {},
-> extends ParentTopicClass<InitArgs, State, ReturnArgs> {
+> extends ParentTopic<InitArgs, State, ReturnArgs> {
     clearChild (
         context: BotContext,
         instance: TopicInstance<State>,
     ) {
         if (instance.state.child) {
-            TopicClass.deleteInstance(context, instance.state.child);
+            Topic.deleteInstance(context, instance.state.child);
             instance.state.child = undefined;
         }
     }
@@ -58,21 +58,21 @@ export class TopicClassWithChild <
     }
 }
 
-export interface TopicClassWithChildArrayState {
+export interface TopicWithChildArrayState {
     children: string[];
 }
 
-export class TopicClassWithChildArray <
+export class TopicWithChildArray <
     InitArgs extends {} = {},
-    State extends TopicClassWithChildArrayState = TopicClassWithChildArrayState,
+    State extends TopicWithChildArrayState = TopicWithChildArrayState,
     ReturnArgs extends {} = {},
-> extends ParentTopicClass<InitArgs, State, ReturnArgs> {
+> extends ParentTopic<InitArgs, State, ReturnArgs> {
     async removeChild (
         context: BotContext,
         instance: TopicInstance<State>,
         childInstance: TopicInstance
     ) {
-        TopicClass.deleteInstance(context, childInstance.state.child);
+        Topic.deleteInstance(context, childInstance.state.child);
         instance.state.children = instance.state.children.filter(child => child !== childInstance.name);
     }
 

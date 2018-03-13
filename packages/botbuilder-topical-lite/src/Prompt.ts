@@ -1,17 +1,16 @@
 import { Promiseable, Activity } from 'botbuilder';
-import { Topic, toPromise, returnsPromiseVoid } from "./topical";
-import { Validator, ValidatorResult } from './Validator';
+import { Topic, toPromise, returnsPromiseVoid, Validator, ValidatorResult } from './topical';
 
-export interface PromptTopicInitArgs <S> {
+export interface PromptInitArgs <S> {
     promptState: S;
 }
 
-export interface PromptTopicState <S> {
+export interface PromptState <S> {
     turns: number;
     promptState: S;
 }
 
-export class PromptTopic <V, S = any> extends Topic<PromptTopicInitArgs<S>, PromptTopicState<S>, ValidatorResult<V>> {
+export class Prompt <V, S = any> extends Topic<PromptInitArgs<S>, PromptState<S>, ValidatorResult<V>> {
     protected _maxTurns: number = 2;
 
     public maxTurns(maxTurns: number) {
@@ -37,7 +36,7 @@ export class PromptTopic <V, S = any> extends Topic<PromptTopicInitArgs<S>, Prom
 
     async init (
         context: BotContext,
-        args?: PromptTopicInitArgs<S>
+        args?: PromptInitArgs<S>
     ) {
         this.state = {
             turns: 0,

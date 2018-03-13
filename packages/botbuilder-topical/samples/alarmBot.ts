@@ -1,8 +1,9 @@
 import { ConsoleAdapter } from 'botbuilder-node';
 import { Bot, MemoryStorage, BotStateManager } from 'botbuilder';
-import { TopicClass, SimpleForm, TextPromptTopicClass, prettyConsole, TopicInstance, TopicClassWithChild } from '../src/topical';
-// import { wstelemetry } from './wstelemetry';
-// TopicClass.telemetry = wstelemetry;
+import { Topic, SimpleForm, TextPromptTopic, TopicInstance, TopicWithChild, prettyConsole, WSTelemetry } from '../src/topical';
+
+// const wst = new WSTelemetry('ws://localhost:8080/server');
+// Topic.telemetry = action => wst.send(action);
 
 const adapter = new ConsoleAdapter();
 
@@ -15,7 +16,7 @@ bot
     .use(new BotStateManager())
     .use(prettyConsole)
     .onReceive(async c => {
-        await TopicClass.do(c, () => alarmBotClass.createInstance(c));
+        await Topic.do(c, () => alarmBotClass.createInstance(c));
     });
 
 interface Alarm {
@@ -36,7 +37,7 @@ interface ShowAlarmInitArgs {
     alarms: Alarm[]
 }
 
-class ShowAlarmsClass extends TopicClass<ShowAlarmInitArgs> {
+class ShowAlarms extends Topic<ShowAlarmInitArgs> {
     async init (
         context: BotContext,
         instance: TopicInstance,
@@ -51,7 +52,7 @@ class ShowAlarmsClass extends TopicClass<ShowAlarmInitArgs> {
     }
 }
 
-const showAlarmsClass = new ShowAlarmsClass();
+const showAlarms = new ShowAlarms();
 
 interface DeleteAlarmInitArgs {
     alarms: Alarm[];
@@ -71,13 +72,13 @@ interface SimpleFormPromptState {
     prompt: string;
 }
 
-const textPromptClass = new TextPromptTopicClass()
+const textPromptClass = new TextPromptTopic()
     .maxTurns(100)
-    .prompt(async (context, instance) => {
+    .prompter(async (context, instance) => {
         context.reply(instance.state.promptState.prompt);
     });
 
-class DeleteAlarmClass extends TopicClassWithChild<DeleteAlarmInitArgs, DeleteAlarmState, DeleteAlarmReturnArgs> {
+class DeleteAlarm extends TopicWithChild<DeleteAlarmInitArgs, DeleteAlarmState, DeleteAlarmReturnArgs> {
     constructor (name?: string) {
         super(name);
 
@@ -136,7 +137,7 @@ class DeleteAlarmClass extends TopicClassWithChild<DeleteAlarmInitArgs, DeleteAl
     }
 }
 
-const deleteAlarmClass = new DeleteAlarmClass();
+const deleteAlarmClass = new DeleteAlarm();
 
 interface AlarmBotState {
     child: string;
@@ -147,7 +148,7 @@ const simpleForm = new SimpleForm();
 
 const helpText = `I know how to set, show, and delete alarms.`;
 
-class AlarmBotClass extends TopicClassWithChild<undefined, AlarmBotState, undefined> {
+class AlarmBot extends TopicWithChild<undefined, AlarmBotState, undefined> {
     constructor (name?: string) {
         super(name);
 
@@ -156,7 +157,7 @@ class AlarmBotClass extends TopicClassWithChild<undefined, AlarmBotState, undefi
                 instance.state.alarms.push({ ... childInstance.returnArgs.form } as any as Alarm);
                 context.reply(`Alarm successfully added!`);
             })
-            .onChildReturn(showAlarmsClass)
+            .onChildReturn(showAlarms)
             .onChildReturn(deleteAlarmClass, async (context, instance, childInstance) => {
                 if (childInstance.returnArgs) {
                     instance.state.alarms = instance.state.alarms
@@ -206,7 +207,7 @@ class AlarmBotClass extends TopicClassWithChild<undefined, AlarmBotState, undefi
                     }
                 }));
             } else if (/show|list/i.test(context.request.text)) {
-                this.setChild(context, instance, await showAlarmsClass.createInstance(context, instance, {
+                this.setChild(context, instance, await showAlarms.createInstance(context, instance, {
                     alarms: instance.state.alarms
                 }));
             } else if (/delete|remove/i.test(context.request.text)) {
@@ -220,4 +221,4 @@ class AlarmBotClass extends TopicClassWithChild<undefined, AlarmBotState, undefi
     }
 }
 
-const alarmBotClass = new AlarmBotClass();
+const alarmBotClass = new AlarmBot();

@@ -1,4 +1,4 @@
-import { TopicClass, TopicInstance, TextPromptTopicClass, TopicClassWithChild } from './topical';
+import { Topic, TopicInstance, TextPromptTopic, TopicWithChild } from './topical';
 
 export interface SimpleFormMetadata {
     type: 'string';
@@ -31,17 +31,17 @@ interface SimpleFormPromptState {
     prompt: string;
 }
 
-export class SimpleForm extends TopicClassWithChild<SimpleFormInitArgs, SimpleFormState, SimpleFormReturnArgs> {
-    private textPromptClass: TextPromptTopicClass<SimpleFormPromptState>;
+export class SimpleForm extends TopicWithChild<SimpleFormInitArgs, SimpleFormState, SimpleFormReturnArgs> {
+    private textPromptClass: TextPromptTopic<SimpleFormPromptState>;
 
     constructor (
         name?: string
     ) {
         super(name);
 
-        this.textPromptClass = new TextPromptTopicClass<SimpleFormPromptState>(this.name)
+        this.textPromptClass = new TextPromptTopic<SimpleFormPromptState>(this.name)
             .maxTurns(100)
-            .prompt(async (context, instance, result) => {
+            .prompter(async (context, instance, result) => {
                 context.reply(instance.state.promptState.prompt);
             });
 

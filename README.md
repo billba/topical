@@ -8,7 +8,9 @@
 
 ## How do I install *Topical*?
 
-`npm install -S botbuilder-topical`
+Standard applications: `npm install -S botbuilder-topical-lite`
+
+Scalable web services: `npm install -S botbuilder-topical`
 
 ## The *Topics* pattern
 
@@ -25,20 +27,21 @@ For single-user in-process applications, the Topics pattern is easily implemente
 Topical supplies a [`Topic`](/src/Topic.ts) class. Here's a simple version of the Root topic illustrated above: 
 
 ```ts
-class RootTopic extends Topic {
+class RootTopic extends TopicWithChild {
     async init(context, args) {
         context.reply("How can I help you today?");
     }
     async onReceive(context) {
-        if (await this.dispatch(context, this.state.child))
+        if (await this.dispatchToChild(context))
             return;
 
         if (context.request.text === "book travel") {
-            this.state.child = await new TravelTopic().createInstance(
-                context, async (context) => {
+            this.setChild(context, instance, await new TravelTopic().createInstance(context,
+                async (context) => {
                     context.reply(`Welcome back to the Root!`);
-                    this.state.child = undefined;
-                });
+                    this.clearChild();
+                }
+            ));
         }
     }
 }
@@ -61,24 +64,24 @@ In this way, each turn can be very efficiently executed on a given instance of y
 Here's the scalable web service version of the above code:
 
 ```ts
-class RootTopicClass extends TopicClass {
+class RootTopic extends TopicChild {
     constructor(name) {
         super(name);
 
         this.onChildReturn(travelTopicClass, (context, instance, childInstance) => {
             context.reply(`Welcome back to the Root!`);
-            instance.state.child = undefined;
+            this.clearChild();
         });
     }
     async init(context, instance, args) {
         context.reply("How can I help you today?");
     }
     async onReceive(context, instance) {
-        if (await this.dispatch(context, instance.state.child))
+        if (await this.dispatchToChild(context, instance))
             return;
 
         if (context.request.text === "book travel")
-            instance.state.child = await travelTopicClass.createInstance(context, instance);
+            this.setChild(context, instance, await travelTopic.createInstance(context, instance));
     }
 }
 ```

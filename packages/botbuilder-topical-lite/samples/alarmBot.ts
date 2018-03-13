@@ -1,8 +1,9 @@
 import { ConsoleAdapter } from 'botbuilder-node';
 import { Bot } from 'botbuilder';
-import { Topic, prettyConsole, TextPromptTopic } from '../src/topical';
-// import { wstelemetry } from './wstelemetry';
-// Topic.telemetry = wstelemetry;
+import { Topic, TopicWithChild, SimpleForm, prettyConsole, TextPrompt, WSTelemetry } from '../src/topical';
+
+const wst = new WSTelemetry('ws://localhost:8080/server');
+Topic.telemetry = action => wst.send(action);
 
 const adapter = new ConsoleAdapter();
 
@@ -16,74 +17,6 @@ bot
         await Topic.do(c, () => new AlarmBot().createInstance(c))
     });
 
-import { SimpleFormInitArgs, SimpleFormData, SimpleFormSchema, SimpleFormReturnArgs } from '../src/topical';
-import { TopicWithChild } from '../src/parentTopics';
-
-interface SimpleFormState {
-    form: SimpleFormData;
-    schema: SimpleFormSchema;
-    child: Topic;
-}
-
-class SimpleForm extends TopicWithChild<SimpleFormInitArgs, SimpleFormState, SimpleFormReturnArgs> {
-    async init (
-        context: BotContext,
-        args: SimpleFormInitArgs,
-    ) {
-        this.state.schema = args.schema;
-        this.state.form = {}
-        await this.doNext(context, this);
-    }
-
-    async next (
-        context: BotContext,
-    ) {
-        for (let name of Object.keys(this.state.schema)) {
-            if (!this.state.form[name]) {
-                const metadata = this.state.schema[name];
-
-                if (metadata.type !== 'string')
-                    throw `not expecting type "${metadata.type}"`;
-
-                this.setChild(await new TextPromptTopic()
-                    .maxTurns(100)
-                    .prompt(context=> {
-                        context.reply(metadata.prompt);
-                    })
-                    .createInstance(
-                        context,
-                        async (context, result) => {
-                            const metadata = this.state.schema[name];
-
-                            if (metadata.type !== 'string')
-                                throw `not expecting type "${metadata.type}"`;
-
-                            this.state.form[name] = result.value;
-                            this.clearChild();
-
-                            await this.doNext(context, this);
-                        }
-                    )
-                )
-
-                break;
-            }
-        }
-
-        if (!this.hasChild()) {
-            await this.returnToParent(context, {
-                form: this.state.form
-            });
-        }
-    }
-
-    async onReceive (
-        context: BotContext,
-    ) {
-        if (!await this.dispatchToChild(context))
-            throw "a prompt should always be active"
-    }
-}
 
 interface Alarm {
     name: string;
@@ -145,14 +78,14 @@ class DeleteAlarm extends TopicWithChild<DeleteAlarmInitArgs, DeleteAlarmState, 
 
         this.state.alarms = args.alarms;
 
-        this.setChild(await new TextPromptTopic()
+        this.setChild(await new TextPrompt()
             .maxTurns(100)
             .prompt(context=> {
                 context.reply(`Which alarm do you want to delete?\n${listAlarms(this.state.alarms)}`);
             })
             .createInstance(c, async (c, args) => {
                 this.state.alarmName = args.value;
-                this.setChild(await new TextPromptTopic()
+                this.setChild(await new TextPrompt()
                     .maxTurns(100)
                     .prompt(context=> {
                         context.reply(`Are you sure you want to delete alarm "${args.value}"? (yes/no)`);

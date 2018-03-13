@@ -1,6 +1,5 @@
 import { Bot, Activity } from 'botbuilder'; // so that we get BotContext
-import { returnsPromiseVoid } from './helpers';
-import { Telemetry } from './topical';
+import { returnsPromiseVoid, Telemetry } from './topical';
 
 export type TopicReturnToParent <Args> = (
     context: BotContext,
@@ -146,7 +145,7 @@ export abstract class Topic <
         if (!Topic.telemetry)
             return;
 
-        await Topic.telemetry(context, {
+        await Topic.telemetry({
             type,
             activity: context.request as Activity,
             instance: {

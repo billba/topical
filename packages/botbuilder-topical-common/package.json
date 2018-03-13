@@ -1,9 +1,9 @@
 {
-  "name": "botbuilder-topical",
-  "version": "0.6.7",
-  "description": "Topics abstraction for BotBuilder 4.x",
-  "main": "lib/src/topical.js",
-  "types": "lib/src/topical.d.ts",
+  "name": "botbuilder-topical-common",
+  "version": "0.7.0",
+  "description": "Shared functionality for botbuilder-topical-*",
+  "main": "lib/topical-common.js",
+  "types": "lib/topical-common.d.ts",
   "scripts": {
     "watch": "tsc -w",
     "build": "tsc",
@@ -13,12 +13,11 @@
   "license": "MIT",
   "devDependencies": {
     "@types/ws": "^4.0.1",
-    "typescript": "^2.7.2",
-    "ws": "^5.0.0"
+    "typescript": "^2.7.2"
   },
   "dependencies": {
     "@microsoft/recognizers-text-suite": "^1.0.0",
     "botbuilder": "^4.0.0-m1.4",
-    "botbuilder-node": "^4.0.0-m1.7"
+    "ws": "^5.0.0"
   }
 }
