@@ -1,12 +1,5 @@
 import { Topic, TopicInstance } from './topical';
 
-export abstract class ParentTopic <
-    InitArgs extends {} = {},
-    State extends {} = {},
-    ReturnArgs extends {} = {},
-> extends Topic<InitArgs, State, ReturnArgs> {
-}
-
 export interface TopicWithChildState {
     child: string;
 }
@@ -15,7 +8,7 @@ export class TopicWithChild <
     InitArgs extends {} = {},
     State extends TopicWithChildState = TopicWithChildState,
     ReturnArgs extends {} = {},
-> extends ParentTopic<InitArgs, State, ReturnArgs> {
+> extends Topic<InitArgs, State, ReturnArgs> {
     clearChild (
         context: BotContext,
         instance: TopicInstance<State>,
@@ -66,7 +59,7 @@ export class TopicWithChildArray <
     InitArgs extends {} = {},
     State extends TopicWithChildArrayState = TopicWithChildArrayState,
     ReturnArgs extends {} = {},
-> extends ParentTopic<InitArgs, State, ReturnArgs> {
+> extends Topic<InitArgs, State, ReturnArgs> {
     async removeChild (
         context: BotContext,
         instance: TopicInstance<State>,

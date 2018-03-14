@@ -1,5 +1,5 @@
 export * from './Topic';
-export * from './ParentTopic';
+export * from './parents';
 export * from './Prompt';
 export * from './SimpleForm';
 export * from './prompts';
