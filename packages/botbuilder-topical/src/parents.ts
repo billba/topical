@@ -4,7 +4,7 @@ export interface TopicWithChildState {
     child: string;
 }
 
-export class TopicWithChild <
+export abstract class TopicWithChild <
     InitArgs extends {} = {},
     State extends TopicWithChildState = TopicWithChildState,
     ReturnArgs extends {} = {},
@@ -55,7 +55,7 @@ export interface TopicWithChildArrayState {
     children: string[];
 }
 
-export class TopicWithChildArray <
+export abstract class TopicWithChildArray <
     InitArgs extends {} = {},
     State extends TopicWithChildArrayState = TopicWithChildArrayState,
     ReturnArgs extends {} = {},
