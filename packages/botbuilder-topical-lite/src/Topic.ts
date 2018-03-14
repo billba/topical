@@ -56,9 +56,9 @@ export abstract class Topic <
                 throw "This topic has already returned";
             this.returned = true;
 
-            await this.sendTelemetry(context, 'onChildReturn.begin');
+            // await this.sendTelemetry(context, 'onChildReturn.begin');
             await returnToParent(c, args);
-            await this.sendTelemetry(context, 'onChildReturn.end');
+            // await this.sendTelemetry(context, 'onChildReturn.end');
         }
 
         await this.sendTelemetry(context, 'init.begin');
