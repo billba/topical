@@ -1,15 +1,11 @@
-import { Promiseable, Activity } from 'botbuilder';
+import { Promiseable, Activity, BotContext, ConversationState, Storage } from 'botbuilder';
 import { toPromise, returnsPromiseVoid, Telemetry, TelemetryAction } from './topical';
 
-declare global {
-    interface ConversationState {
-        topical: {
-            instances: {
-                [instanceName: string]: TopicInstance;
-            }
-            rootInstanceName: string;
-        },
+interface TopicalConversationState {
+    instances: {
+        [instanceName: string]: TopicInstance;
     }
+    rootInstanceName: string;
 }
 
 export enum TopicReturn {
@@ -44,7 +40,15 @@ export abstract class Topic <
 > {
     private static topicClasses: {
         [name: string]: Topic;
-    } = {}
+    } = {};
+
+    private static conversationState: ConversationState<TopicalConversationState>;
+
+    static init(
+        storage: Storage,
+    ) {
+        Topic.conversationState = new ConversationState<TopicalConversationState>(storage);
+    }
 
     constructor (
         public name?: string,
@@ -77,7 +81,7 @@ export abstract class Topic <
 
         await this.sendTelemetry(context, newInstance, 'init.begin');
 
-        context.state.conversation.topical.instances[newInstance.name] = newInstance;
+        Topic.conversationState.get(context).instances[newInstance.name] = newInstance;
 
         await toPromise(this.init(context, newInstance, args));
 
@@ -103,7 +107,7 @@ export abstract class Topic <
         context: BotContext,
         arg: TopicInstance | string,
     ) {
-        delete context.state.conversation.topical.instances[typeof arg === 'string'
+        delete Topic.conversationState.get(context).instances[typeof arg === 'string'
             ? arg
             : arg.name
         ];
@@ -112,17 +116,20 @@ export abstract class Topic <
     static rootInstanceName(
         context: BotContext,
     ) {
-        return context.state.conversation.topical
-            ? context.state.conversation.topical.rootInstanceName
-            : undefined;
+        return Topic.conversationState.get(context).rootInstanceName;
     }
 
     static async do (
         context: BotContext,
         getRootInstanceName: () => Promise<string>,
     ) {
-        if (context.state.conversation.topical) {
-            const rootInstanceName = context.state.conversation.topical.rootInstanceName;
+        if (!Topic.conversationState)
+            throw "You must call Topic.init before calling Topic.do";
+
+        const topical = await Topic.conversationState.read(context) as TopicalConversationState | Partial<TopicalConversationState>;
+
+        if (topical.rootInstanceName) {
+            const rootInstanceName = topical.rootInstanceName;
             const instance = Topic.getInstanceFromName(context, rootInstanceName);
             const topic = Topic.getTopicFromInstance(instance);
 
@@ -130,7 +137,7 @@ export abstract class Topic <
 
             // garbage collect orphaned instances
 
-            const orphans = { ... context.state.conversation.topical.instances };
+            const orphans = { ... topical.instances };
 
             const deorphanize = (instanceName: string) => {
                 const instance = orphans[instanceName];
@@ -151,23 +158,22 @@ export abstract class Topic <
 
             await topic.sendTelemetry(context, instance, 'endOfTurn');
         } else {
-            context.state.conversation.topical = {
-                instances: {},
-                rootInstanceName: undefined
-            }
-    
-            context.state.conversation.topical.rootInstanceName = await getRootInstanceName();
-            const instance = Topic.getInstanceFromName(context, context.state.conversation.topical.rootInstanceName);
+            topical.instances = {};
+            topical.rootInstanceName = await getRootInstanceName();
+
+            const instance = Topic.getInstanceFromName(context, topical.rootInstanceName);
             const topic = Topic.getTopicFromInstance(instance);
             await topic.sendTelemetry(context, instance, 'assignRootTopic');
-        }    
+        }
+
+        await Topic.conversationState.write(context);
     }
 
     private static getInstanceFromName (
         context: BotContext,
         instanceName: string,
     ) {
-        const instance = context.state.conversation.topical.instances[instanceName];
+        const instance = Topic.conversationState.get(context).instances[instanceName];
 
         if (!instance) {
             console.warn(`Unknown instance ${instanceName}`);

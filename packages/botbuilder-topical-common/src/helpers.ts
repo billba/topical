@@ -1,9 +1,9 @@
-import { Promiseable, isPromised } from "botbuilder";
+import { Promiseable, MiddlewareHandler } from "botbuilder";
 
-export const toPromise = <T> (t: Promiseable<T>) => isPromised(t) ? t : Promise.resolve(t);
+export const toPromise = <T> (t: Promiseable<T>) => (t as any).then ? (t as Promise<T>) : Promise.resolve<T>(t);
 
-export const prettyConsole = {
-    postActivity(c, activities, next) {
+export const prettyConsole: MiddlewareHandler = (context, next) => {
+    context.onSendActivity((_, activities, next) => {
         let first;
 
         for (let activity of activities) {
@@ -22,7 +22,9 @@ export const prettyConsole = {
         }
 
         return next();
-    }
+    });
+
+    return next();
 }
 
 export const returnsPromiseVoid = () => Promise.resolve();

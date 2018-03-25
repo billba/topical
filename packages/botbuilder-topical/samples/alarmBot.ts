@@ -1,21 +1,16 @@
-import { ConsoleAdapter } from 'botbuilder-node';
-import { Bot, MemoryStorage, BotStateManager } from 'botbuilder';
+import { BotContext, MemoryStorage, ConsoleAdapter } from 'botbuilder';
 import { Topic, SimpleForm, TextPromptTopic, TopicInstance, TopicWithChild, prettyConsole, WSTelemetry } from '../src/topical';
 
 // const wst = new WSTelemetry('ws://localhost:8080/server');
 // Topic.telemetry = action => wst.send(action);
 
+Topic.init(new MemoryStorage());
+
 const adapter = new ConsoleAdapter();
 
-adapter.listen();
-
-const bot = new Bot(adapter);
-
-bot
-    .use(new MemoryStorage())
-    .use(new BotStateManager())
+adapter
     .use(prettyConsole)
-    .onReceive(async c => {
+    .listen(async c => {
         await Topic.do(c, () => alarmBotClass.createInstance(c));
     });
 
@@ -44,9 +39,9 @@ class ShowAlarms extends Topic<ShowAlarmInitArgs> {
         args: ShowAlarmInitArgs,
     ) {
         if (args.alarms.length === 0)
-            context.reply(`You haven't set any alarms.`);
+            await context.sendActivity(`You haven't set any alarms.`);
         else
-            context.reply(`You have the following alarms set:\n${listAlarms(args.alarms)}`);
+            await context.sendActivity(`You have the following alarms set:\n${listAlarms(args.alarms)}`);
 
         this.returnToParent(instance);
     }
@@ -75,7 +70,7 @@ interface SimpleFormPromptState {
 const textPromptClass = new TextPromptTopic()
     .maxTurns(100)
     .prompter(async (context, instance) => {
-        context.reply(instance.state.promptState.prompt);
+        await context.sendActivity(instance.state.promptState.prompt);
     });
 
 class DeleteAlarm extends TopicWithChild<DeleteAlarmInitArgs, DeleteAlarmState, DeleteAlarmReturnArgs> {
@@ -115,7 +110,7 @@ class DeleteAlarm extends TopicWithChild<DeleteAlarmInitArgs, DeleteAlarmState, 
         args: DeleteAlarmInitArgs,
     ) {
         if (args.alarms.length === 0) {
-            context.reply(`You don't have any alarms.`);
+            await context.sendActivity(`You don't have any alarms.`);
             return this.returnToParent(instance);
         }
 
@@ -155,7 +150,7 @@ class AlarmBot extends TopicWithChild<undefined, AlarmBotState, undefined> {
         this
             .onChildReturn(simpleForm, async (context, instance, childInstance) => {
                 instance.state.alarms.push({ ... childInstance.returnArgs.form } as any as Alarm);
-                context.reply(`Alarm successfully added!`);
+                await context.sendActivity(`Alarm successfully added!`);
             })
             .onChildReturn(showAlarms)
             .onChildReturn(deleteAlarmClass, async (context, instance, childInstance) => {
@@ -163,9 +158,9 @@ class AlarmBot extends TopicWithChild<undefined, AlarmBotState, undefined> {
                     instance.state.alarms = instance.state.alarms
                         .filter(alarm => alarm.name !== childInstance.returnArgs.alarmName);
 
-                    context.reply(`Alarm "${childInstance.returnArgs.alarmName}" has been deleted.`)
+                    await context.sendActivity(`Alarm "${childInstance.returnArgs.alarmName}" has been deleted.`)
                 } else {
-                    context.reply(`Okay, the status quo has been preserved.`)
+                    await context.sendActivity(`Okay, the status quo has been preserved.`)
                 }
             })
             .afterChildReturn(async (context, instance, childInstance) => {
@@ -177,7 +172,7 @@ class AlarmBot extends TopicWithChild<undefined, AlarmBotState, undefined> {
         context: BotContext,
         instance: TopicInstance,
     ) {
-        context.reply(`Welcome to Alarm Bot!\n${helpText}`);
+        await context.sendActivity(`Welcome to Alarm Bot!\n${helpText}`);
         instance.state.alarms = [];
     }
 
@@ -185,10 +180,6 @@ class AlarmBot extends TopicWithChild<undefined, AlarmBotState, undefined> {
         context: BotContext,
         instance: TopicInstance<AlarmBotState>,
     ) {
-        if (context.request.type === 'message' && context.request.text === '#orphan') {
-            instance.state.child = undefined;
-        }
-
         if (await this.dispatchToChild(context, instance))
             return;
 
@@ -215,7 +206,7 @@ class AlarmBot extends TopicWithChild<undefined, AlarmBotState, undefined> {
                     alarms: instance.state.alarms
                 }));
             } else {
-                context.reply(helpText);
+                await context.sendActivity(helpText);
             }
         }
     }
