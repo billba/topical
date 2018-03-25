@@ -32,15 +32,17 @@ interface SimpleFormPromptState {
     prompt: string;
 }
 
-export class SimpleForm extends TopicWithChild<SimpleFormInitArgs, SimpleFormState, SimpleFormReturnArgs> {
-    private textPromptClass: TextPromptTopic<SimpleFormPromptState>;
+export class SimpleForm <
+    Context extends BotContext = BotContext
+> extends TopicWithChild<SimpleFormInitArgs, SimpleFormState, SimpleFormReturnArgs, Context> {
+    private textPromptClass: TextPromptTopic<SimpleFormPromptState, Context>;
 
     constructor (
         name?: string
     ) {
         super(name);
 
-        this.textPromptClass = new TextPromptTopic<SimpleFormPromptState>(this.name)
+        this.textPromptClass = new TextPromptTopic<SimpleFormPromptState, Context>(this.name)
             .maxTurns(100)
             .prompter(async (context, instance, result) => {
                 await context.sendActivity(instance.state.promptState.prompt);
@@ -61,7 +63,7 @@ export class SimpleForm extends TopicWithChild<SimpleFormInitArgs, SimpleFormSta
     }
 
     async init(
-        context: BotContext,
+        context: Context,
         instance: TopicInstance<SimpleFormState, SimpleFormReturnArgs>,
         args: SimpleFormInitArgs
     ) {
@@ -72,7 +74,7 @@ export class SimpleForm extends TopicWithChild<SimpleFormInitArgs, SimpleFormSta
     }
 
     async next(
-        context: BotContext,
+        context: Context,
         instance: TopicInstance<SimpleFormState, SimpleFormReturnArgs>,
     ) {
         for (let name of Object.keys(instance.state.schema)) {
@@ -100,7 +102,7 @@ export class SimpleForm extends TopicWithChild<SimpleFormInitArgs, SimpleFormSta
     }
 
     async onReceive(
-        context: BotContext,
+        context: Context,
         instance: TopicInstance<SimpleFormState, SimpleFormReturnArgs>,
     ) {
         if (!await this.dispatchToChild(context, instance))

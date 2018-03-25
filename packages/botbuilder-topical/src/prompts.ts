@@ -1,6 +1,10 @@
 import { Prompt, hasText, hasNumber, Culture } from './topical';
+import { BotContext } from 'botbuilder';
 
-export class TextPromptTopic <State = any> extends Prompt<string, State> {
+export class TextPromptTopic <
+    State = any,
+    Context extends BotContext = BotContext,
+> extends Prompt<string, State, Context> {
     constructor (name?: string) {
         super(name);
 
@@ -8,7 +12,10 @@ export class TextPromptTopic <State = any> extends Prompt<string, State> {
     }
 }
 
-export class NumberPromptTopic <State = any> extends Prompt<number, State> {
+export class NumberPromptTopic <
+    State = any,
+    Context extends BotContext = BotContext,
+> extends Prompt<number, State, Context> {
     constructor (name: string, culture: Culture);
     constructor (culture: Culture);
     constructor (... args) {
