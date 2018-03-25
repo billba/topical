@@ -27,8 +27,8 @@ export class TopicInstance <State = any, ReturnArgs = any> {
     }
 }
 
-export type TopicOnChildReturnHandler <State, ReturnArgs, ChildReturnArgs> = (
-    context: BotContext,
+export type TopicOnChildReturnHandler <State, ReturnArgs, ChildReturnArgs, Context extends BotContext> = (
+    context: Context,
     instance: TopicInstance<State, ReturnArgs>,
     childInstance: TopicInstance<undefined, ChildReturnArgs>,
 ) => Promise<void>;
@@ -37,6 +37,7 @@ export abstract class Topic <
     InitArgs extends {} = {},
     State extends {} = {},
     ReturnArgs extends {} = {},
+    Context extends BotContext = BotContext, 
 > {
     private static topicClasses: {
         [name: string]: Topic;
@@ -73,7 +74,7 @@ export abstract class Topic <
     }
 
     async createInstance (
-        context: BotContext,
+        context: Context,
         parentInstance?: TopicInstance,
         args?: InitArgs,
     ) {
@@ -119,8 +120,8 @@ export abstract class Topic <
         return Topic.conversationState.get(context).rootInstanceName;
     }
 
-    static async do (
-        context: BotContext,
+    static async do <Context extends BotContext = BotContext> (
+        context: Context,
         getRootInstanceName: () => Promise<string>,
     ) {
         if (!Topic.conversationState)
@@ -197,17 +198,17 @@ export abstract class Topic <
     }
 
     async doNext (
-        context: BotContext,
+        context: Context,
         instance: TopicInstance,
     ): Promise<boolean>;
 
     async doNext (
-        context: BotContext,
+        context: Context,
         instanceName: string,
     ): Promise<boolean>;
 
     async doNext (
-        context: BotContext,
+        context: Context,
         arg: TopicInstance | string,
     ) {
         if (!arg)
@@ -228,17 +229,17 @@ export abstract class Topic <
     }
 
     async dispatch (
-        context: BotContext,
+        context: Context,
         instance: TopicInstance,
     ): Promise<boolean>;
 
     async dispatch (
-        context: BotContext,
+        context: Context,
         instanceName: string,
     ): Promise<boolean>;
 
     async dispatch (
-        context: BotContext,
+        context: Context,
         arg: TopicInstance | string,
     ) {
         if (!arg)
@@ -259,8 +260,8 @@ export abstract class Topic <
     }
 
     private async returnedToParent (
-        context: BotContext,
-        instance: TopicInstance<any>,
+        context: Context,
+        instance: TopicInstance,
     ): Promise<boolean> {
         if (instance.return !== TopicReturn.signalled || !instance.parentInstanceName)
             return false;
@@ -289,31 +290,31 @@ export abstract class Topic <
     }
 
     async init (
-        context: BotContext,
+        context: Context,
         instance: TopicInstance<State, ReturnArgs>,
         args?: InitArgs,
     ) {
     }
 
     async next (
-        context: BotContext,
+        context: Context,
         instance: TopicInstance<State, ReturnArgs>,
     ) {
     }
 
     async onReceive (
-        context: BotContext,
+        context: Context,
         instance: TopicInstance<State, ReturnArgs>,
     ) {
     }
 
     private _onChildReturnHandlers: {
-        [topicName: string]: TopicOnChildReturnHandler<any, any, any>;
+        [topicName: string]: TopicOnChildReturnHandler<any, any, any, Context>;
     } = {};
     
     protected onChildReturn <ChildReturnArgs> (
         topic: Topic<any, any, ChildReturnArgs>,
-        handler: TopicOnChildReturnHandler<State, ReturnArgs, ChildReturnArgs> = returnsPromiseVoid
+        handler: TopicOnChildReturnHandler<State, ReturnArgs, ChildReturnArgs, Context> = returnsPromiseVoid
     ) {
         if (this._onChildReturnHandlers[topic.name])
             throw new Error(`An attempt was made to call onChildReturn for topic ${topic.name}. This topic is already handled.`);
@@ -323,10 +324,10 @@ export abstract class Topic <
         return this;
     }
 
-    private _afterChildReturn: TopicOnChildReturnHandler<any, any, any> = returnsPromiseVoid;
+    private _afterChildReturn: TopicOnChildReturnHandler<any, any, any, Context> = returnsPromiseVoid;
 
     protected afterChildReturn <ChildReturnArgs> (
-        handler: TopicOnChildReturnHandler<State, ReturnArgs, any> = returnsPromiseVoid
+        handler: TopicOnChildReturnHandler<State, ReturnArgs, any, Context> = returnsPromiseVoid
     ) {
         this._afterChildReturn = handler;
     }
@@ -334,7 +335,7 @@ export abstract class Topic <
     static telemetry: Telemetry;
 
     private async sendTelemetry (
-        context: BotContext,
+        context: Context,
         instance: TopicInstance,
         type: string,
     ) {
@@ -353,7 +354,7 @@ export abstract class Topic <
     }
 
     listChildren (
-        context: BotContext,
+        context: Context,
         instance: TopicInstance<State, ReturnArgs>
     ): string[] {
         return [];

@@ -9,9 +9,10 @@ export abstract class TopicWithChild <
     InitArgs extends {} = {},
     State extends TopicWithChildState = TopicWithChildState,
     ReturnArgs extends {} = {},
-> extends Topic<InitArgs, State, ReturnArgs> {
+    Context extends BotContext = BotContext, 
+> extends Topic<InitArgs, State, ReturnArgs, Context> {
     clearChild (
-        context: BotContext,
+        context: Context,
         instance: TopicInstance<State>,
     ) {
         if (instance.state.child) {
@@ -21,7 +22,7 @@ export abstract class TopicWithChild <
     }
 
     setChild (
-        context: BotContext,
+        context: Context,
         instance: TopicInstance<State>,
         childInstanceName: string,
     ) {
@@ -31,21 +32,21 @@ export abstract class TopicWithChild <
     }
 
     hasChild (
-        context: BotContext,
+        context: Context,
         instance: TopicInstance<State>,
     ) {
         return !!instance.state.child;
     }
 
     async dispatchToChild (
-        context: BotContext,
+        context: Context,
         instance: TopicInstance<State>,
     ) {
         return this.dispatch(context, instance.state.child);
     }
 
     listChildren (
-        context: BotContext,
+        context: Context,
         instance: TopicInstance<State>,
     ) {
         return instance.state.child ? [instance.state.child] : [];
@@ -60,9 +61,10 @@ export abstract class TopicWithChildArray <
     InitArgs extends {} = {},
     State extends TopicWithChildArrayState = TopicWithChildArrayState,
     ReturnArgs extends {} = {},
-> extends Topic<InitArgs, State, ReturnArgs> {
+    Context extends BotContext = BotContext,
+> extends Topic<InitArgs, State, ReturnArgs, Context> {
     async removeChild (
-        context: BotContext,
+        context: Context,
         instance: TopicInstance<State>,
         childInstance: TopicInstance
     ) {
@@ -71,14 +73,14 @@ export abstract class TopicWithChildArray <
     }
 
     async init (
-        context: BotContext,
+        context: Context,
         instance: TopicInstance<State>,
     ) {
         instance.state.children = [];
     }
 
     listChildren (
-        context: BotContext,
+        context: Context,
         instance: TopicInstance<State>,
     ) {
         return instance.state.children;

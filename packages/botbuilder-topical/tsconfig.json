@@ -53,6 +53,7 @@
     "files": [
       "src/topical",
       "samples/alarmBot",
+      "samples/customContext",
     ]
   }
   

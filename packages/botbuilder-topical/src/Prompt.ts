@@ -18,15 +18,19 @@ export interface PromptReturnArgs <V> {
     result: ValidatorResult<V>;
 }
 
-export type Prompter <V, S = any> = (
-    context: BotContext,
+export type Prompter <V, S = any, Context extends BotContext = BotContext> = (
+    context: Context,
     instance: TopicInstance<PromptState<S>, PromptReturnArgs<V>>,
     result?: ValidatorResult<V>
 ) => Promise<void>;
 
-export class Prompt <V, S = any> extends Topic<PromptInitArgs<S>, PromptState<S>, PromptReturnArgs<V>> {
+export class Prompt <
+    V = any,
+    S = any,
+    Context extends BotContext = BotContext,
+> extends Topic<PromptInitArgs<S>, PromptState<S>, PromptReturnArgs<V>, Context> {
     async init (
-        context: BotContext,
+        context: Context,
         instance: TopicInstance<PromptState<S>, PromptReturnArgs<V>>,
         args: PromptInitArgs<S>,
     ) {
@@ -39,7 +43,7 @@ export class Prompt <V, S = any> extends Topic<PromptInitArgs<S>, PromptState<S>
     }
 
     async onReceive (
-        context: BotContext,
+        context: Context,
         instance: TopicInstance<PromptState<S>, PromptReturnArgs<V>>,
     ) {
         const result = await this._validator.validate(context.request as Activity);
@@ -71,11 +75,11 @@ export class Prompt <V, S = any> extends Topic<PromptInitArgs<S>, PromptState<S>
         return this;
     }
 
-    protected _prompter?: Prompter<V, S> = () => {
+    protected _prompter?: Prompter<V, S, Context> = () => {
         throw "You must provide a prompt function";
     }
     
-    public prompter(prompt: Prompter<V, S>) {
+    public prompter (prompt: Prompter<V, S, Context>) {
         this._prompter = (context, instance, result) => toPromise(prompt(context, instance, result));
 
         return this;
