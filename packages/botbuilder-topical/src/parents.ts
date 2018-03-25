@@ -1,4 +1,5 @@
 import { Topic, TopicInstance } from './topical';
+import { BotContext } from 'botbuilder';
 
 export interface TopicWithChildState {
     child: string;

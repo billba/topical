@@ -1,4 +1,5 @@
 import { Topic, TopicInstance, TextPromptTopic, TopicWithChild } from './topical';
+import { BotContext } from 'botbuilder';
 
 export interface SimpleFormMetadata {
     type: 'string';
@@ -42,7 +43,7 @@ export class SimpleForm extends TopicWithChild<SimpleFormInitArgs, SimpleFormSta
         this.textPromptClass = new TextPromptTopic<SimpleFormPromptState>(this.name)
             .maxTurns(100)
             .prompter(async (context, instance, result) => {
-                context.reply(instance.state.promptState.prompt);
+                await context.sendActivity(instance.state.promptState.prompt);
             });
 
         this

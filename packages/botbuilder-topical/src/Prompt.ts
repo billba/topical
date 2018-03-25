@@ -1,4 +1,4 @@
-import { Promiseable, Activity } from 'botbuilder';
+import { Promiseable, Activity, BotContext } from 'botbuilder';
 import { Topic, TopicInstance } from "./topical";
 import { toPromise, returnsPromiseVoid, Validator, ValidatorResult } from 'botbuilder-topical-common';
 

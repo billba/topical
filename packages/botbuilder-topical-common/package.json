@@ -1,6 +1,6 @@
 {
   "name": "botbuilder-topical-common",
-  "version": "0.7.0",
+  "version": "0.8.3",
   "description": "Shared functionality for botbuilder-topical-*",
   "main": "lib/topical-common.js",
   "types": "lib/topical-common.d.ts",
@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@microsoft/recognizers-text-suite": "^1.0.0",
-    "botbuilder": "^4.0.0-m1.4",
+    "botbuilder": "^4.0.0-m2.1",
     "ws": "^5.0.0"
   }
 }

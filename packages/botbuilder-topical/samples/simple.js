@@ -1,24 +1,17 @@
-import { ConsoleAdapter } from 'botbuilder-node';
-import { Bot, MemoryStorage, BotStateManager } from 'botbuilder';
-import { TopicClass } from '../src/topical'; // from 'botbuilder-topical'
+const { MemoryStorage, ConsoleAdapter } = require('botbuilder');
+const { Topic, TopicWithChild } = require ('../lib/src/topical.js');
+
+Topic.init(new MemoryStorage());
 
 const adapter = new ConsoleAdapter();
 
-adapter.listen();
-
-const bot = new Bot(adapter);
-
-bot
-    .use(new MemoryStorage())
-    .use(new BotStateManager())
-
-bot.onReceive(async context => {
-    await TopicClass.do(context, () => rootTopicClass.createInstance(context))
+adapter.listen(async context => {
+    await Topic.do(context, () => rootTopic.createInstance(context))
 });
         
-class ChildTopicClass extends TopicClass {
+class ChildTopic extends Topic {
     async init(context, instance, args) {
-        context.reply(`Welcome to the child topic!\nWhat multiple of ${args["foo"]} do you want to return?`);
+        await context.sendActivity(`Welcome to the child topic!\nWhat multiple of ${args["foo"]} do you want to return?`);
     }
 
     async onReceive(context, instance) {
@@ -27,7 +20,7 @@ class ChildTopicClass extends TopicClass {
         const num = Number.parseInt(text);
 
         if (Number.isNaN(num))
-            context.reply(`Please supply a number.`);
+            context.sendActivity(`Please supply a number.`);
         else
             this.returnToParent(instance, {
                 num
@@ -35,11 +28,21 @@ class ChildTopicClass extends TopicClass {
     }
 }
 
-const childTopicClass = new TopicClass('childTopic');
+const childTopic = new ChildTopic();
 
-class RootTopicClass extends TopicClass {
+class RootTopic extends TopicWithChild {
+    constructor(name) {
+        super(name);
+
+        this
+            .onChildReturn(childTopic, async (context, instance, childInstance) => {
+                await context.sendActivity(`13 * ${childInstance.returnArgs.num} = ${13 * childInstance.returnArgs.num}`);
+                this.clearChild(context, instance);
+            });
+    }
+
     async init(context) {
-        context.reply(`Welcome to my root topic!`);
+        await context.sendActivity(`Welcome to my root topic!`);
     }
     
     async onReceive(context, instance) {
@@ -47,31 +50,26 @@ class RootTopicClass extends TopicClass {
 
         if (text === 'end child') {
             if (instance.state.child) {
-                instance.state.child = undefined;
-                context.reply(`I have ended the child topic.`);
+                this.clearChild(context, instance);
+                context.sendActivity(`I have ended the child topic.`);
             } else {
-                context.reply(`There is no child to end`);
+                context.sendActivity(`There is no child to end`);
             }
             return;
         }
 
-        if (await this.dispatch(context, instance.state.child))
+        if (await this.dispatchToChild(context, instance))
             return;
 
         if (text === 'start child') {
-            topicContext.instance.state.child = await childTopicClass.createInstance(context, instance, {
+            this.setChild(context, instance, await childTopic.createInstance(context, instance, {
                 foo: 13
-            });
+            }));
             return;
         }
 
-        context.reply(`Try "start child" or "end child".`);
-    }
-
-    async onChildReturn(context, instance, childInstance) {
-        context.reply(`13 * ${childInstance.returnArgs.num} = ${13 * childInstance.returnArgs.num}`);
-        instance.state.child = undefined;
+        await context.sendActivity(`Try "start child" or "end child".`);
     }
 }
 
-const rootTopicClass = new TopicClass('rootTopic')
+const rootTopic = new RootTopic()
