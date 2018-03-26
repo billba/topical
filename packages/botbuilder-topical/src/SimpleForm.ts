@@ -1,4 +1,4 @@
-import { Topic, TopicInstance, TextPromptTopic, TopicWithChild } from './topical';
+import { Topic, TopicInstance, TextPrompt, TopicWithChild } from './topical';
 import { BotContext } from 'botbuilder';
 
 export interface SimpleFormMetadata {
@@ -35,21 +35,21 @@ interface SimpleFormPromptState {
 export class SimpleForm <
     Context extends BotContext = BotContext
 > extends TopicWithChild<SimpleFormInitArgs, SimpleFormState, SimpleFormReturnArgs, Context> {
-    private textPromptClass: TextPromptTopic<SimpleFormPromptState, Context>;
+    private textPrompt: TextPrompt<SimpleFormPromptState, Context>;
 
     constructor (
         name?: string
     ) {
         super(name);
 
-        this.textPromptClass = new TextPromptTopic<SimpleFormPromptState, Context>(this.name)
+        this.textPrompt = new TextPrompt<SimpleFormPromptState, Context>(this.name)
             .maxTurns(100)
             .prompter(async (context, instance, result) => {
                 await context.sendActivity(instance.state.promptState.prompt);
             });
 
         this
-            .onChildReturn(this.textPromptClass, async (context, instance, childInstance) => {
+            .onChildReturn(this.textPrompt, async (context, instance, childInstance) => {
                 const metadata = instance.state.schema[childInstance.returnArgs.name];
         
                 if (metadata.type !== 'string')
@@ -84,7 +84,7 @@ export class SimpleForm <
                 if (metadata.type !== 'string')
                     throw `not expecting type "${metadata.type}"`;
 
-                this.setChild(context, instance, await this.textPromptClass.createInstance(context, instance, {
+                this.setChild(context, instance, await this.textPrompt.createInstance(context, instance, {
                     name,
                     promptState: {
                         prompt: metadata.prompt,
