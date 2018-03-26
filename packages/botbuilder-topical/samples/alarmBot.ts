@@ -1,5 +1,5 @@
 import { BotContext, MemoryStorage, ConsoleAdapter } from 'botbuilder';
-import { Topic, SimpleForm, TextPromptTopic, TopicInstance, TopicWithChild, prettyConsole, WSTelemetry } from '../src/topical';
+import { Topic, SimpleForm, TextPrompt, TopicInstance, TopicWithChild, prettyConsole, WSTelemetry } from '../src/topical';
 
 // const wst = new WSTelemetry('ws://localhost:8080/server');
 // Topic.telemetry = action => wst.send(action);
@@ -67,7 +67,7 @@ interface SimpleFormPromptState {
     prompt: string;
 }
 
-const textPromptClass = new TextPromptTopic()
+const textPrompt = new TextPrompt()
     .maxTurns(100)
     .prompter(async (context, instance) => {
         await context.sendActivity(instance.state.promptState.prompt);
@@ -78,11 +78,11 @@ class DeleteAlarm extends TopicWithChild<DeleteAlarmInitArgs, DeleteAlarmState, 
         super(name);
 
         this
-            .onChildReturn(textPromptClass, async (context, instance, childInstance) => {
+            .onChildReturn(textPrompt, async (context, instance, childInstance) => {
                 switch (childInstance.returnArgs.name) {
                     case 'whichAlarm':
                         instance.state.alarmName = childInstance.returnArgs.result.value;
-                        this.setChild(context, instance, await textPromptClass.createInstance(context, instance, {
+                        this.setChild(context, instance, await textPrompt.createInstance(context, instance, {
                             name: 'confirm',
                             promptState: {
                                 prompt: `Are you sure you want to delete alarm "${childInstance.returnArgs.result.value}"? (yes/no)"`,
@@ -116,7 +116,7 @@ class DeleteAlarm extends TopicWithChild<DeleteAlarmInitArgs, DeleteAlarmState, 
 
         instance.state.alarms = args.alarms;
 
-        this.setChild(context, instance, await textPromptClass.createInstance(context, instance, {
+        this.setChild(context, instance, await textPrompt.createInstance(context, instance, {
             name: 'whichAlarm',
             promptState: {
                 prompt: `Which alarm do you want to delete?\n${listAlarms(instance.state.alarms)}`,
@@ -132,7 +132,7 @@ class DeleteAlarm extends TopicWithChild<DeleteAlarmInitArgs, DeleteAlarmState, 
     }
 }
 
-const deleteAlarmClass = new DeleteAlarm();
+const deleteAlarm = new DeleteAlarm();
 
 interface AlarmBotState {
     child: string;
@@ -153,7 +153,7 @@ class AlarmBot extends TopicWithChild<undefined, AlarmBotState, undefined> {
                 await context.sendActivity(`Alarm successfully added!`);
             })
             .onChildReturn(showAlarms)
-            .onChildReturn(deleteAlarmClass, async (context, instance, childInstance) => {
+            .onChildReturn(deleteAlarm, async (context, instance, childInstance) => {
                 if (childInstance.returnArgs) {
                     instance.state.alarms = instance.state.alarms
                         .filter(alarm => alarm.name !== childInstance.returnArgs.alarmName);
@@ -202,7 +202,7 @@ class AlarmBot extends TopicWithChild<undefined, AlarmBotState, undefined> {
                     alarms: instance.state.alarms
                 }));
             } else if (/delete|remove/i.test(context.request.text)) {
-                this.setChild(context, instance, await deleteAlarmClass.createInstance(context, instance, {
+                this.setChild(context, instance, await deleteAlarm.createInstance(context, instance, {
                     alarms: instance.state.alarms
                 }));
             } else {

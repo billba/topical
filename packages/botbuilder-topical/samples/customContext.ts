@@ -1,5 +1,5 @@
 import { BotContext, MemoryStorage, ConsoleAdapter } from 'botbuilder';
-import { Topic, SimpleForm, TextPromptTopic, TopicInstance, TopicWithChild, prettyConsole, WSTelemetry } from '../src/topical';
+import { Topic, SimpleForm, TextPrompt, TopicInstance, TopicWithChild, prettyConsole, WSTelemetry } from '../src/topical';
 
 // const wst = new WSTelemetry('ws://localhost:8080/server');
 // Topic.telemetry = action => wst.send(action);
@@ -37,7 +37,7 @@ class Child extends Topic<any, any, any, CustomContext> {
 
 const child = new Child();
 
-const prompt = new TextPromptTopic<string, CustomContext>()
+const prompt = new TextPrompt<string, CustomContext>()
     .prompter(async (context, instance, args) => {
         await context.sendActivity(context.foo);
         await context.sendActivity(instance.state.promptState);
