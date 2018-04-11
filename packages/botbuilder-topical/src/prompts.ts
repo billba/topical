@@ -1,26 +1,18 @@
-import { Prompt, hasText, hasNumber, Culture } from './topical';
+import { Prompt, hasText, hasNumber, Culture, PromptInit } from './topical';
 import { BotContext } from 'botbuilder';
 
-export class TextPrompt <
+export abstract class TextPrompt <
     State = any,
     Context extends BotContext = BotContext,
 > extends Prompt<string, State, Context> {
-    constructor (name?: string) {
-        super(name);
-
-        this.validator(hasText);
-    }
+    validator = hasText;
 }
 
-export class NumberPrompt <
+export abstract class NumberPrompt <
     State = any,
     Context extends BotContext = BotContext,
 > extends Prompt<number, State, Context> {
-    constructor (name: string, culture: Culture);
-    constructor (culture: Culture);
-    constructor (... args) {
-        super(typeof args[0] === 'string' && args[0]);
+    abstract culture: Culture;
 
-        this.validator(hasNumber(args[typeof args[0] === 'string' ? 1 : 0]));
-    }
+    validator = hasNumber(this.culture); // <-- I have concerns about this
 }

@@ -1,8 +1,8 @@
 import { Promiseable, Activity, BotContext } from 'botbuilder';
-import { Topic, TopicInstance } from "./topical";
+import { Topic } from "./topical";
 import { toPromise, returnsPromiseVoid, Validator, ValidatorResult } from 'botbuilder-topical-common';
 
-export interface PromptInitArgs <S> {
+export interface PromptInit <S> {
     name: string;
     promptState: S;
 }
@@ -13,50 +13,40 @@ export interface PromptState <S> {
     promptState: S;
 }
 
-export interface PromptReturnArgs <V> {
+export interface PromptReturn <V> {
     name: string;
     result: ValidatorResult<V>;
 }
 
-export type Prompter <V, S = any, Context extends BotContext = BotContext> = (
-    context: Context,
-    instance: TopicInstance<PromptState<S>, PromptReturnArgs<V>>,
-    result?: ValidatorResult<V>
-) => Promise<void>;
-
-export class Prompt <
+export abstract class Prompt <
     V = any,
     S = any,
     Context extends BotContext = BotContext,
-> extends Topic<PromptInitArgs<S>, PromptState<S>, PromptReturnArgs<V>, Context> {
+> extends Topic<PromptInit<S>, PromptState<S>, PromptReturn<V>, Context> {
     async init (
-        context: Context,
-        instance: TopicInstance<PromptState<S>, PromptReturnArgs<V>>,
-        args: PromptInitArgs<S>,
+        args: PromptInit<S>,
     ) {
-         instance.state = {
+         this.state = {
             name: args.name,
             turns: 0,
             promptState: args.promptState,
         }
-            await this._prompter(context, instance);
+
+        await this.prompter();
     }
 
-    async onReceive (
-        context: Context,
-        instance: TopicInstance<PromptState<S>, PromptReturnArgs<V>>,
-    ) {
-        const result = await this._validator.validate(context.request as Activity);
+    async onTurn () {
+        const result = await this.validator.validate(this.context.request);
 
         if (!result.reason)
-            return this.returnToParent(instance, {
-                name: instance.state.name,
+            return this.returnToParent({
+                name: this.state.name,
                 result
             });
 
-        if (++ instance.state.turns === this._maxTurns) {
-            return this.returnToParent(instance, {
-                name: instance.state.name,
+        if (++ this.state.turns === this.maxTurns) {
+            return this.returnToParent({
+                name: this.state.name,
                 result: {
                     value: result.value,
                     reason: 'too_many_attempts',
@@ -64,33 +54,12 @@ export class Prompt <
             });
         }
 
-        return this._prompter(context, instance, result);
+        return this.prompter(result);
     }
 
-    protected _maxTurns: number = 2;
+    maxTurns = 2;
+ 
+    abstract async prompter (result?: ValidatorResult<V>): Promise<void>;
 
-    public maxTurns(maxTurns: number) {
-        this._maxTurns = maxTurns;
-
-        return this;
-    }
-
-    protected _prompter?: Prompter<V, S, Context> = () => {
-        throw "You must provide a prompt function";
-    }
-    
-    public prompter (prompt: Prompter<V, S, Context>) {
-        this._prompter = (context, instance, result) => toPromise(prompt(context, instance, result));
-
-        return this;
-    }
-
-    protected _validator: Validator<V> = new Validator(() => {
-        throw "You must provide a validator";
-    })
-
-    public validator(validator: Validator<V>) {
-        this._validator = validator;
-        return this;
-    }
+    abstract validator: Validator<V>;
 }

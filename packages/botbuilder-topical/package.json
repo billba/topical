@@ -12,7 +12,8 @@
   "author": "Bill Barnes",
   "license": "MIT",
   "devDependencies": {
-    "typescript": "^2.7.2"
+    "typescript": "^2.8.1",
+    "nodemon": "1.17.3"
   },
   "dependencies": {
     "@microsoft/recognizers-text-suite": "^1.0.0",
