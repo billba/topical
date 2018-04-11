@@ -4,13 +4,13 @@ import { toPromise, returnsPromiseVoid, Validator, ValidatorResult } from 'botbu
 
 export interface PromptInit <S> {
     name: string;
-    promptState: S;
+    args: S;
 }
 
 export interface PromptState <S> {
     name: string;
     turns: number;
-    promptState: S;
+    args: S;
 }
 
 export interface PromptReturn <V> {
@@ -21,15 +21,16 @@ export interface PromptReturn <V> {
 export abstract class Prompt <
     V = any,
     S = any,
+    Construct = any,
     Context extends BotContext = BotContext,
-> extends Topic<PromptInit<S>, PromptState<S>, PromptReturn<V>, Context> {
+> extends Topic<PromptInit<S>, PromptState<S>, PromptReturn<V>, Construct, Context> {
     async init (
         args: PromptInit<S>,
     ) {
          this.state = {
             name: args.name,
             turns: 0,
-            promptState: args.promptState,
+            args: args.args,
         }
 
         await this.prompter();

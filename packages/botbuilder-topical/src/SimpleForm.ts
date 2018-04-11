@@ -1,8 +1,8 @@
-import { Topic, TopicInstance, TextPrompt, TopicWithChild } from './topical';
+import { Topic, TextPrompt, TopicWithChild, ValidatorResult } from './topical';
 import { BotContext } from 'botbuilder';
 
 export interface SimpleFormMetadata {
-    type: 'string';
+    type: string;
     prompt: string;
 }
 
@@ -20,11 +20,11 @@ export interface SimpleFormState {
     child: string;
 }
 
-export interface SimpleFormInitArgs {
+export interface SimpleFormInit {
     schema: SimpleFormSchema
 }
 
-export interface SimpleFormReturnArgs {
+export interface SimpleFormReturn {
     form: SimpleFormData;
 }
 
@@ -32,80 +32,67 @@ interface SimpleFormPromptState {
     prompt: string;
 }
 
-export class SimpleForm <
-    Context extends BotContext = BotContext
-> extends TopicWithChild<SimpleFormInitArgs, SimpleFormState, SimpleFormReturnArgs, Context> {
-    private textPrompt: TextPrompt<SimpleFormPromptState, Context>;
+class PromptForValue extends TextPrompt<SimpleFormPromptState> {
 
-    constructor (
-        name?: string
-    ) {
-        super(name);
+    maxTurns = 100;
 
-        this.textPrompt = new TextPrompt<SimpleFormPromptState, Context>(this.name)
-            .maxTurns(100)
-            .prompter(async (context, instance, result) => {
-                await context.sendActivity(instance.state.promptState.prompt);
-            });
-
-        this
-            .onChildReturn(this.textPrompt, async (context, instance, childInstance) => {
-                const metadata = instance.state.schema[childInstance.returnArgs.name];
-        
-                if (metadata.type !== 'string')
-                    throw `not expecting type "${metadata.type}"`;
-        
-                instance.state.form[childInstance.returnArgs.name] = childInstance.returnArgs.result.value;
-                this.clearChild(context, instance);
-
-                await this.doNext(context, instance.name);
-            });
+    async prompter(result: ValidatorResult<string>) {
+        await this.context.sendActivity(this.state.args.prompt);
     }
+}
+
+export class SimpleForm extends TopicWithChild<SimpleFormInit, SimpleFormState, SimpleFormReturn> {
 
     async init(
-        context: Context,
-        instance: TopicInstance<SimpleFormState, SimpleFormReturnArgs>,
-        args: SimpleFormInitArgs
+        args: SimpleFormInit,
     ) {
-        instance.state.schema = args.schema;
-        instance.state.form = {};
+        this.state.schema = args.schema;
+        this.state.form = {};
 
-        await this.doNext(context, instance);
+        await this.next();
     }
 
-    async next(
-        context: Context,
-        instance: TopicInstance<SimpleFormState, SimpleFormReturnArgs>,
-    ) {
-        for (let name of Object.keys(instance.state.schema)) {
-            if (!instance.state.form[name]) {
-                const metadata = instance.state.schema[name];
+    async next () {
+        for (let name of Object.keys(this.state.schema)) {
+            if (!this.state.form[name]) {
+                const metadata = this.state.schema[name];
 
                 if (metadata.type !== 'string')
                     throw `not expecting type "${metadata.type}"`;
 
-                this.setChild(context, instance, await this.textPrompt.createInstance(context, instance, {
+                this.createChild(PromptForValue, {
                     name,
-                    promptState: {
+                    args: {
                         prompt: metadata.prompt,
                     },
-                }));
+                });
                 break;
             }
         }
 
-        if (!this.hasChild(context, instance)) {
-            this.returnToParent(instance, {
-                form: instance.state.form
+        if (!this.hasChild()) {
+            this.returnToParent({
+                form: this.state.form
             });
         }
     }
 
-    async onReceive(
-        context: Context,
-        instance: TopicInstance<SimpleFormState, SimpleFormReturnArgs>,
-    ) {
-        if (!await this.dispatchToChild(context, instance))
+    async onReceive() {
+        if (!await this.dispatchToChild())
             throw "a prompt should always be active";
+    }
+
+    async onChildReturn(child: Topic) {
+        if (child instanceof PromptForValue) {
+            const metadata = this.state.schema[child.returnArgs.name];
+
+            if (metadata.type !== 'string')
+                throw `not expecting type "${metadata.type}"`;
+
+            this.state.form[child.returnArgs.name] = child.returnArgs.result.value!;
+            this.clearChild();
+
+            await this.next();
+        }
     }
 }

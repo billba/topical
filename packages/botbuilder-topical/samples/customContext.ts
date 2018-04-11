@@ -1,5 +1,5 @@
 import { BotContext, MemoryStorage, ConsoleAdapter } from 'botbuilder';
-import { Topic, SimpleForm, TextPrompt, TopicInstance, TopicWithChild, prettyConsole, WSTelemetry } from '../src/topical';
+import { Topic, SimpleForm, TextPrompt, TopicWithChild, prettyConsole, WSTelemetry } from '../src/topical';
 
 // const wst = new WSTelemetry('ws://localhost:8080/server');
 // Topic.telemetry = action => wst.send(action);
@@ -21,60 +21,51 @@ adapter
     .use(prettyConsole)
     .listen(async context => {
         const customContext = new CustomContext(context);
-        await Topic.do(customContext, () => foo.createInstance(customContext));
+        await Topic.do(customContext, () => Foo.create(customContext));
     });
 
 
-class Child extends Topic<any, any, any, CustomContext> {
+class Child extends Topic<any, any, any, any, CustomContext> {
     async init(
-        context: CustomContext,
-        instance: TopicInstance
     ) {
-        await context.sendActivity(context.foo);
-        this.returnToParent(instance);
+        await this.context.sendActivity(this.context.foo);
+        this.returnToParent();
     }
 }
 
-const child = new Child();
+Child.register();
 
-const prompt = new TextPrompt<string, CustomContext>()
-    .prompter(async (context, instance, args) => {
-        await context.sendActivity(context.foo);
-        await context.sendActivity(instance.state.promptState);
-    });
+class PromptForText extends TextPrompt<string, CustomContext> {
+    async prompter() {
+        await this.context.sendActivity(this.context.foo);
+        await this.context.sendActivity(this.state.args);
+    }
+}
 
-class Foo extends TopicWithChild<any, any, any, CustomContext> {
-    constructor(name?: string) {
-        super(name);
+PromptForText.register();
 
-        this
-            .onChildReturn(child, async (context, instance, childInstance) => {
-                await context.sendActivity(context.foo);
-                this.setChild(context, instance, await prompt.createInstance(context, instance, {
-                    name: 'name',
-                    promptState: 'Wassup?',
-                }));
-            })
-            .onChildReturn(prompt, async (context, instance, childInstance) => {
-                console.log("I got here");
-                await context.sendActivity(`You said ${childInstance.returnArgs.result.value}`);
-                this.clearChild(context, instance);
+class Foo extends TopicWithChild<any, any, any, any, CustomContext> {
+    async onChildReturn(child: Topic) {
+        if (child instanceof Child) {
+            await this.context.sendActivity(this.context.foo);
+            this.createChild(PromptForText, {
+                name: 'name',
+                args: 'Wassup?',
             });
+        } else if (child instanceof PromptForText) {
+            console.log("I got here");
+            await this.context.sendActivity(`You said ${child.returnArgs.result.value}`);
+            this.clearChild();
+        }
     }
 
-    async init(
-        context: CustomContext,
-        instance: TopicInstance
-    ) {
-        this.setChild(context, instance, await child.createInstance(context, instance));
+    async init() {
+        this.createChild(Child);
     }
 
-    async onReceive(
-        context: CustomContext,
-        instance: TopicInstance
-    ) {  
-        await this.dispatchToChild(context, instance);
+    async onTurn() {  
+        await this.dispatchToChild();
     }
 }
 
-const foo = new Foo();
+Foo.register();

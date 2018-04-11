@@ -1,18 +1,19 @@
-import { Topic } from './topical';
+import { Topic, Topicable } from './topical';
 import { BotContext } from 'botbuilder';
 
 export interface TopicWithChildState {
-    child: string;
+    child?: string;
 }
 
 export abstract class TopicWithChild <
     InitArgs extends {} = {},
     State extends TopicWithChildState = TopicWithChildState,
     ReturnArgs extends {} = {},
+    Construct extends {} = {},
     Context extends BotContext = BotContext, 
-> extends Topic<InitArgs, State, ReturnArgs, Context> {
-    clearChild (
-    ) {
+> extends Topic<InitArgs, State, ReturnArgs, Construct, Context> {
+
+    clearChild () {
         if (this.state.child) {
             Topic.deleteInstance(this.context, this.state.child);
             this.state.child = undefined;
@@ -27,8 +28,20 @@ export abstract class TopicWithChild <
         this.state.child = childInstanceName;
     }
 
-    hasChild (
+    async createChild <
+        T extends Topicable<Init, State, any, Construct, Context>,
+        Init,
+        State,
+        Construct,
+    > (
+        topicClass: T,
+        args?: Init,
+        construct?: Construct,
     ) {
+        this.setChild(await (topicClass as any).create(this, args));
+    }
+
+    hasChild () {
         return !!this.state.child;
     }
 
@@ -49,6 +62,7 @@ export abstract class TopicWithChildArray <
     InitArgs extends {} = {},
     State extends TopicWithChildArrayState = TopicWithChildArrayState,
     ReturnArgs extends {} = {},
+    Construct extends {} = {},
     Context extends BotContext = BotContext,
 > extends Topic<InitArgs, State, ReturnArgs, Context> {
     async removeChild (
