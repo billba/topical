@@ -13,14 +13,14 @@ export abstract class TopicWithChild <
     Context extends BotContext = BotContext, 
 > extends Topic<InitArgs, State, ReturnArgs, Construct, Context> {
 
-    clearChild () {
+    public clearChild () {
         if (this.state.child) {
             Topic.deleteInstance(this.context, this.state.child);
             this.state.child = undefined;
         }
     }
 
-    setChild (
+    public setChild (
         childInstanceName: string,
     ) {
         if (this.state.child)
@@ -29,9 +29,8 @@ export abstract class TopicWithChild <
     }
 
     async createChild <
-        T extends Topicable<Init, State, any, Construct, Context>,
+        T extends Topicable<Init, any, any, Construct, Context>,
         Init,
-        State,
         Construct,
     > (
         topicClass: T,
@@ -41,15 +40,15 @@ export abstract class TopicWithChild <
         this.setChild(await (topicClass as any).create(this, args));
     }
 
-    hasChild () {
+    public hasChild () {
         return !!this.state.child;
     }
 
-    async dispatchToChild () {
+    public async dispatchToChild () {
         return this.dispatchTo(this.state.child);
     }
 
-    listChildren () {
+    public listChildren () {
         return this.state.child ? [this.state.child] : [];
     }
 }
@@ -65,18 +64,18 @@ export abstract class TopicWithChildArray <
     Construct extends {} = {},
     Context extends BotContext = BotContext,
 > extends Topic<InitArgs, State, ReturnArgs, Context> {
-    async removeChild (
+    public async removeChild (
         child: string,
     ) {
         Topic.deleteInstance(this.context, child);
         this.state.children = this.state.children.filter(_child => _child !== child);
     }
 
-    async init () {
+    public async onBegin () {
         this.state.children = [];
     }
 
-    listChildren () {
+    public listChildren () {
         return this.state.children;
     }
 }

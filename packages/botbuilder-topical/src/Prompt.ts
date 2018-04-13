@@ -2,15 +2,15 @@ import { Promiseable, Activity, BotContext } from 'botbuilder';
 import { Topic } from "./topical";
 import { toPromise, returnsPromiseVoid, Validator, ValidatorResult } from 'botbuilder-topical-common';
 
-export interface PromptInit <S> {
+export interface PromptInit <PromptArgs> {
     name: string;
-    args: S;
+    args: PromptArgs;
 }
 
-export interface PromptState <S> {
+export interface PromptState <PromptArgs> {
     name: string;
     turns: number;
-    args: S;
+    args: PromptArgs;
 }
 
 export interface PromptReturn <V> {
@@ -20,12 +20,13 @@ export interface PromptReturn <V> {
 
 export abstract class Prompt <
     V = any,
-    S = any,
+    PromptArgs = any,
     Construct = any,
     Context extends BotContext = BotContext,
-> extends Topic<PromptInit<S>, PromptState<S>, PromptReturn<V>, Construct, Context> {
-    async init (
-        args: PromptInit<S>,
+> extends Topic<PromptInit<PromptArgs>, PromptState<PromptArgs>, PromptReturn<V>, Construct, Context> {
+
+    async onBegin (
+        args: PromptInit<PromptArgs>,
     ) {
          this.state = {
             name: args.name,
@@ -37,6 +38,7 @@ export abstract class Prompt <
     }
 
     async onTurn () {
+
         const result = await this.validator.validate(this.context.request);
 
         if (!result.reason)
@@ -58,7 +60,7 @@ export abstract class Prompt <
         return this.prompter(result);
     }
 
-    maxTurns = 2;
+    maxTurns = 3;
  
     abstract async prompter (result?: ValidatorResult<V>): Promise<void>;
 

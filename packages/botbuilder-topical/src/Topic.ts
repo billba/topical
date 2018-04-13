@@ -15,14 +15,14 @@ interface Topical {
     rootInstanceName: string;
 }
 
-export enum TopicReturn {
+enum TopicReturnStatus {
     noReturn,
     signalled,
     succeeded,
 }
 
 export interface Topicable <
-    Init extends {} = {},
+    Begin extends {} = {},
     State extends {} = {},
     Return extends {} = {},
     Construct extends {} = {},
@@ -30,46 +30,52 @@ export interface Topicable <
 > {
     new (
         construct: Construct,
-    ): Topic<Init, State, Return, Construct, Context>;
+    ): Topic<Begin, State, Return, Construct, Context>;
+}
+
+export interface TopicInitOptions {
+    telemetry: Telemetry;
 }
 
 export abstract class Topic <
-    Init extends {} = {},
+    Begin extends {} = {},
     State extends {} = {},
     Return extends {} = {},
     Construct extends {} = {},
     Context extends BotContext = BotContext, 
 > {
-    static topics: {
-        [name: string]: Topicable;
-    } = {}
+    private static topicalState: BotState<Topical>;
 
-    static register(
-        ... topics: Topicable[]
+    private static telemetry: Telemetry;
+
+    public static init(
+        storage: Storage,
+        options?: TopicInitOptions,
     ) {
-        if (topics.length === 0) {
-            if (this === Topic)
-                throw "Topic cannot be registered."
-            topics = [this as any as Topicable];
-        }
-
-        for (const topic of topics) {
-            const name = topic.name;
-
-            if (Topic.topics[name]) {
-                throw `An attempt was made to register a topic with existing name "${name}".`;
-            }
-
-            Topic.topics[name] = topic;
+        if (Topic.topicalState)
+            throw "you should only call Topic.init once.";
+        Topic.topicalState = new BotState<Topical>(storage, context => `topical:${context.request.channelId}.${context.request.conversation.id}`);
+        if (options) {
+            if (options.telemetry)
+                Topic.telemetry = options.telemetry;
         }
     }
 
-    private static topicalState: BotState<Topical>;
+    private static topics: {
+        [name: string]: Topicable;
+    } = {}
 
-    static init(
-        storage: Storage,
-    ) {
-        Topic.topicalState = new BotState<Topical>(storage, context => `topical:${context.request.channelId}.${context.request.conversation.id}`);
+    protected static subtopics = [] as Topicable[];
+
+    protected static register() {
+        for (const T of this.subtopics) {
+            (T as any).register();
+        }
+
+        if (this === Topic || Topic.topics[this.name])
+            return;
+
+        Topic.topics[this.name] = this as any;
     }
 
     // We can't just have this.state as a normal property because state is a pointer to a part of Topic.topicalState
@@ -92,8 +98,8 @@ export abstract class Topic <
         Object.assign(this._state, state);
     }
 
-    private return = TopicReturn.noReturn;
-    public returnArgs?: Return;
+    private returnStatus = TopicReturnStatus.noReturn;
+    public return?: Return;
 
     public context!: Context;
     public instanceName!: string;
@@ -127,16 +133,15 @@ export abstract class Topic <
         return topic;
     }
 
-    static async create <
-        T extends Topicable<Init, State, any, Construct, Context>,
-        Init,
-        State,
+    protected static async create <
+        T extends Topicable<Begin, any, any, Construct, Context>,
+        Begin,
         Construct,
         Context extends BotContext,
     > (
         this: T,
         parentOrContext: Topic<any, any, any, any, Context> | Context,
-        args?: Init,
+        args?: Begin,
         construct = {} as Construct,
     ) {
         let parent: Topic<any, any, any, any, Context> | undefined;
@@ -159,11 +164,11 @@ export abstract class Topic <
 
         Topic.topicalState.get(context)!.instances[instance.instanceName] = instance;
 
-        const topic = (this as any)._new(context, instance.instanceName, parent, instance.state, construct);
+        const topic: Topic<Begin, any, any, Construct, Context> = (this as any)._new(context, instance.instanceName, parent, instance.state, construct);
 
         // await this.sendTelemetry(context, newInstance, 'init.begin');
 
-        await topic.init(args);
+        await topic.onBegin(args);
 
         if (await topic.returnedToParent())
             return undefined;
@@ -173,12 +178,12 @@ export abstract class Topic <
         return instance.instanceName;
     }
 
-    private static load <C extends BotContext> (
-        parentOrContext: Topic<any, any, any, any, C> | C,
+    private static load <Context extends BotContext> (
+        parentOrContext: Topic<any, any, any, any, Context> | Context,
         instance: TopicInstance,
-    ) {
-        let parent: Topic<any, any, any, any, C> | undefined;
-        let context: C;
+    ): Topic<any, any, any, any, Context> {
+        let parent: Topic<any, any, any, any, Context> | undefined;
+        let context: Context;
 
         if (parentOrContext instanceof Topic) {
             parent = parentOrContext;
@@ -189,80 +194,92 @@ export abstract class Topic <
         }
 
         const T = Topic.topics[instance.topicName];
-        return (T as any)._new(context, instance.instanceName, parent, instance.construct, instance.state);
+        return (T as any)._new(context, instance.instanceName, parent, instance.state, instance.construct);
     }
 
-    returnToParent(
+    public returnToParent(
         args?: Return,
     ) {
-        if (this.return)
+        if (this.returnStatus)
             throw "already returned";
-        this.return = TopicReturn.signalled;
-        this.returnArgs = args;
+        this.returnStatus = TopicReturnStatus.signalled;
+        this.return = args;
     }
 
-    static deleteInstance (
+    protected static deleteInstance (
         context: BotContext,
         instanceName: string,
     ) {
         delete Topic.topicalState.get(context)!.instances[instanceName];
     }
 
-    static rootInstanceName(
+    protected static rootInstanceName(
         context: BotContext,
     ) {
         return Topic.topicalState.get(context)!.rootInstanceName;
     }
 
-    static async do <Context extends BotContext = BotContext> (
+    public static async do <
+        T extends Topicable<Begin, any, any, any, Context>,
+        Begin,
+        Context extends BotContext = BotContext
+    > (
+        this: T,
         context: Context,
-        getRootInstanceName: () => Promise<string | undefined>,
+        args?: Begin,
     ) {
+        if (this === Topic as any)
+            throw "You can only `do' a child of Topic.";
+
         if (!Topic.topicalState)
-            throw "You must call Topic.init before calling Topic.do";
+            throw "You must call Topic.init before calling YourTopic.do";
+
+        if (!Topic.topics[this.name])
+            (this as any).register();
 
         const topical = await Topic.topicalState.read(context) as Topical | Partial<Topical>;
+        const state = Topic.topicalState.get(context);
 
         if (topical.rootInstanceName) {
             const rootInstanceName = topical.rootInstanceName;
             const instance = Topic.getInstanceFromName(context, rootInstanceName);
             const topic = Topic.load(context, instance);
 
-            await topic.dispatchTo(rootInstanceName);
+            await topic.onTurn();
 
             // garbage collect orphaned instances
 
-            const orphans = { ... topical.instances };
+            // const orphans = { ... topical.instances };
 
-            const deorphanize = (instanceName: string) => {
-                const instance = orphans[instanceName];
-                if (!instance)
-                    throw "unexpected";
+            // const deorphanize = (instanceName: string) => {
+            //     const instance = orphans[instanceName];
+            //     if (!instance)
+            //         throw "unexpected";
 
-                const topic = Topic.load(context, instance);
+            //     const topic = Topic.load(context, instance);
 
-                delete orphans[instanceName];
+            //     delete orphans[instanceName];
         
-                for (let child of topic.listChildren())
-                    deorphanize(child);
-            }
+            //     for (let child of topic.listChildren())
+            //         deorphanize(child);
+            // }
 
-            deorphanize(rootInstanceName);
+            // deorphanize(rootInstanceName);
 
-            for (const orphan of Object.keys(orphans)) {
-                console.warn(`Garbage collecting instance ${orphan} -- you should have called Topic.deleteInstance()`)
-                Topic.deleteInstance(context, orphan);
-            }
+            // for (const orphan of Object.keys(orphans)) {
+            //     console.warn(`Garbage collecting instance ${orphan} -- you should have called Topic.deleteInstance()`)
+            //     Topic.deleteInstance(context, orphan);
+            // }
 
             // await topic.sendTelemetry(context, instance, 'endOfTurn');
         } else {
             topical.instances = {};
-            topical.rootInstanceName = await getRootInstanceName();
+            topical.rootInstanceName = await (this as any).create(context, args);
             if (!topical.rootInstanceName)
                 throw "no topic instance returned";
 
-            const instance = Topic.getInstanceFromName(context, topical.rootInstanceName);
-            const topic = Topic.load(context, instance);
+            // const instance = Topic.getInstanceFromName(context, topical.rootInstanceName);
+            // const topic = Topic.load(context, instance);
             // await topic.sendTelemetry(context, instance, 'assignRootTopic');
         }
 
@@ -281,38 +298,7 @@ export abstract class Topic <
         return instance;
     }
 
-    // async doNext (
-    //     context: Context,
-    //     instance: TopicInstance,
-    // ): Promise<boolean>;
-
-    // async doNext (
-    //     context: Context,
-    //     instanceName: string,
-    // ): Promise<boolean>;
-
-    // async doNext (
-    //     context: Context,
-    //     arg: TopicInstance | string,
-    // ) {
-    //     if (!arg)
-    //         return false;
-    
-    //     const instance = typeof arg === 'string'
-    //         ? Topic.getInstanceFromName(context, arg)
-    //         : arg;
-
-    //     const topic = Topic.getTopicFromInstance(instance);
-
-    //     await topic.sendTelemetry(context, instance, 'next.begin');
-    //     await topic.next(context, instance);
-    //     await this.returnedToParent(context, instance);
-    //     await topic.sendTelemetry(context, instance, 'next.end');
-
-    //     return true;
-    // }
-
-    async dispatchTo (
+    public async dispatchTo (
         instanceName: string | undefined,
     ) {
         if (!instanceName)
@@ -327,21 +313,21 @@ export abstract class Topic <
 
         // await topic.sendTelemetry(context, instance, 'onReceive.begin');
         await topic.onTurn();
-        await this.returnedToParent();
+        await topic.returnedToParent();
         // await topic.sendTelemetry(context, instance, 'onReceive.end');
         
         return true;
     }
 
     private async returnedToParent (): Promise<boolean> {
-        if (this.return !== TopicReturn.signalled)
+        if (this.returnStatus !== TopicReturnStatus.signalled)
             return false;
         
         if (!this.parent)
             throw `orphan ${this.instanceName} attempted to returnToParent()`;
 
         Topic.deleteInstance(this.context, this.instanceName);
-        this.return = TopicReturn.succeeded;
+        this.returnStatus = TopicReturnStatus.succeeded;
 
         // await parentTopic.sendTelemetry(context, parentInstance, 'onChildReturn.begin');
 
@@ -353,50 +339,18 @@ export abstract class Topic <
         return true;
     }
 
-    async init (
-        args?: Init,
+    public async onBegin (
+        args?: Begin,
     ) {
     }
 
-    // async next (
-    //     context: Context,
-    //     instance: TopicInstance<State, Return>,
-    // ) {
-    // }
-
-    async onTurn () {
+    public async onTurn () {
     }
 
-    async onChildReturn(
+    public async onChildReturn(
         child: Topic<any, any, any, any, Context>,
     ) {
     }
-
-    // private _onChildReturnHandlers: {
-    //     [topicName: string]: TopicOnChildReturnHandler<any, any, any, Context>;
-    // } = {};
-    
-    // protected onChildReturn <ChildReturnArgs> (
-    //     topic: Topic<any, any, ChildReturnArgs>,
-    //     handler: TopicOnChildReturnHandler<State, Return, ChildReturnArgs, Context> = returnsPromiseVoid
-    // ) {
-    //     if (this._onChildReturnHandlers[topic.name])
-    //         throw new Error(`An attempt was made to call onChildReturn for topic ${topic.name}. This topic is already handled.`);
-
-    //     this._onChildReturnHandlers[topic.name] = handler;
-
-    //     return this;
-    // }
-
-    // private _afterChildReturn: TopicOnChildReturnHandler<any, any, any, Context> = returnsPromiseVoid;
-
-    // protected afterChildReturn <ChildReturnArgs> (
-    //     handler: TopicOnChildReturnHandler<State, Return, any, Context> = returnsPromiseVoid
-    // ) {
-    //     this._afterChildReturn = handler;
-    // }
-
-    // static telemetry: Telemetry;
 
     // private async sendTelemetry (
     //     context: Context,
@@ -417,7 +371,7 @@ export abstract class Topic <
     //     });
     // }
 
-    listChildren (): string[] {
+    public listChildren (): string[] {
         return [];
     }
 }

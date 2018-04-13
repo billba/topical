@@ -1,6 +1,5 @@
 import { BotContext, MemoryStorage, ConsoleAdapter } from 'botbuilder';
 import { Topic, SimpleForm, TextPrompt, TopicWithChild, prettyConsole, WSTelemetry } from '../src/topical';
-import { runInThisContext } from 'vm';
 
 // const wst = new WSTelemetry('ws://localhost:8080/server');
 // Topic.telemetry = action => wst.send(action);
@@ -12,7 +11,7 @@ const adapter = new ConsoleAdapter();
 adapter
     .use(prettyConsole)
     .listen(async c => {
-        await Topic.do(c, () => AlarmBot.create(c));
+        await AlarmBot.do(c);
     });
 
 interface Alarm {
@@ -34,7 +33,7 @@ interface ShowAlarmInitArgs {
 }
 
 class ShowAlarms extends Topic<ShowAlarmInitArgs> {
-    async init (
+    async onBegin (
         args: ShowAlarmInitArgs,
     ) {
         if (args.alarms.length === 0)
@@ -74,37 +73,10 @@ class PromptForText extends TextPrompt {
 }
 
 class DeleteAlarm extends TopicWithChild<DeleteAlarmInitArgs, DeleteAlarmState, DeleteAlarmReturnArgs> {
-    async onChildReturn(child: Topic) {
-        if (!(child instanceof PromptForText))
-            throw "unexpected child topic";
-        
-        switch (child.returnArgs.name) {
-            case 'whichAlarm':
-                this.state.alarmName = child.returnArgs.result.value!;
-                this.createChild(PromptForText, {
-                    name: 'confirm',
-                    args: {
-                        prompt: `Are you sure you want to delete alarm "${child.returnArgs.result.value}"? (yes/no)"`,
-                    },
-                });
-                break;
 
-            case 'confirm':
-                this.clearChild();
-                this.returnToParent(child.returnArgs.result.value === 'yes'
-                    ? {
-                        alarmName: this.state.alarmName
-                    }
-                    : undefined
-                )
-                break;
+    static subtopics = [PromptForText];
 
-            default:
-                throw `unknwon prompt name ${child.returnArgs.name}`;
-        }
-    }
-
-    async init (
+    async onBegin (
         args: DeleteAlarmInitArgs,
     ) {
         if (args.alarms.length === 0) {
@@ -114,7 +86,7 @@ class DeleteAlarm extends TopicWithChild<DeleteAlarmInitArgs, DeleteAlarmState, 
 
         this.state.alarms = args.alarms;
 
-        this.createChild(PromptForText, {
+        await this.createChild(PromptForText, {
             name: 'whichAlarm',
             args: {
                 prompt: `Which alarm do you want to delete?\n${listAlarms(this.state.alarms)}`,
@@ -125,6 +97,37 @@ class DeleteAlarm extends TopicWithChild<DeleteAlarmInitArgs, DeleteAlarmState, 
     async onTurn () {
         await this.dispatchToChild();
     }
+
+    async onChildReturn(child: Topic) {
+        if (!(child instanceof PromptForText))
+            throw "unexpected child topic";
+        
+        switch (child.return.name) {
+            case 'whichAlarm':
+                this.state.alarmName = child.return.result.value!;
+                await this.createChild(PromptForText, {
+                    name: 'confirm',
+                    args: {
+                        prompt: `Are you sure you want to delete alarm "${child.return.result.value}"? (yes/no)"`,
+                    },
+                });
+                break;
+
+            case 'confirm':
+                this.clearChild();
+                this.returnToParent(child.return.result.value === 'yes'
+                    ? {
+                        alarmName: this.state.alarmName
+                    }
+                    : undefined
+                )
+                break;
+
+            default:
+                throw `unknwon prompt name ${child.return.name}`;
+        }
+    }
+
 }
 
 interface AlarmBotState {
@@ -136,7 +139,9 @@ const helpText = `I know how to set, show, and delete alarms.`;
 
 class AlarmBot extends TopicWithChild<any, AlarmBotState, any> {
 
-    async init () {
+    static subtopics = [DeleteAlarm, ShowAlarms, SimpleForm];
+
+    async onBegin () {
         await this.context.sendActivity(`Welcome to Alarm Bot!\n${helpText}`);
         this.state.alarms = [];
     }
@@ -149,7 +154,7 @@ class AlarmBot extends TopicWithChild<any, AlarmBotState, any> {
             const text = this.context.request.text;
 
             if (/set|add|create/i.test(text)) {
-                this.createChild(SimpleForm, {
+                await this.createChild(SimpleForm, {
                     schema: {
                         name: {
                             type: 'string',
@@ -162,11 +167,11 @@ class AlarmBot extends TopicWithChild<any, AlarmBotState, any> {
                     }
                 });
             } else if (/show|list/i.test(text)) {
-                this.createChild(ShowAlarms, {
+                await this.createChild(ShowAlarms, {
                     alarms: this.state.alarms
                 });
             } else if (/delete|remove/i.test(text)) {
-                this.createChild(DeleteAlarm, {
+                await this.createChild(DeleteAlarm, {
                     alarms: this.state.alarms
                 });
             } else {
@@ -177,14 +182,14 @@ class AlarmBot extends TopicWithChild<any, AlarmBotState, any> {
 
     async onChildReturn(child: Topic) {
         if (child instanceof SimpleForm) {
-            this.state.alarms.push({ ... child.returnArgs.form } as any as Alarm);
+            this.state.alarms.push({ ... child.return.form } as any as Alarm);
             await this.context.sendActivity(`Alarm successfully added!`);
         } else if (child instanceof DeleteAlarm) {
-            if (child.returnArgs) {
+            if (child.return) {
                 this.state.alarms = this.state.alarms
-                    .filter(alarm => alarm.name !== child.returnArgs.alarmName);
+                    .filter(alarm => alarm.name !== child.return.alarmName);
 
-                await this.context.sendActivity(`Alarm "${child.returnArgs.alarmName}" has been deleted.`)
+                await this.context.sendActivity(`Alarm "${child.return.alarmName}" has been deleted.`)
             } else {
                 await this.context.sendActivity(`Okay, the status quo has been preserved.`)
             }
@@ -194,5 +199,3 @@ class AlarmBot extends TopicWithChild<any, AlarmBotState, any> {
         this.clearChild();
     }
 }
-
-Topic.register(AlarmBot, DeleteAlarm, ShowAlarms, SimpleForm);

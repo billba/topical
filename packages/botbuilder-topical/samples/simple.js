@@ -6,70 +6,65 @@ Topic.init(new MemoryStorage());
 const adapter = new ConsoleAdapter();
 
 adapter.listen(async context => {
-    await Topic.do(context, () => rootTopic.createInstance(context))
+    await RootTopic.do(context)
 });
         
 class ChildTopic extends Topic {
-    async init(context, instance, args) {
-        await context.sendActivity(`Welcome to the child topic!\nWhat multiple of ${args["foo"]} do you want to return?`);
+    async init(args) {
+        await this.context.sendActivity(`Welcome to the child topic!\nWhat multiple of ${args["foo"]} do you want to return?`);
     }
 
-    async onReceive(context, instance) {
-        const text = context.request.type === 'message' ? context.request.text : undefined;
+    async onTurn() {
+        const text = this.context.request.type === 'message' ? this.context.request.text : undefined;
         
         const num = Number.parseInt(text);
 
         if (Number.isNaN(num))
-            context.sendActivity(`Please supply a number.`);
+            await this.context.sendActivity(`Please supply a number.`);
         else
-            this.returnToParent(instance, {
+            return this.returnToParent({
                 num
             });
     }
 }
 
-const childTopic = new ChildTopic();
-
 class RootTopic extends TopicWithChild {
-    constructor(name) {
-        super(name);
 
-        this
-            .onChildReturn(childTopic, async (context, instance, childInstance) => {
-                await context.sendActivity(`13 * ${childInstance.returnArgs.num} = ${13 * childInstance.returnArgs.num}`);
-                this.clearChild(context, instance);
-            });
-    }
+    static subtopics = [ChildTopic];
 
-    async init(context) {
-        await context.sendActivity(`Welcome to my root topic!`);
+    async init() {
+        await this.context.sendActivity(`Welcome to my root topic!`);
     }
     
-    async onReceive(context, instance) {
-        const text = context.request.type === 'message' ? context.request.text : undefined;
+    async onTurn() {
+        const text = this.context.request.type === 'message' ? this.context.request.text : undefined;
 
         if (text === 'end child') {
-            if (instance.state.child) {
-                this.clearChild(context, instance);
-                context.sendActivity(`I have ended the child topic.`);
+            if (this.hasChild()) {
+                this.clearChild();
+                await this.context.sendActivity(`I have ended the child topic.`);
             } else {
-                context.sendActivity(`There is no child to end`);
+                await this.context.sendActivity(`There is no child to end`);
             }
             return;
         }
 
-        if (await this.dispatchToChild(context, instance))
+        if (await this.dispatchToChild())
             return;
 
         if (text === 'start child') {
-            this.setChild(context, instance, await childTopic.createInstance(context, instance, {
+            return this.createChild(ChildTopic, {
                 foo: 13
-            }));
-            return;
+            });
         }
 
-        await context.sendActivity(`Try "start child" or "end child".`);
+        await this.context.sendActivity(`Try "start child" or "end child".`);
     }
-}
 
-const rootTopic = new RootTopic()
+    async onChildReturn(child)
+    {
+        await this.context.sendActivity(`13 * ${child.returnArgs.num} = ${13 * child.returnArgs.num}`);
+        this.clearChild();
+    }
+
+}

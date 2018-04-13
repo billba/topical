@@ -2,9 +2,9 @@ import { Prompt, hasText, hasNumber, Culture, PromptInit, Validator } from './to
 import { BotContext } from 'botbuilder';
 
 export abstract class TextPrompt <
-    State = any,
+    PromptArgs = any,
     Context extends BotContext = BotContext,
-> extends Prompt<string, State, {}, Context> {
+> extends Prompt<string, PromptArgs, {}, Context> {
 
     validator = hasText;
 }
@@ -14,21 +14,14 @@ export interface CultureConstruct {
 }
 
 export abstract class NumberPrompt <
-    State = any,
+    PromptArgs = any,
     Context extends BotContext = BotContext,
-> extends Prompt<number, State, CultureConstruct, Context> {
+> extends Prompt<number, PromptArgs, CultureConstruct, Context> {
 
     validator: Validator<number>;
 
     constructor(construct: CultureConstruct) {
         super(construct);
         this.validator = hasNumber(construct.culture);
-    }
-}
-
-export class T extends TextPrompt {
-
-    async prompter() {
-
     }
 }

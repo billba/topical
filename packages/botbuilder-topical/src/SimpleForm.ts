@@ -34,7 +34,7 @@ interface SimpleFormPromptState {
 
 class PromptForValue extends TextPrompt<SimpleFormPromptState> {
 
-    maxTurns = 100;
+    maxTurns = Number.MAX_SAFE_INTEGER;
 
     async prompter(result: ValidatorResult<string>) {
         await this.context.sendActivity(this.state.args.prompt);
@@ -42,8 +42,10 @@ class PromptForValue extends TextPrompt<SimpleFormPromptState> {
 }
 
 export class SimpleForm extends TopicWithChild<SimpleFormInit, SimpleFormState, SimpleFormReturn> {
+    
+    static subtopics = [PromptForValue];
 
-    async init(
+    async onBegin(
         args: SimpleFormInit,
     ) {
         this.state.schema = args.schema;
@@ -53,14 +55,14 @@ export class SimpleForm extends TopicWithChild<SimpleFormInit, SimpleFormState, 
     }
 
     async next () {
-        for (let name of Object.keys(this.state.schema)) {
+        for (const name of Object.keys(this.state.schema)) {
             if (!this.state.form[name]) {
                 const metadata = this.state.schema[name];
 
                 if (metadata.type !== 'string')
                     throw `not expecting type "${metadata.type}"`;
 
-                this.createChild(PromptForValue, {
+                await this.createChild(PromptForValue, {
                     name,
                     args: {
                         prompt: metadata.prompt,
@@ -77,22 +79,20 @@ export class SimpleForm extends TopicWithChild<SimpleFormInit, SimpleFormState, 
         }
     }
 
-    async onReceive() {
+    async onTurn() {
         if (!await this.dispatchToChild())
             throw "a prompt should always be active";
     }
 
-    async onChildReturn(child: Topic) {
-        if (child instanceof PromptForValue) {
-            const metadata = this.state.schema[child.returnArgs.name];
+    async onChildReturn(child: PromptForValue) {
+        const metadata = this.state.schema[child.return.name];
 
-            if (metadata.type !== 'string')
-                throw `not expecting type "${metadata.type}"`;
+        if (metadata.type !== 'string')
+            throw `not expecting type "${metadata.type}"`;
 
-            this.state.form[child.returnArgs.name] = child.returnArgs.result.value!;
-            this.clearChild();
+        this.state.form[child.return.name] = child.return.result.value!;
+        this.clearChild();
 
-            await this.next();
-        }
+        await this.next();
     }
 }

@@ -1,5 +1,5 @@
 import { BotContext, MemoryStorage, ConsoleAdapter } from 'botbuilder';
-import { Topic, SimpleForm, TextPrompt, TopicWithChild, prettyConsole, WSTelemetry } from '../src/topical';
+import { Topic, TextPrompt, TopicWithChild, prettyConsole, WSTelemetry } from '../src/topical';
 
 // const wst = new WSTelemetry('ws://localhost:8080/server');
 // Topic.telemetry = action => wst.send(action);
@@ -9,31 +9,24 @@ Topic.init(new MemoryStorage());
 const adapter = new ConsoleAdapter();
 
 class CustomContext extends BotContext {
-    foo: string;
-
-    constructor(context: BotContext) {
-        super(context);
-        this.foo = "hey";
-    }
+    foo = "hey"
 }
 
 adapter
     .use(prettyConsole)
     .listen(async context => {
         const customContext = new CustomContext(context);
-        await Topic.do(customContext, () => Foo.create(customContext));
+        await Foo.do(customContext);
     });
 
 
 class Child extends Topic<any, any, any, any, CustomContext> {
-    async init(
+    async onBegin(
     ) {
         await this.context.sendActivity(this.context.foo);
         this.returnToParent();
     }
 }
-
-Child.register();
 
 class PromptForText extends TextPrompt<string, CustomContext> {
     async prompter() {
@@ -42,9 +35,10 @@ class PromptForText extends TextPrompt<string, CustomContext> {
     }
 }
 
-PromptForText.register();
-
 class Foo extends TopicWithChild<any, any, any, any, CustomContext> {
+
+    static subtopics = [PromptForText];
+
     async onChildReturn(child: Topic) {
         if (child instanceof Child) {
             await this.context.sendActivity(this.context.foo);
@@ -54,12 +48,12 @@ class Foo extends TopicWithChild<any, any, any, any, CustomContext> {
             });
         } else if (child instanceof PromptForText) {
             console.log("I got here");
-            await this.context.sendActivity(`You said ${child.returnArgs.result.value}`);
+            await this.context.sendActivity(`You said ${child.return.result.value}`);
             this.clearChild();
         }
     }
 
-    async init() {
+    async onBegin() {
         this.createChild(Child);
     }
 
@@ -67,5 +61,3 @@ class Foo extends TopicWithChild<any, any, any, any, CustomContext> {
         await this.dispatchToChild();
     }
 }
-
-Foo.register();
