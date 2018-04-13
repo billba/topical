@@ -28,11 +28,11 @@ export interface SimpleFormReturn {
     form: SimpleFormData;
 }
 
-interface SimpleFormPromptState {
+export interface SimpleFormPromptState {
     prompt: string;
 }
 
-class PromptForValue extends TextPrompt<SimpleFormPromptState> {
+export class PromptForValue extends TextPrompt<SimpleFormPromptState> {
 
     maxTurns = Number.MAX_SAFE_INTEGER;
 
