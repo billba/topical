@@ -1,5 +1,6 @@
 import { BotContext, MemoryStorage, ConsoleAdapter } from 'botbuilder';
-import { Topic, SimpleForm, TextPrompt, TopicWithChild, prettyConsole, WSTelemetry } from '../src/topical';
+import { Topic, TextPrompt, TopicWithChild, prettyConsole, WSTelemetry } from '../src/topical';
+import { SimpleForm } from './SimpleForm';
 
 // const wst = new WSTelemetry('ws://localhost:8080/server');
 // Topic.telemetry = action => wst.send(action);
