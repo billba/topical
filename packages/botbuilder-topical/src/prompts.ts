@@ -9,18 +9,18 @@ export abstract class TextPrompt <
     validator = hasText;
 }
 
-export interface CultureConstruct {
-    culture: Culture;
+export interface CultureConstructor {
+    culture: string;
 }
 
 export abstract class NumberPrompt <
     PromptArgs = any,
     Context extends BotContext = BotContext,
-> extends Prompt<number, PromptArgs, CultureConstruct, Context> {
+> extends Prompt<number, PromptArgs, CultureConstructor, Context> {
 
     validator: Validator<number>;
 
-    constructor(construct: CultureConstruct) {
+    constructor(construct: CultureConstructor) {
         super(construct);
         this.validator = hasNumber(construct.culture);
     }

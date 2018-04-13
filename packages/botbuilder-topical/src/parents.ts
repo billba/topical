@@ -6,10 +6,10 @@ export interface TopicWithChildState {
 }
 
 export abstract class TopicWithChild <
-    InitArgs extends {} = {},
+    InitArgs = any,
     State extends TopicWithChildState = TopicWithChildState,
-    ReturnArgs extends {} = {},
-    Construct extends {} = {},
+    ReturnArgs = any,
+    Construct = any,
     Context extends BotContext = BotContext, 
 > extends Topic<InitArgs, State, ReturnArgs, Construct, Context> {
 
@@ -58,10 +58,10 @@ export interface TopicWithChildArrayState {
 }
 
 export abstract class TopicWithChildArray <
-    InitArgs extends {} = {},
+    InitArgs = any,
     State extends TopicWithChildArrayState = TopicWithChildArrayState,
-    ReturnArgs extends {} = {},
-    Construct extends {} = {},
+    ReturnArgs = any,
+    Construct = any,
     Context extends BotContext = BotContext,
 > extends Topic<InitArgs, State, ReturnArgs, Context> {
     public async removeChild (

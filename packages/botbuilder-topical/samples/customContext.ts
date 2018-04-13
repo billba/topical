@@ -21,8 +21,7 @@ adapter
 
 
 class Child extends Topic<any, any, any, any, CustomContext> {
-    async onBegin(
-    ) {
+    async onBegin() {
         await this.context.sendActivity(this.context.foo);
         this.returnToParent();
     }
@@ -39,6 +38,14 @@ class Foo extends TopicWithChild<any, any, any, any, CustomContext> {
 
     static subtopics = [PromptForText];
 
+    async onBegin() {
+        this.createChild(Child);
+    }
+
+    async onTurn() {  
+        await this.dispatchToChild();
+    }
+
     async onChildReturn(child: Topic) {
         if (child instanceof Child) {
             await this.context.sendActivity(this.context.foo);
@@ -50,14 +57,8 @@ class Foo extends TopicWithChild<any, any, any, any, CustomContext> {
             console.log("I got here");
             await this.context.sendActivity(`You said ${child.return.result.value}`);
             this.clearChild();
-        }
+        } else
+            throw "mystery child topic";
     }
 
-    async onBegin() {
-        this.createChild(Child);
-    }
-
-    async onTurn() {  
-        await this.dispatchToChild();
-    }
 }

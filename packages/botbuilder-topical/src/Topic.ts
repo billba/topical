@@ -1,10 +1,10 @@
 import { Promiseable, Activity, BotContext, Storage, BotState } from 'botbuilder';
 import { toPromise, returnsPromiseVoid, Telemetry, TelemetryAction } from './topical';
 
-interface TopicInstance <State = any, Construct = any> {
+interface TopicInstance <State = any, Constructor = any> {
     instanceName: string;
     topicName: string;
-    construct: Construct,
+    constructorArgs: Constructor,
     state: State;
 }
 
@@ -22,15 +22,15 @@ enum TopicReturnStatus {
 }
 
 export interface Topicable <
-    Begin extends {} = {},
-    State extends {} = {},
-    Return extends {} = {},
-    Construct extends {} = {},
+    Begin = any,
+    State = any,
+    Return = any,
+    Constructor = any,
     Context extends BotContext = BotContext, 
 > {
     new (
-        construct: Construct,
-    ): Topic<Begin, State, Return, Construct, Context>;
+        args: Constructor,
+    ): Topic<Begin, State, Return, Constructor, Context>;
 }
 
 export interface TopicInitOptions {
@@ -38,10 +38,10 @@ export interface TopicInitOptions {
 }
 
 export abstract class Topic <
-    Begin extends {} = {},
-    State extends {} = {},
-    Return extends {} = {},
-    Construct extends {} = {},
+    Begin = any,
+    State = any,
+    Return = any,
+    Constructor = any,
     Context extends BotContext = BotContext, 
 > {
     private static topicalState: BotState<Topical>;
@@ -67,13 +67,23 @@ export abstract class Topic <
 
     protected static subtopics = [] as Topicable[];
 
+    // it's really easy to forget the "static" on subtopics -- this helps avoid errors
+    public set subtopics(subtopics: never) {
+        throw "subtopics need to be set as a static";
+    }
+
     protected static register() {
         for (const T of this.subtopics) {
             (T as any).register();
         }
 
-        if (this === Topic || Topic.topics[this.name])
+        if (this === Topic)
             return;
+
+        const T = Topic.topics[this.name];
+
+        if (T && T !== this as any)
+            throw `A different topic with name ${T.name} has already been registered.`
 
         Topic.topics[this.name] = this as any;
     }
@@ -106,43 +116,41 @@ export abstract class Topic <
     public parent?: Topic<any, any, any, any, Context>;
 
     constructor (
-        construct: Construct,
+        args: Constructor,
     ) {
     }
 
     private static _new <
-        T extends Topicable<any, State, any, Construct, Context>,
+        T extends Topicable<any, State, any, Constructor, Context>,
         State,
-        Construct,
+        Constructor,
         Context extends BotContext,
     > (
         this: T,
         context: Context,
-        instanceName: string,
         parent: Topic<any, any, any, any, Context> | undefined,
-        state: State,
-        construct: Construct,
+        instance: TopicInstance<State, Constructor>,
     ) {
-        const topic = new this(construct);
+        const topic = new this(instance.constructorArgs);
 
         topic.context = context;
-        topic.instanceName = instanceName;
         topic.parent = parent;
-        topic._state = state;
+        topic.instanceName = instance.instanceName;
+        topic._state = instance.state;
 
         return topic;
     }
 
     protected static async create <
-        T extends Topicable<Begin, any, any, Construct, Context>,
+        T extends Topicable<Begin, any, any, Constructor, Context>,
         Begin,
-        Construct,
+        Constructor,
         Context extends BotContext,
     > (
         this: T,
         parentOrContext: Topic<any, any, any, any, Context> | Context,
-        args?: Begin,
-        construct = {} as Construct,
+        beginArgs?: Begin,
+        constructorArgs?: Constructor,
     ) {
         let parent: Topic<any, any, any, any, Context> | undefined;
         let context: Context;
@@ -158,17 +166,17 @@ export abstract class Topic <
         const instance: TopicInstance = {
             instanceName: `${this.name}(${Date.now().toString()}${Math.random().toString().substr(1)})`,
             topicName: this.name,
-            construct,
+            constructorArgs,
             state: {},
         }
 
         Topic.topicalState.get(context)!.instances[instance.instanceName] = instance;
 
-        const topic: Topic<Begin, any, any, Construct, Context> = (this as any)._new(context, instance.instanceName, parent, instance.state, construct);
+        const topic: Topic<Begin, any, any, Constructor, Context> = (this as any)._new(context, parent, instance);
 
         // await this.sendTelemetry(context, newInstance, 'init.begin');
 
-        await topic.onBegin(args);
+        await topic.onBegin(beginArgs);
 
         if (await topic.returnedToParent())
             return undefined;
@@ -182,6 +190,11 @@ export abstract class Topic <
         parentOrContext: Topic<any, any, any, any, Context> | Context,
         instance: TopicInstance,
     ): Topic<any, any, any, any, Context> {
+
+        const T = Topic.topics[instance.topicName];
+        if (!T)
+            throw `An attempt was made to load unregistered topic ${instance.topicName}.`
+
         let parent: Topic<any, any, any, any, Context> | undefined;
         let context: Context;
 
@@ -193,15 +206,15 @@ export abstract class Topic <
             context = parentOrContext;
         }
 
-        const T = Topic.topics[instance.topicName];
-        return (T as any)._new(context, instance.instanceName, parent, instance.state, instance.construct);
+        return (T as any)._new(context, parent, instance);
     }
 
     public returnToParent(
         args?: Return,
     ) {
-        if (this.returnStatus)
+        if (this.returnStatus != TopicReturnStatus.noReturn)
             throw "already returned";
+
         this.returnStatus = TopicReturnStatus.signalled;
         this.return = args;
     }
@@ -238,7 +251,6 @@ export abstract class Topic <
             (this as any).register();
 
         const topical = await Topic.topicalState.read(context) as Topical | Partial<Topical>;
-        const state = Topic.topicalState.get(context);
 
         if (topical.rootInstanceName) {
             const rootInstanceName = topical.rootInstanceName;
@@ -303,9 +315,9 @@ export abstract class Topic <
     ) {
         if (!instanceName)
             return false;
-    
+
         const instance = Topic.getInstanceFromName(this.context, instanceName);
-        
+
         if (!instance)
             return false;
 
@@ -322,7 +334,7 @@ export abstract class Topic <
     private async returnedToParent (): Promise<boolean> {
         if (this.returnStatus !== TopicReturnStatus.signalled)
             return false;
-        
+
         if (!this.parent)
             throw `orphan ${this.instanceName} attempted to returnToParent()`;
 
@@ -337,19 +349,6 @@ export abstract class Topic <
         // await parentTopic.sendTelemetry(context, parentInstance, 'onChildReturn.end');
 
         return true;
-    }
-
-    public async onBegin (
-        args?: Begin,
-    ) {
-    }
-
-    public async onTurn () {
-    }
-
-    public async onChildReturn(
-        child: Topic<any, any, any, any, Context>,
-    ) {
     }
 
     // private async sendTelemetry (
@@ -370,6 +369,21 @@ export abstract class Topic <
     //         },
     //     });
     // }
+
+    // These four default methods are optionally overrideable by subclasses
+
+    public async onBegin (
+        args?: Begin,
+    ) {
+    }
+
+    public async onTurn () {
+    }
+
+    public async onChildReturn(
+        child: Topic<any, any, any, any, Context>,
+    ) {
+    }
 
     public listChildren (): string[] {
         return [];

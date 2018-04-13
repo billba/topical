@@ -19,6 +19,6 @@
   "dependencies": {
     "@microsoft/recognizers-text-suite": "^1.0.0",
     "botbuilder": "^4.0.0-m2.1",
-    "botbuilder-topical-common": "0.8.3"
+    "botbuilder-topical-common": "0.8.4"
   }
 }

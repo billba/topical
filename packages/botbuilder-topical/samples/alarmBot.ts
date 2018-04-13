@@ -23,18 +23,13 @@ const listAlarms = (alarms: Alarm[]) => alarms
     .map(alarm => `* "${alarm.name}" set for ${alarm.when}`)
     .join('\n');
 
-interface SetAlarmState {
-    alarm: Partial<Alarm>;
-    child: string;
-}
-
-interface ShowAlarmInitArgs {
+interface ShowAlarmBegin {
     alarms: Alarm[]
 }
 
-class ShowAlarms extends Topic<ShowAlarmInitArgs> {
+class ShowAlarms extends Topic<ShowAlarmBegin> {
     async onBegin (
-        args: ShowAlarmInitArgs,
+        args: ShowAlarmBegin,
     ) {
         if (args.alarms.length === 0)
             await this.context.sendActivity(`You haven't set any alarms.`);
@@ -45,7 +40,7 @@ class ShowAlarms extends Topic<ShowAlarmInitArgs> {
     }
 }
 
-interface DeleteAlarmInitArgs {
+interface DeleteAlarmBegin {
     alarms: Alarm[];
 }
 
@@ -55,12 +50,8 @@ interface DeleteAlarmState {
     child: string;
 }
 
-interface DeleteAlarmReturnArgs {
+interface DeleteAlarmReturn {
     alarmName: string;
-}
-
-interface SimpleFormPromptState {
-    prompt: string;
 }
 
 class PromptForText extends TextPrompt {
@@ -72,12 +63,12 @@ class PromptForText extends TextPrompt {
     }
 }
 
-class DeleteAlarm extends TopicWithChild<DeleteAlarmInitArgs, DeleteAlarmState, DeleteAlarmReturnArgs> {
+class DeleteAlarm extends TopicWithChild<DeleteAlarmBegin, DeleteAlarmState, DeleteAlarmReturn> {
 
     static subtopics = [PromptForText];
 
     async onBegin (
-        args: DeleteAlarmInitArgs,
+        args: DeleteAlarmBegin,
     ) {
         if (args.alarms.length === 0) {
             await this.context.sendActivity(`You don't have any alarms.`);
@@ -137,7 +128,7 @@ interface AlarmBotState {
 
 const helpText = `I know how to set, show, and delete alarms.`;
 
-class AlarmBot extends TopicWithChild<any, AlarmBotState, any> {
+class AlarmBot extends TopicWithChild<any, AlarmBotState> {
 
     static subtopics = [DeleteAlarm, ShowAlarms, SimpleForm];
 
