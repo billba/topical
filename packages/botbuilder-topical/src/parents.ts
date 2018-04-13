@@ -6,12 +6,12 @@ export interface TopicWithChildState {
 }
 
 export abstract class TopicWithChild <
-    InitArgs = any,
+    Begin = any,
     State extends TopicWithChildState = TopicWithChildState,
-    ReturnArgs = any,
-    Construct = any,
+    Return = any,
+    Constructor = any,
     Context extends BotContext = BotContext, 
-> extends Topic<InitArgs, State, ReturnArgs, Construct, Context> {
+> extends Topic<Begin, State, Return, Constructor, Context> {
 
     public clearChild () {
         if (this.state.child) {
@@ -29,15 +29,15 @@ export abstract class TopicWithChild <
     }
 
     async createChild <
-        T extends Topicable<Init, any, any, Construct, Context>,
-        Init,
-        Construct,
+        T extends Topicable<Begin, any, any, Constructor, Context>,
+        Begin,
+        Constructor,
     > (
         topicClass: T,
-        args?: Init,
-        construct?: Construct,
+        beginArgs?: Begin,
+        constructorArgs?: Constructor,
     ) {
-        this.setChild(await (topicClass as any).create(this, args));
+        this.setChild(await (topicClass as any).create(this, beginArgs, constructorArgs));
     }
 
     public hasChild () {
@@ -58,12 +58,12 @@ export interface TopicWithChildArrayState {
 }
 
 export abstract class TopicWithChildArray <
-    InitArgs = any,
+    Begin = any,
     State extends TopicWithChildArrayState = TopicWithChildArrayState,
-    ReturnArgs = any,
-    Construct = any,
+    Return = any,
+    Constructor = any,
     Context extends BotContext = BotContext,
-> extends Topic<InitArgs, State, ReturnArgs, Context> {
+> extends Topic<Begin, State, Return, Context> {
     public async removeChild (
         child: string,
     ) {
