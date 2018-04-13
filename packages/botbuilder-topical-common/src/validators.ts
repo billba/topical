@@ -2,34 +2,23 @@ import { Activity } from 'botbuilder';
 import { Validator } from './Validator';
 
 export const isMessage = new Validator<Partial<Activity>>(activity => activity.type === 'message'
-    ? {
-        value: activity
-    }
-    : {
-        reason: 'not_a_message'
-    }
+    ? { value: activity }
+    : { reason: 'not_a_message' }
 );
 
 export const hasText = isMessage
-    .and<string>((activity, value) => {
+    .and((activity, value) => {
         const text = value.text.trim();
 
         return text.length
-            ? {
-                value: text
-            }
-            : {
-                reason: 'empty_text'
-            }
+            ? { value: text }
+            : { reason: 'empty_text' }
     });
-
-import { Culture } from '@microsoft/recognizers-text-suite';
-export { Culture }
 
 import { NumberRecognizer } from '@microsoft/recognizers-text-number';
 
-export const hasNumbers = (culture: Culture) => hasText
-    .and<number[]>(async (activity, text) => {
+export const hasNumbers = (culture: string) => hasText
+    .and(async (activity, text) => {
         const numbers = new NumberRecognizer(culture)
             .getNumberModel()
             .parse(text)
@@ -42,5 +31,7 @@ export const hasNumbers = (culture: Culture) => hasText
             : { reason: 'not_a_number' }
     });
 
-export const hasNumber = (culture: Culture) => hasNumbers(culture)
-    .and<number>(async (activity, numbers) => ({ value: numbers[0] }));
+export const hasNumber = (culture: string) => hasNumbers(culture)
+    .and(async (activity, numbers) => ({ value: numbers[0] }));
+
+export { Culture } from '@microsoft/recognizers-text-number';
