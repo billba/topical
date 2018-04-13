@@ -40,7 +40,7 @@ class FavoriteNumber extends TopicWithChild  {
 
     async onBegin() {
 
-        await this.createChild(PromptForCulture, {
+        await this.beginChild(PromptForCulture, {
             name: 'culture',
             args: `Please pick a culture (${Culture.getSupportedCultureCodes().join(', ')}).`,
         });
@@ -58,7 +58,7 @@ class FavoriteNumber extends TopicWithChild  {
 
         if (child instanceof PromptForCulture) {
 
-            await this.createChild(PromptForNumber, {
+            await this.beginChild(PromptForNumber, {
                 name: 'favoriteNumber',
                 args: `What's your favorite number?`,
             }, {

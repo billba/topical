@@ -39,7 +39,7 @@ class Foo extends TopicWithChild<any, any, any, any, CustomContext> {
     static subtopics = [PromptForText];
 
     async onBegin() {
-        this.createChild(Child);
+        this.beginChild(Child);
     }
 
     async onTurn() {  
@@ -49,7 +49,7 @@ class Foo extends TopicWithChild<any, any, any, any, CustomContext> {
     async onChildReturn(child: Topic) {
         if (child instanceof Child) {
             await this.context.sendActivity(this.context.foo);
-            this.createChild(PromptForText, {
+            this.beginChild(PromptForText, {
                 name: 'name',
                 args: 'Wassup?',
             });

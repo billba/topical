@@ -62,7 +62,7 @@ export class SimpleForm extends TopicWithChild<SimpleFormInit, SimpleFormState, 
                 if (metadata.type !== 'string')
                     throw `not expecting type "${metadata.type}"`;
 
-                await this.createChild(PromptForValue, {
+                await this.beginChild(PromptForValue, {
                     name,
                     args: {
                         prompt: metadata.prompt,

@@ -18,30 +18,35 @@ The Topics pattern models conversations as a dynamic heirarchy of independent co
 
 ![Topics](/Topics.gif)
 
+**Note**: this graphic is now a little out of date, but the basic idea is correct
+
 The Topical library is simply meant to provide low-level support for this pattern. Classes are provided for two kinds of applications: standard applications and scalable web services.
 
 ## Standard applications
 
+** Note: `topical-lite` is currently lagging behind `topical` **
+
 For single-user in-process applications, the Topics pattern is easily implemented with traditional object-oriented programming.
 
-Topical supplies a [`Topic`](/src/Topic.ts) class. Here's a simple version of the Root topic illustrated above: 
+`topical-lite` supplies a [`Topic`](/packages/topical-lite/src/Topic.ts) class. Here's a simple version of the Root topic illustrated above:
 
 ```ts
-class RootTopic extends TopicWithChild {
-    async init(context, args) {
-        context.reply("How can I help you today?");
+class Root extends TopicWithChild {
+    async onBegin(args) {
+        await this.context.sendActivity("How can I help you today?");
     }
-    async onReceive(context) {
-        if (await this.dispatchToChild(context))
+
+    async onTurn() {
+        if (await this.dispatchToChild())
             return;
 
-        if (context.request.text === "book travel") {
-            this.setChild(context, instance, await new TravelTopic().createInstance(context,
-                async (context) => {
-                    context.reply(`Welcome back to the Root!`);
+        if (this.context.request.text === "book travel") {
+            await this.beginChild(TravelTopic,
+                async (context, return) => {
+                    await context.sendActivity(`Welcome back to the Root!`);
                     this.clearChild();
                 }
-            ));
+            );
         }
     }
 }
@@ -51,42 +56,38 @@ class RootTopic extends TopicWithChild {
 
 Traditional object-oriented programming won't work for many-users-to-many-instances web apps. The heirarchy of topics for each conversation must be maintained in a centralized store. Moreover, child topics may complete in entirely different instances (and in extended timeframes), making it impossible to utilize traditional completion handlers.
 
-Topical supplies a [`TopicClass`](/src/TopicClass.ts) class, which models traditional object-oriented programming in a distributed system:
-
-* `FooClass` is created by extending `TopicClass`.
-* An instance of this (which we call the "topic class") is created by calling `const fooClass = new FooClass(). This happens just once per application instance at startup. A unique ID (defaults to the class name) is used to correlate the same topic class across application instances.
-* Each "instance" of `fooClass` is created in the centralized store, each referencing the id of its class, by calling `topicClass.createInstance()`.
-* Almost every method in `topicClass` takes an `instance` parameter. This is where state is stored.
-* Completion handlers are implemented as a listener method.
-
-In this way, each turn can be very efficiently executed on a given instance of your application.
-
-Here's the scalable web service version of the above code:
+`topical` hides most of these differences: 
 
 ```ts
-class RootTopic extends TopicChild {
-    constructor(name) {
-        super(name);
+class Root extends TopicWithChild {
 
-        this.onChildReturn(travelTopicClass, (context, instance, childInstance) => {
-            context.reply(`Welcome back to the Root!`);
-            this.clearChild();
-        });
+    async onBegin(args) {
+        await this.context.sendActivity("How can I help you today?");
     }
-    async init(context, instance, args) {
-        context.reply("How can I help you today?");
-    }
-    async onReceive(context, instance) {
-        if (await this.dispatchToChild(context, instance))
+
+    async onTurn() {
+        if (await this.dispatchToChild())
             return;
 
-        if (context.request.text === "book travel")
-            this.setChild(context, instance, await travelTopic.createInstance(context, instance));
+        if (this.context.request.text === "book travel") {
+            await this.beginChild(TravelTopic);
+        }
+    }
+
+    async onChildReturn(child) {
+        await this.context.sendActivity(`Welcome back to the Root!`);
+        this.clearChild();
     }
 }
-```
 
-As you can see, you can continue to code largely the way you're used to, with just a few simple transformations.
+Root.subtopics = [TravelTopic];
+```
+The main visible differences are:
+* something called "subtopics" (explained shortly)
+* the way child topics return values
+* (not illustrated) a restriction for constructing `Topic`s.
+
+As you can see, you can code topics in distributed web services largely the same way as standard applications. This is the magic of *Topical*.
 
 ## What if I want a Topic to have many children?
 
@@ -112,38 +113,127 @@ Midway through booking a flight, as illustrated above, a user might want to look
 
 ## Do you have samples?
 
-The [simple sample](/samples/simple.js) is a JavaScript bot demonstrates a simple conversation with parent-child topics. To run it:
+The [simple sample](/packages/topical-lite/samples/simple.js) is a JavaScript bot demonstrates a simple conversation with parent-child topics. To run it:
 
 * clone this repo
 * `node samples/simple.js`
 
-The [alarm bot](/samples/alarmBot.ts) is a TypeScript bot with a little more depth. To run it:
+The [alarm bot](/packages/topical-lite/samples/alarmBot.ts) is a TypeScript bot with a little more depth. To run it:
 
 * clone this repo
 * `npm install`
 * `npm run build`
 * `node lib/samples/alarmBot.js`
 
-The [simple alarm bot](/samples/simpleAlarmBot.ts) is the identical bot implemented as a simple application. To run it:
+The [custom context](/packages/topical-lite/samples/customContext.ts) sample demonstrates the use of a custom `TurnContext`.
 
 * clone this repo
 * `npm install`
 * `npm run build`
-* `node lib/samples/alarmBot.js`
+* `node lib/samples/customContext.js`
+
+The [culture](/packages/topical-lite/samples/culture.ts) sample demonstrates the use of a custom promp validator and `NumberPrompt`, which requires providing a constructor argument.
+
+* clone this repo
+* `npm install`
+* `npm run build`
+* `node lib/samples/culture.js`
 
 ## Can I publish my own Topics?
 
-Please do! [SimpleForm](/src/forms.ts) is a (simple) example of a Topic that is of general use (it's used by the alarm bot). It demonstrates how to use another Topic (StringPrompt) without topic id namespace collisions.
+Please do! [SimpleForm](/packages/topical-lite/src/SimpleForm.ts) is a (simple) example of a "form fill" `Topic` that could be of general use (as in the alarm bot sample). It also demonstrates how to express a dependency on another `Topic` (`TextPrompt`).
 
-## Overly Quick Reference for `Topic`
+## Understanding Topical
 
-### `Topic.do(context: BotContext, getRootTopic: () => Promise<Topic>): Promise<void>`
+### "Conceptual" and "Turn" Instances
+
+In a *Topical* application, the conversational state for a given user in a conversation is represented as a dynamic heirarchy of instances of subclasses of `Topic`.
+
+We call these *conceptual instances*, because in a distributed system this heirarchy of instances is stored in a centralized state store. On each turn, instance data is loaded in from the state store, instances of `Topic` subclasses (*turn instances*) are constructed as needed, and the updated instance data is saved back to the state store at the end of the turn.
+
+### Subtopics, and Registration
+
+When its time to construct a turn instance of a `Topic` subclass, *Topical* needs to know which subclass to construct. This information is gathered when the application starts up through a process called *registration*, wherein each subclass is associated with a string (its name). The persisted instance data contains the name of its subclass.
+
+The way registration works is that each subclass of `Topic` declares all the *other* subclasses of `Topic` that it might have to create or load. We call these *subtopics* and they are declared as follows:
+
+```ts
+ThisTopic.subtopics = [ChildTopic, AnotherChildTopic];
+```
+
+In TypeScript, from within your class, you can do:
+
+```ts
+static subtopics = [ChildTopic, AnotherChildTopic];
+```
+
+When your application starts up, your root topic and its subtopics are automatically registered. This process is recursive. In other words if `ChildTopic` declares subtopic `GrandchildTopic`, that will be registered too, and so on.
+
+### Subtopic construction & lifecycle
+
+*Topical* constructs turn instances of `Topic` subclasses for you, as follows:
+
+In any method of a given topic, you *begin* a subclass of `Topic` of by calling `this.beginChild(SubclassOfTopic, beginArgs?, constructorArgs?)`. This:
+
+* creates a conceptual instance of `SubclassOfTopic`, including a unique name. This will be persisted to the state store at the end of the turn
+* calls `new SubclassOfTopic(constructorArgs)`, sets its `.instanceName` and `.state`, and calls its `.onBegin(beginArgs)`
+* sets `this.state.child` of the calling turn instance to the `.instanceName` of the just-created turn instance of `SubclassOfTopic`
+
+Subsequently (either in the same turn or on a later turn) you can call `this.dispatchToChild()`, usually (but not always) from within the `onTurn` method of a given topic. This:
+
+* gets the conceptual instance name from the turn intance of the method's topic's `this.state.child`
+* loads the conceptual instance from the state store
+* looks up `SubclassOfTopic` in *Topical*'s Registration map
+* calls `new SubclassOfTopic(constructorArgs)`, sets its `.instanceName` and `.state`, and calls its `.onTurn()`
+
+As you can see, `new SubclassOfTopic(constructorArgs)` may happen multiple times over the lifetime of the conceptual instance. As a result, `SubclassOfTopic`'s constructor should only do things that make sense both for beginning and dispatching `SubclassOfTopic`, and `constructorArgs` should only contain arguments necessary to *construct* a turn instance of `SubclassOfTopic`.
+
+Many subclasses of `Topic` don't need a constructor at all.
+
+### Creating a Topical application
+
+First, create a subclass of `Topic` which will be your "root topic". Every activity for every user in every conversation will flow through this topic. If it has subtopics (potential child topics), declare them.
+
+Then initialize *Topical* by calling `Topic.init` with a state storage provider. This is where *Topical* will persist each topic's state.
+
+```ts
+Topic.init(new MemoryStorage());
+```
+
+Your *Topical* application is bootstrapped as follows:
+
+```ts
+adapter.listen(async context => {
+    await YourRootTopic.do(context, beginArgs?, constructorArgs?);
+})
+```
+
+When it's called the first time, `YourRootTopic.do`:
+* throws if `Topic.init` hasn't already been called
+* calls `YourRootTopic.register()`, recursively registering `YourRootTopic`, its subtopics, all *their* subtopics, and so on.
+
+The first time an activity is received for a given user in a conversation, `YourRootTopic.do`:
+* begins a conceptual instance of `YourRootTopic` (as noted above, this calls `.onBegin(beginArgs)`)
+* sets it as your root topic instance
+
+On subsequent turns for a given user in a conversation, `YourRootTopic.do`:
+* dispatches to the root topic instance (as noted above, this calls `.onTurn()`)
+
+## Overly Quick Reference for *Topical*
+
+Need updating.
+
+<s>
+#### `Topic.init(storage: Storage)`
+
+
+### `Topic.do(context: BotContext, RootTopic: typeof Topic, args): Promise<void>`
 
 This bootstraps your topic heirarchy with a designated root topic:
 
 ```ts
-bot.onReceive(async context => {
-    await Topic.do(context, () => new RootTopic().createInstance(context));
+adapter.listen(async context => {
+    await Topic.do(context, Root);
 })
 ```
 
@@ -392,3 +482,4 @@ class YourTopic extends Topic {
     }
 }
 ``
+</s>

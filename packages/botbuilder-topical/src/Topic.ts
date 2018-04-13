@@ -54,7 +54,9 @@ export abstract class Topic <
     ) {
         if (Topic.topicalState)
             throw "you should only call Topic.init once.";
+
         Topic.topicalState = new BotState<Topical>(storage, context => `topical:${context.request.channelId}.${context.request.conversation.id}`);
+
         if (options) {
             if (options.telemetry)
                 Topic.telemetry = options.telemetry;
@@ -141,7 +143,7 @@ export abstract class Topic <
         return topic;
     }
 
-    protected static async create <
+    protected static async begin <
         T extends Topicable<Begin, any, any, Constructor, Context>,
         Begin,
         Constructor,
@@ -286,7 +288,7 @@ export abstract class Topic <
             // await topic.sendTelemetry(context, instance, 'endOfTurn');
         } else {
             topical.instances = {};
-            topical.rootInstanceName = await (this as any).create(context, args);
+            topical.rootInstanceName = await (this as any).begin(context, args);
             if (!topical.rootInstanceName)
                 throw "no topic instance returned";
 

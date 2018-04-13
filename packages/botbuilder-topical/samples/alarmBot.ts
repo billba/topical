@@ -78,7 +78,7 @@ class DeleteAlarm extends TopicWithChild<DeleteAlarmBegin, DeleteAlarmState, Del
 
         this.state.alarms = args.alarms;
 
-        await this.createChild(PromptForText, {
+        await this.beginChild(PromptForText, {
             name: 'whichAlarm',
             args: {
                 prompt: `Which alarm do you want to delete?\n${listAlarms(this.state.alarms)}`,
@@ -97,7 +97,7 @@ class DeleteAlarm extends TopicWithChild<DeleteAlarmBegin, DeleteAlarmState, Del
         switch (child.return.name) {
             case 'whichAlarm':
                 this.state.alarmName = child.return.result.value!;
-                await this.createChild(PromptForText, {
+                await this.beginChild(PromptForText, {
                     name: 'confirm',
                     args: {
                         prompt: `Are you sure you want to delete alarm "${child.return.result.value}"? (yes/no)"`,
@@ -146,7 +146,7 @@ class AlarmBot extends TopicWithChild<any, AlarmBotState> {
             const text = this.context.request.text;
 
             if (/set|add|create/i.test(text)) {
-                await this.createChild(SimpleForm, {
+                await this.beginChild(SimpleForm, {
                     schema: {
                         name: {
                             type: 'string',
@@ -159,11 +159,11 @@ class AlarmBot extends TopicWithChild<any, AlarmBotState> {
                     }
                 });
             } else if (/show|list/i.test(text)) {
-                await this.createChild(ShowAlarms, {
+                await this.beginChild(ShowAlarms, {
                     alarms: this.state.alarms
                 });
             } else if (/delete|remove/i.test(text)) {
-                await this.createChild(DeleteAlarm, {
+                await this.beginChild(DeleteAlarm, {
                     alarms: this.state.alarms
                 });
             } else {

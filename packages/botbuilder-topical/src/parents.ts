@@ -28,7 +28,7 @@ export abstract class TopicWithChild <
         this.state.child = childInstanceName;
     }
 
-    async createChild <
+    async beginChild <
         T extends Topicable<Begin, any, any, Constructor, Context>,
         Begin,
         Constructor,
@@ -37,7 +37,7 @@ export abstract class TopicWithChild <
         beginArgs?: Begin,
         constructorArgs?: Constructor,
     ) {
-        this.setChild(await (topicClass as any).create(this, beginArgs, constructorArgs));
+        this.setChild(await (topicClass as any).begin(this, beginArgs, constructorArgs));
     }
 
     public hasChild () {

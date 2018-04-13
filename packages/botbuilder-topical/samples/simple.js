@@ -10,7 +10,7 @@ adapter.listen(async context => {
 });
         
 class ChildTopic extends Topic {
-    async init(args) {
+    async onBegin(args) {
         await this.context.sendActivity(`Welcome to the child topic!\nWhat multiple of ${args["foo"]} do you want to return?`);
     }
 
@@ -30,9 +30,7 @@ class ChildTopic extends Topic {
 
 class RootTopic extends TopicWithChild {
 
-    static subtopics = [ChildTopic];
-
-    async init() {
+    async onBegin() {
         await this.context.sendActivity(`Welcome to my root topic!`);
     }
     
@@ -53,7 +51,7 @@ class RootTopic extends TopicWithChild {
             return;
 
         if (text === 'start child') {
-            return this.createChild(ChildTopic, {
+            return this.beginChild(ChildTopic, {
                 foo: 13
             });
         }
@@ -68,3 +66,5 @@ class RootTopic extends TopicWithChild {
     }
 
 }
+
+RootTopic.subtopics = [ChildTopic];
