@@ -1,4 +1,4 @@
-import { Promiseable, Activity, BotContext, Storage, BotState } from 'botbuilder';
+import { Promiseable, Activity, TurnContext, Storage, BotState } from 'botbuilder';
 import { toPromise, returnsPromiseVoid, Telemetry, TelemetryAction } from './topical';
 
 interface TopicInstance <State = any, Constructor = any> {
@@ -26,7 +26,7 @@ export interface Topicable <
     State = any,
     Return = any,
     Constructor = any,
-    Context extends BotContext = BotContext, 
+    Context extends TurnContext = TurnContext, 
 > {
     new (
         args: Constructor,
@@ -42,7 +42,7 @@ export abstract class Topic <
     State = any,
     Return = any,
     Constructor = any,
-    Context extends BotContext = BotContext, 
+    Context extends TurnContext = TurnContext, 
 > {
     private static topicalState: BotState<Topical>;
 
@@ -55,7 +55,7 @@ export abstract class Topic <
         if (Topic.topicalState)
             throw "you should only call Topic.init once.";
 
-        Topic.topicalState = new BotState<Topical>(storage, context => `topical:${context.request.channelId}.${context.request.conversation.id}`);
+        Topic.topicalState = new BotState<Topical>(storage, context => `topical:${context.activity.channelId}.${context.activity.conversation.id}`);
 
         if (options) {
             if (options.telemetry)
@@ -126,7 +126,7 @@ export abstract class Topic <
         T extends Topicable<any, State, any, Constructor, Context>,
         State,
         Constructor,
-        Context extends BotContext,
+        Context extends TurnContext,
     > (
         this: T,
         context: Context,
@@ -147,7 +147,7 @@ export abstract class Topic <
         T extends Topicable<Begin, any, any, Constructor, Context>,
         Begin,
         Constructor,
-        Context extends BotContext,
+        Context extends TurnContext,
     > (
         this: T,
         parentOrContext: Topic<any, any, any, any, Context> | Context,
@@ -188,7 +188,7 @@ export abstract class Topic <
         return instance.instanceName;
     }
 
-    private static load <Context extends BotContext> (
+    private static load <Context extends TurnContext> (
         parentOrContext: Topic<any, any, any, any, Context> | Context,
         instance: TopicInstance,
     ): Topic<any, any, any, any, Context> {
@@ -222,14 +222,14 @@ export abstract class Topic <
     }
 
     protected static deleteInstance (
-        context: BotContext,
+        context: TurnContext,
         instanceName: string,
     ) {
         delete Topic.topicalState.get(context)!.instances[instanceName];
     }
 
     protected static rootInstanceName(
-        context: BotContext,
+        context: TurnContext,
     ) {
         return Topic.topicalState.get(context)!.rootInstanceName;
     }
@@ -237,7 +237,7 @@ export abstract class Topic <
     public static async do <
         T extends Topicable<Begin, any, any, any, Context>,
         Begin,
-        Context extends BotContext = BotContext
+        Context extends TurnContext = TurnContext
     > (
         this: T,
         context: Context,
@@ -301,7 +301,7 @@ export abstract class Topic <
     }
 
     private static getInstanceFromName (
-        context: BotContext,
+        context: TurnContext,
         instanceName: string,
     ) {
         const instance = Topic.topicalState.get(context)!.instances[instanceName];
@@ -363,7 +363,7 @@ export abstract class Topic <
 
     //     await Topic.telemetry({
     //         type,
-    //         activity: context.request as Activity,
+    //         activity: context.activity as Activity,
     //         instance: {
     //             instanceName: instance.instanceName,
     //             topicName: this.name,

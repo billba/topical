@@ -1,5 +1,5 @@
 import { Topic, Topicable } from './topical';
-import { BotContext } from 'botbuilder';
+import { TurnContext } from 'botbuilder';
 
 export interface TopicWithChildState {
     child?: string;
@@ -10,7 +10,7 @@ export abstract class TopicWithChild <
     State extends TopicWithChildState = TopicWithChildState,
     Return = any,
     Constructor = any,
-    Context extends BotContext = BotContext, 
+    Context extends TurnContext = TurnContext, 
 > extends Topic<Begin, State, Return, Constructor, Context> {
 
     public clearChild () {
@@ -62,7 +62,7 @@ export abstract class TopicWithChildArray <
     State extends TopicWithChildArrayState = TopicWithChildArrayState,
     Return = any,
     Constructor = any,
-    Context extends BotContext = BotContext,
+    Context extends TurnContext = TurnContext,
 > extends Topic<Begin, State, Return, Context> {
     public async removeChild (
         child: string,

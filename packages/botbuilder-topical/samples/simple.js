@@ -15,7 +15,7 @@ class ChildTopic extends Topic {
     }
 
     async onTurn() {
-        const text = this.context.request.type === 'message' ? this.context.request.text : undefined;
+        const text = this.context.activity.type === 'message' ? this.context.activity.text : undefined;
         
         const num = Number.parseInt(text);
 
@@ -35,7 +35,7 @@ class RootTopic extends TopicWithChild {
     }
     
     async onTurn() {
-        const text = this.context.request.type === 'message' ? this.context.request.text : undefined;
+        const text = this.context.activity.type === 'message' ? this.context.activity.text : undefined;
 
         if (text === 'end child') {
             if (this.hasChild()) {

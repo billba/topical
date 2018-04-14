@@ -1,5 +1,4 @@
 import { Topic, TextPrompt, TopicWithChild, ValidatorResult } from '../src/topical';
-import { BotContext } from 'botbuilder';
 
 export interface SimpleFormMetadata {
     type: string;

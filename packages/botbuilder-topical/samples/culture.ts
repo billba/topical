@@ -1,5 +1,5 @@
-import { BotContext, MemoryStorage, ConsoleAdapter } from 'botbuilder';
-import { Topic, Culture, NumberPrompt, TopicWithChild, prettyConsole, WSTelemetry, TextPrompt, Prompt, hasText } from '../src/topical';
+import { MemoryStorage, ConsoleAdapter } from 'botbuilder';
+import { Topic, Culture, NumberPrompt, TopicWithChild, prettyConsole, WSTelemetry, Prompt, hasText } from '../src/topical';
 
 // const wst = new WSTelemetry('ws://localhost:8080/server');
 // Topic.telemetry = action => wst.send(action);
