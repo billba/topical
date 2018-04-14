@@ -6,38 +6,50 @@ export type TopicReturnToParent <Args> = (
     args?: Args
 ) => Promise<void>;
 
-export abstract class Topic <
-    InitArgs extends {} = {},
+
+export interface Topicable <
+    Begin extends {} = {},
     State extends {} = {},
-    ReturnArgs extends {} = {},
+    Return extends {} = {},
+    Context extends BotContext = BotContext, 
+> {
+    new (
+    ): Topic<Begin, State, Return, Context>;
+}
+
+export abstract class Topic <
+    Begin extends {} = {},
+    State extends {} = {},
+    Return extends {} = {},
+    Context extends BotContext = BotContext,
 > {
     public topicName = this.constructor.name;
     public instanceName = `${this.topicName}(${Date.now().toString()}${Math.random().toString().substr(1)})`;
 
     protected state = {} as State;
-    protected returned;
+    private returned;
     
-    returnToParent: TopicReturnToParent<ReturnArgs> = () => {
+    returnToParent: TopicReturnToParent<Return> = () => {
         throw "You must call createTopicInstance";
     }
 
     async createInstance (
         context: BotContext,
-        returnToParent?: TopicReturnToParent<ReturnArgs>
+        returnToParent?: TopicReturnToParent<Return>
     ): Promise<this>;
 
     async createInstance (
         context: BotContext,
-        args: InitArgs,
-        returnToParent?: TopicReturnToParent<ReturnArgs>
+        args: Begin,
+        returnToParent?: TopicReturnToParent<Return>
     ): Promise<this>;
 
     async createInstance (
         context: BotContext,
         ... params,
     ) {
-        let args = {} as InitArgs;
-        let returnToParent: TopicReturnToParent<ReturnArgs> = returnsPromiseVoid;
+        let args = {} as Begin;
+        let returnToParent: TopicReturnToParent<Return> = returnsPromiseVoid;
 
         if (params.length > 0) {
             if (typeof params[0] === 'function') {
@@ -63,7 +75,7 @@ export abstract class Topic <
 
         await this.sendTelemetry(context, 'init.begin');
 
-        await this.init(context, args);
+        await this.onBegin(context, args);
 
         await this.sendTelemetry(context, 'init.end');
 
@@ -80,7 +92,7 @@ export abstract class Topic <
             return false;
         
         await this.sendTelemetry(context, 'onReceive.begin');
-        await topic.onReceive(context);
+        await topic.onTurn(context);
         await this.sendTelemetry(context, 'onReceive.begin');
 
         return true;
@@ -100,27 +112,24 @@ export abstract class Topic <
         return false;
     }
 
-    async init (
+    async onBegin (
         context: BotContext,
-        args?: InitArgs,
+        args?: Begin,
     ) {
     }
 
-    async next (
-        context: BotContext,
-    ) {
-    }
-
-    async onReceive (
+    async onTurn (
         context: BotContext,
     ) {
     }
 
     static rootTopic: Topic;
 
-    static async do (
+    static async do<
+        T extends Topicable<Begin, any, any, any, Context>,
+    > (
         context: BotContext,
-        getRootTopic: () => Promise<Topic>
+        Root: T,
     ) {
         if (Topic.rootTopic) {
             await Topic.rootTopic.dispatch(context, Topic.rootTopic);

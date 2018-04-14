@@ -18,18 +18,12 @@ export class Validator <V> {
             const result = await toPromise(validate(activity))
 
             if (result === undefined)
-                return {
-                    reason: 'none'
-                }
+                return { reason: 'none' };
             
-            if (typeof result === 'object') {
-                if ((result as any).reason || (result as any).value)
-                    return result as ValidatorResult<V>;
-            }
+            if (typeof result === 'object' && ((result as any).reason || (result as any).value))
+                return result;
 
-            return {
-                value: result
-            } as ValidatorResult<V>
+            return { value: result } as ValidatorResult<V>;
         }
     }
 
@@ -39,9 +33,7 @@ export class Validator <V> {
         return new Validator(async activity => {
             const result = await this.validate(activity);
             if (result.reason)
-                return {
-                    reason: result.reason
-                };
+                return { reason: result.reason };
             return constraint(activity, result.value);
         })
     }

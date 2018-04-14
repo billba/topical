@@ -12,11 +12,13 @@
   "author": "Bill Barnes",
   "license": "MIT",
   "devDependencies": {
+    "@types/jsonwebtoken": "^7.2.6",
+    "nodemon": "1.17.3",
     "typescript": "^2.7.2"
   },
   "dependencies": {
     "@microsoft/recognizers-text-suite": "^1.0.0",
     "botbuilder": "^4.0.0-m2.1",
-    "botbuilder-topical-common": "0.8.3"
+    "botbuilder-topical-common": "0.8.4"
   }
 }

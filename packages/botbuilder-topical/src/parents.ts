@@ -1,55 +1,55 @@
-import { Topic, TopicInstance } from './topical';
+import { Topic, Topicable } from './topical';
 import { BotContext } from 'botbuilder';
 
 export interface TopicWithChildState {
-    child: string;
+    child?: string;
 }
 
 export abstract class TopicWithChild <
-    InitArgs extends {} = {},
+    Begin = any,
     State extends TopicWithChildState = TopicWithChildState,
-    ReturnArgs extends {} = {},
+    Return = any,
+    Constructor = any,
     Context extends BotContext = BotContext, 
-> extends Topic<InitArgs, State, ReturnArgs, Context> {
-    clearChild (
-        context: Context,
-        instance: TopicInstance<State>,
-    ) {
-        if (instance.state.child) {
-            Topic.deleteInstance(context, instance.state.child);
-            instance.state.child = undefined;
+> extends Topic<Begin, State, Return, Constructor, Context> {
+
+    public clearChild () {
+        if (this.state.child) {
+            Topic.deleteInstance(this.context, this.state.child);
+            this.state.child = undefined;
         }
     }
 
-    setChild (
-        context: Context,
-        instance: TopicInstance<State>,
+    public setChild (
         childInstanceName: string,
     ) {
-        if (instance.state.child)
-            this.clearChild(context, instance);
-        instance.state.child = childInstanceName;
+        if (this.state.child)
+            this.clearChild();
+        this.state.child = childInstanceName;
     }
 
-    hasChild (
-        context: Context,
-        instance: TopicInstance<State>,
+    async beginChild <
+        T extends Topicable<Begin, any, any, Constructor, Context>,
+        Begin,
+        Constructor,
+    > (
+        topicClass: T,
+        beginArgs?: Begin,
+        constructorArgs?: Constructor,
     ) {
-        return !!instance.state.child;
+        this.setChild(await (topicClass as any).begin(this, beginArgs, constructorArgs));
     }
 
-    async dispatchToChild (
-        context: Context,
-        instance: TopicInstance<State>,
-    ) {
-        return this.dispatch(context, instance.state.child);
+    public hasChild () {
+        return !!this.state.child;
     }
 
-    listChildren (
-        context: Context,
-        instance: TopicInstance<State>,
-    ) {
-        return instance.state.child ? [instance.state.child] : [];
+    public async dispatchToChild () {
+        return this.dispatchTo(this.state.child);
+    }
+
+    public listChildren () {
+        return this.state.child ? [this.state.child] : [];
     }
 }
 
@@ -58,31 +58,24 @@ export interface TopicWithChildArrayState {
 }
 
 export abstract class TopicWithChildArray <
-    InitArgs extends {} = {},
+    Begin = any,
     State extends TopicWithChildArrayState = TopicWithChildArrayState,
-    ReturnArgs extends {} = {},
+    Return = any,
+    Constructor = any,
     Context extends BotContext = BotContext,
-> extends Topic<InitArgs, State, ReturnArgs, Context> {
-    async removeChild (
-        context: Context,
-        instance: TopicInstance<State>,
-        childInstance: TopicInstance
+> extends Topic<Begin, State, Return, Context> {
+    public async removeChild (
+        child: string,
     ) {
-        Topic.deleteInstance(context, childInstance.state.child);
-        instance.state.children = instance.state.children.filter(child => child !== childInstance.name);
+        Topic.deleteInstance(this.context, child);
+        this.state.children = this.state.children.filter(_child => _child !== child);
     }
 
-    async init (
-        context: Context,
-        instance: TopicInstance<State>,
-    ) {
-        instance.state.children = [];
+    public async onBegin () {
+        this.state.children = [];
     }
 
-    listChildren (
-        context: Context,
-        instance: TopicInstance<State>,
-    ) {
-        return instance.state.children;
+    public listChildren () {
+        return this.state.children;
     }
 }
