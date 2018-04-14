@@ -143,6 +143,10 @@ The [culture](/packages/topical-lite/samples/culture.ts) sample demonstrates the
 
 Please do! [SimpleForm](/packages/topical-lite/src/SimpleForm.ts) is a (simple) example of a "form fill" `Topic` that could be of general use (as in the alarm bot sample). It also demonstrates how to express a dependency on another `Topic` (`TextPrompt`).
 
+## Using Topical
+
+Sorry, for now please look at the samples to see *Topical* in action.
+
 ## Understanding Topical
 
 ### "Conceptual" and "Turn" Instances
@@ -193,6 +197,11 @@ Many subclasses of `Topic` don't need a constructor at all.
 ### Creating a Topical application
 
 First, create a subclass of `Topic` which will be your "root topic". Every activity for every user in every conversation will flow through this topic. If it has subtopics (potential child topics), declare them.
+
+```ts
+class YourRootTopic extends Topic {
+}
+```
 
 Then initialize *Topical* by calling `Topic.init` with a state storage provider. This is where *Topical* will persist each topic's state.
 
