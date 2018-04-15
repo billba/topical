@@ -1,4 +1,4 @@
-import { BotContext, MemoryStorage, ConsoleAdapter } from 'botbuilder';
+import { MemoryStorage, ConsoleAdapter } from 'botbuilder';
 import { Topic, TextPrompt, TopicWithChild, prettyConsole, WSTelemetry } from '../src/topical';
 import { SimpleForm } from './SimpleForm';
 
@@ -142,10 +142,9 @@ class AlarmBot extends TopicWithChild<any, AlarmBotState> {
         if (await this.dispatchToChild())
             return;
 
-        if (this.context.request.type === 'message') {
-            const text = this.context.request.text;
+        if (this.text) {
 
-            if (/set|add|create/i.test(text)) {
+            if (/set|add|create/i.test(this.text)) {
                 await this.beginChild(SimpleForm, {
                     schema: {
                         name: {
@@ -158,11 +157,11 @@ class AlarmBot extends TopicWithChild<any, AlarmBotState> {
                         }
                     }
                 });
-            } else if (/show|list/i.test(text)) {
+            } else if (/show|list/i.test(this.text)) {
                 await this.beginChild(ShowAlarms, {
                     alarms: this.state.alarms
                 });
-            } else if (/delete|remove/i.test(text)) {
+            } else if (/delete|remove/i.test(this.text)) {
                 await this.beginChild(DeleteAlarm, {
                     alarms: this.state.alarms
                 });

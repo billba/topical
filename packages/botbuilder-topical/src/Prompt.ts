@@ -1,4 +1,4 @@
-import { Promiseable, Activity, BotContext } from 'botbuilder';
+import { Promiseable, Activity, TurnContext } from 'botbuilder';
 import { Topic } from "./topical";
 import { toPromise, returnsPromiseVoid, Validator, ValidatorResult } from 'botbuilder-topical-common';
 
@@ -22,7 +22,7 @@ export abstract class Prompt <
     V = any,
     PromptArgs = any,
     Construct = any,
-    Context extends BotContext = BotContext,
+    Context extends TurnContext = TurnContext,
 > extends Topic<PromptInit<PromptArgs>, PromptState<PromptArgs>, PromptReturn<V>, Construct, Context> {
 
     async onBegin (
@@ -39,7 +39,7 @@ export abstract class Prompt <
 
     async onTurn () {
 
-        const result = await this.validator.validate(this.context.request);
+        const result = await this.validator.validate(this.context.activity);
 
         if (!result.reason)
             return this.returnToParent({

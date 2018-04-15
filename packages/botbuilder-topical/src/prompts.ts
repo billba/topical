@@ -1,9 +1,9 @@
 import { Prompt, hasText, hasNumber, Culture, PromptInit, Validator } from './topical';
-import { BotContext } from 'botbuilder';
+import { TurnContext } from 'botbuilder';
 
 export abstract class TextPrompt <
     PromptArgs = any,
-    Context extends BotContext = BotContext,
+    Context extends TurnContext = TurnContext,
 > extends Prompt<string, PromptArgs, {}, Context> {
 
     validator = hasText;
@@ -15,7 +15,7 @@ export interface CultureConstructor {
 
 export abstract class NumberPrompt <
     PromptArgs = any,
-    Context extends BotContext = BotContext,
+    Context extends TurnContext = TurnContext,
 > extends Prompt<number, PromptArgs, CultureConstructor, Context> {
 
     validator: Validator<number>;

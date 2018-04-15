@@ -3,7 +3,7 @@ import { Promiseable, MiddlewareHandler } from "botbuilder";
 export const toPromise = <T> (t: Promiseable<T>) => (t as any).then ? (t as Promise<T>) : Promise.resolve<T>(t);
 
 export const prettyConsole: MiddlewareHandler = (context, next) => {
-    context.onSendActivity((_, activities, next) => {
+    context.onSendActivities((_, activities, next) => {
         let first;
 
         for (let activity of activities) {

@@ -15,9 +15,7 @@ class ChildTopic extends Topic {
     }
 
     async onTurn() {
-        const text = this.context.request.type === 'message' ? this.context.request.text : undefined;
-        
-        const num = Number.parseInt(text);
+        const num = Number.parseInt(this.text);
 
         if (Number.isNaN(num))
             await this.context.sendActivity(`Please supply a number.`);
@@ -35,9 +33,7 @@ class RootTopic extends TopicWithChild {
     }
     
     async onTurn() {
-        const text = this.context.request.type === 'message' ? this.context.request.text : undefined;
-
-        if (text === 'end child') {
+        if (this.text === 'end child') {
             if (this.hasChild()) {
                 this.clearChild();
                 await this.context.sendActivity(`I have ended the child topic.`);
@@ -50,7 +46,7 @@ class RootTopic extends TopicWithChild {
         if (await this.dispatchToChild())
             return;
 
-        if (text === 'start child') {
+        if (this.text === 'start child') {
             return this.beginChild(ChildTopic, {
                 foo: 13
             });
@@ -61,7 +57,7 @@ class RootTopic extends TopicWithChild {
 
     async onChildReturn(child)
     {
-        await this.context.sendActivity(`13 * ${child.returnArgs.num} = ${13 * child.returnArgs.num}`);
+        await this.context.sendActivity(`13 * ${child.return.num} = ${13 * child.return.num}`);
         this.clearChild();
     }
 

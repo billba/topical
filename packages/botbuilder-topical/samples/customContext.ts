@@ -1,4 +1,4 @@
-import { BotContext, MemoryStorage, ConsoleAdapter } from 'botbuilder';
+import { TurnContext, MemoryStorage, ConsoleAdapter } from 'botbuilder';
 import { Topic, TextPrompt, TopicWithChild, prettyConsole, WSTelemetry } from '../src/topical';
 
 // const wst = new WSTelemetry('ws://localhost:8080/server');
@@ -8,7 +8,7 @@ Topic.init(new MemoryStorage());
 
 const adapter = new ConsoleAdapter();
 
-class CustomContext extends BotContext {
+class CustomContext extends TurnContext {
     foo = "hey"
 }
 
