@@ -36,7 +36,7 @@ class PromptForText extends TextPrompt<string, CustomContext> {
 
 class Foo extends TopicWithChild<any, any, any, any, CustomContext> {
 
-    static subtopics = [PromptForText];
+    static subtopics = [Child, PromptForText];
 
     async onBegin() {
         this.beginChild(Child);
