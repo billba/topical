@@ -37,7 +37,8 @@ export abstract class TopicWithChild <
         beginArgs?: Begin,
         constructorArgs?: Constructor,
     ) {
-        this.setChild(await (topicClass as any).begin(this, beginArgs, constructorArgs));
+        const instanceName = this.createTopicInstance(topicClass, constructorArgs);
+        this.setChild(await Topic.beginInstance(this, instanceName, beginArgs) ? instanceName : undefined);
     }
 
     public hasChild () {
