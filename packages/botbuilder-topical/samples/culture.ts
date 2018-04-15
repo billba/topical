@@ -17,8 +17,8 @@ adapter
 class PromptForCulture extends Prompt<string, string> {
 
     validator = hasText
-        .and((activity, value) => Culture.getSupportedCultureCodes().includes(value)
-            ? { value }
+        .and<string>((activity, text) => Culture.getSupportedCultureCodes().includes(text)
+            ? text
             : { reason: 'unsupported_culture' }
         );
 
@@ -62,12 +62,12 @@ class FavoriteNumber extends TopicWithChild  {
                 name: 'favoriteNumber',
                 args: `What's your favorite number?`,
             }, {
-                culture: child.return.result.value, 
+                culture: child.return!.result.value!, 
             });
 
         } else if (child instanceof PromptForNumber) {
 
-            await this.context.sendActivity(`${child.return.result.value}? That's my favorite too!`);
+            await this.context.sendActivity(`${child.return!.result.value}? That's my favorite too!`);
             this.clearChild();
         }
     }

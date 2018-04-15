@@ -9,7 +9,7 @@ export const prettyConsole: MiddlewareHandler = (context, next) => {
         for (let activity of activities) {
             if (activity.type === 'message') {
                 activity.text = '> '
-                    + activity.text
+                    + activity.text!
                         .split('\n')
                         .join(`\n> `)
                     + '\n';

@@ -6,15 +6,18 @@ export interface ValidatorResult <V> {
     reason?: string;
 }
 
-export type Validate <V> = (activity: Activity) => Promiseable<ValidatorResult<V> | V>;
-export type StrictValidate <V> = (activity: Activity) => Promise<ValidatorResult<V>>;
-export type Constraint <V, W = V> = (activity: Activity, value: V) => Promiseable<ValidatorResult<W> | W>;
+export type Validate <V> = (activity: Partial<Activity>) => Promiseable<ValidatorResult<V> | V>;
+export type StrictlyValidate <V> = (activity: Partial<Activity>) => Promise<ValidatorResult<V>>;
+export type Constraint <V, W> = (activity: Partial<Activity>, value: V) => Promiseable<ValidatorResult<W> | W>;
 
 export class Validator <V> {
-    validate: StrictValidate<V>;
+
+    validate: StrictlyValidate<V>;
 
     constructor(validate: Validate<V>) {
+
         this.validate = async (activity) => {
+
             const result = await toPromise(validate(activity))
 
             if (result === undefined)
@@ -23,18 +26,22 @@ export class Validator <V> {
             if (typeof result === 'object' && ((result as any).reason || (result as any).value))
                 return result;
 
-            return { value: result } as ValidatorResult<V>;
+            return { value: result as V };
         }
     }
 
     and <W = V> (
         constraint: Constraint<V, W>
-    ): Validator <W> {
-        return new Validator(async activity => {
+    ) {
+
+        return new Validator<W>(async activity => {
+
             const result = await this.validate(activity);
+
             if (result.reason)
                 return { reason: result.reason };
-            return constraint(activity, result.value);
+
+            return constraint(activity, result.value!);
         })
     }
 }

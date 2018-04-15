@@ -20,23 +20,19 @@ export interface SimpleFormState {
 }
 
 export interface SimpleFormInit {
-    schema: SimpleFormSchema
+    schema: SimpleFormSchema;
 }
 
 export interface SimpleFormReturn {
     form: SimpleFormData;
 }
 
-export interface SimpleFormPromptState {
-    prompt: string;
-}
-
-export class PromptForValue extends TextPrompt<SimpleFormPromptState> {
+export class PromptForValue extends TextPrompt<string> {
 
     maxTurns = Number.MAX_SAFE_INTEGER;
 
     async prompter(result: ValidatorResult<string>) {
-        await this.context.sendActivity(this.state.args.prompt);
+        await this.context.sendActivity(this.state.args);
     }
 }
 
@@ -45,9 +41,9 @@ export class SimpleForm extends TopicWithChild<SimpleFormInit, SimpleFormState, 
     static subtopics = [PromptForValue];
 
     async onBegin(
-        args: SimpleFormInit,
+        args?: SimpleFormInit,
     ) {
-        this.state.schema = args.schema;
+        this.state.schema = args!.schema;
         this.state.form = {};
 
         await this.next();
@@ -63,9 +59,7 @@ export class SimpleForm extends TopicWithChild<SimpleFormInit, SimpleFormState, 
 
                 await this.beginChild(PromptForValue, {
                     name,
-                    args: {
-                        prompt: metadata.prompt,
-                    },
+                    args: metadata.prompt,
                 });
                 break;
             }
@@ -84,12 +78,12 @@ export class SimpleForm extends TopicWithChild<SimpleFormInit, SimpleFormState, 
     }
 
     async onChildReturn(child: PromptForValue) {
-        const metadata = this.state.schema[child.return.name];
+        const metadata = this.state.schema[child.return!.name];
 
         if (metadata.type !== 'string')
             throw `not expecting type "${metadata.type}"`;
 
-        this.state.form[child.return.name] = child.return.result.value!;
+        this.state.form[child.return!.name] = child.return!.result.value!;
         this.clearChild();
 
         await this.next();

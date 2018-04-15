@@ -55,7 +55,7 @@ class Foo extends TopicWithChild<any, any, any, any, CustomContext> {
             });
         } else if (child instanceof PromptForText) {
             console.log("I got here");
-            await this.context.sendActivity(`You said ${child.return.result.value}`);
+            await this.context.sendActivity(`You said ${child.return!.result.value}`);
             this.clearChild();
         } else
             throw "mystery child topic";

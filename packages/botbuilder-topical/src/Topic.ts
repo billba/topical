@@ -95,14 +95,12 @@ export abstract class Topic <
     // If someone does try to do this.state = { ... }, we delete all the old properties and replace them with the properties
     // from the new state. Messy, inefficient, works.
 
-    private _state!: State;
-
-    public get text () {
-        return this.context.activity.type === 'message' ? this.context.activity.text.trim() : undefined;
-    }
+    private _state!: {
+        [property: string]: any
+    };
 
     public get state () {
-        return this._state;
+        return this._state as State;
     }
 
     public set state (
@@ -120,6 +118,7 @@ export abstract class Topic <
     public context!: Context;
     public instanceName!: string;
     public parent?: Topic<any, any, any, any, Context>;
+    public text?: string;
 
     constructor (
         args: Constructor,
@@ -143,6 +142,7 @@ export abstract class Topic <
         topic.parent = parent;
         topic.instanceName = instance.instanceName;
         topic._state = instance.state;
+        topic.text = context.activity.type === 'message' ? context.activity.text.trim() : undefined;
 
         return topic;
     }

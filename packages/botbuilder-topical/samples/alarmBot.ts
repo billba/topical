@@ -94,20 +94,20 @@ class DeleteAlarm extends TopicWithChild<DeleteAlarmBegin, DeleteAlarmState, Del
         if (!(child instanceof PromptForText))
             throw "unexpected child topic";
         
-        switch (child.return.name) {
+        switch (child.return!.name) {
             case 'whichAlarm':
-                this.state.alarmName = child.return.result.value!;
+                this.state.alarmName = child.return!.result.value!;
                 await this.beginChild(PromptForText, {
                     name: 'confirm',
                     args: {
-                        prompt: `Are you sure you want to delete alarm "${child.return.result.value}"? (yes/no)"`,
+                        prompt: `Are you sure you want to delete alarm "${child.return!.result.value}"? (yes/no)"`,
                     },
                 });
                 break;
 
             case 'confirm':
                 this.clearChild();
-                this.returnToParent(child.return.result.value === 'yes'
+                this.returnToParent(child.return!.result.value === 'yes'
                     ? {
                         alarmName: this.state.alarmName
                     }
@@ -116,7 +116,7 @@ class DeleteAlarm extends TopicWithChild<DeleteAlarmBegin, DeleteAlarmState, Del
                 break;
 
             default:
-                throw `unknwon prompt name ${child.return.name}`;
+                throw `unknwon prompt name ${child.return!.name}`;
         }
     }
 
@@ -173,14 +173,14 @@ class AlarmBot extends TopicWithChild<any, AlarmBotState> {
 
     async onChildReturn(child: Topic) {
         if (child instanceof SimpleForm) {
-            this.state.alarms.push({ ... child.return.form } as any as Alarm);
+            this.state.alarms.push({ ... child.return!.form } as any as Alarm);
             await this.context.sendActivity(`Alarm successfully added!`);
         } else if (child instanceof DeleteAlarm) {
             if (child.return) {
                 this.state.alarms = this.state.alarms
-                    .filter(alarm => alarm.name !== child.return.alarmName);
+                    .filter(alarm => alarm.name !== child.return!.alarmName);
 
-                await this.context.sendActivity(`Alarm "${child.return.alarmName}" has been deleted.`)
+                await this.context.sendActivity(`Alarm "${child.return!.alarmName}" has been deleted.`)
             } else {
                 await this.context.sendActivity(`Okay, the status quo has been preserved.`)
             }

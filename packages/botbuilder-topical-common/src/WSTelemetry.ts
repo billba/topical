@@ -1,4 +1,5 @@
 import * as WebSocket from 'ws';
+import { TelemetryAction } from './Telemetry';
 
 export class WSTelemetry {
     private open: boolean;
@@ -19,7 +20,7 @@ export class WSTelemetry {
     }
 
     async send (
-        action
+        action: TelemetryAction
     ) {
         if (this.open)
             this.ws.send(JSON.stringify(action));
