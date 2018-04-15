@@ -97,6 +97,10 @@ export abstract class Topic <
 
     private _state!: State;
 
+    public get text () {
+        return this.context.activity.type === 'message' ? this.context.activity.text.trim() : undefined;
+    }
+
     public get state () {
         return this._state;
     }
