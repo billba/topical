@@ -105,6 +105,16 @@ export abstract class Topic <
         return this.topicInstance.instanceName;
     }
 
+    public get begun () {
+        return this.topicInstance.begun;
+    }
+
+    public set begun (
+        begun: boolean,
+    ) {
+        this.topicInstance.begun = begun;
+    }
+
     private returnStatus = TopicReturnStatus.noReturn;
     public return?: Return;
 
@@ -170,7 +180,7 @@ export abstract class Topic <
         const topic = Topic.loadInstance(parentOrContext, instanceName);
         // await this.sendTelemetry(context, newInstance, 'init.begin');
 
-        topic.topicInstance.begun = true;
+        topic.begun = true;
 
         await topic.onBegin(beginArgs);
 
@@ -330,10 +340,10 @@ export abstract class Topic <
         if (!instance)
             return false;
 
-        if (!instance.begun)
-            throw `An attempt was made to dispatch to ${instance.instanceName}, which has not yet begun.`;
-
         const topic = Topic.loadInstance(this, instance);
+
+        if (!topic.begun)
+            throw `An attempt was made to dispatch to ${topic.instanceName}, which has not yet begun.`;
 
         // await topic.sendTelemetry(context, instance, 'onReceive.begin');
         await topic.onTurn();
