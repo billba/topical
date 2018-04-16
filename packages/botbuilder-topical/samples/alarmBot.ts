@@ -29,9 +29,11 @@ interface ShowAlarmBegin {
 }
 
 class ShowAlarms extends Topic<ShowAlarmBegin> {
+
     async onBegin (
         args: ShowAlarmBegin,
     ) {
+
         if (args.alarms.length === 0)
             await this.context.sendActivity(`You haven't set any alarms.`);
         else
@@ -71,6 +73,7 @@ class DeleteAlarm extends TopicWithChild<DeleteAlarmBegin, DeleteAlarmState, Del
     async onBegin (
         args: DeleteAlarmBegin,
     ) {
+
         if (args.alarms.length === 0) {
             await this.context.sendActivity(`You don't have any alarms.`);
             return this.returnToParent();
@@ -87,13 +90,15 @@ class DeleteAlarm extends TopicWithChild<DeleteAlarmBegin, DeleteAlarmState, Del
     }
 
     async onTurn () {
+
         await this.dispatchToChild();
     }
 
     async onChildReturn(child: Topic) {
+
         if (!(child instanceof PromptForText))
             throw "unexpected child topic";
-        
+
         switch (child.return!.name) {
             case 'whichAlarm':
                 this.state.alarmName = child.return!.result.value!;
@@ -134,11 +139,13 @@ class AlarmBot extends TopicWithChild<any, AlarmBotState> {
     static subtopics = [DeleteAlarm, ShowAlarms, SimpleForm];
 
     async onBegin () {
+
         await this.context.sendActivity(`Welcome to Alarm Bot!\n${helpText}`);
         this.state.alarms = [];
     }
 
     async onTurn () {
+
         if (await this.dispatchToChild())
             return;
 
@@ -172,6 +179,7 @@ class AlarmBot extends TopicWithChild<any, AlarmBotState> {
     }
 
     async onChildReturn(child: Topic) {
+
         if (child instanceof SimpleForm) {
             this.state.alarms.push({ ... child.return!.form } as any as Alarm);
             await this.context.sendActivity(`Alarm successfully added!`);

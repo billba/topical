@@ -23,6 +23,7 @@ class PromptForCulture extends Prompt<string, string> {
         );
 
     async prompter() {
+
         await this.context.sendActivity(this.state.args);
     }
 }
