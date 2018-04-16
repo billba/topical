@@ -76,49 +76,58 @@ export abstract class Topic <
     }
 
     protected static register() {
-        for (const T of this.subtopics) {
+
+        for (const T of this.subtopics)
             (T as any).register();
-        }
 
         if (this === Topic)
             return;
 
         const T = Topic.topics[this.name];
 
-        if (T && T !== this as any)
+        if (T) {
+
+            if (T === this as any)
+                return; // no need to re-register
             throw `A different topic with name ${T.name} has already been registered.`
+        }
 
         Topic.topics[this.name] = this as any;
     }
 
     public get state () {
+
         return this.topicInstance.state;
     }
 
     public set state (
         state: State,
     ) {
+
         this.topicInstance.state = state;
     }
 
     public get instanceName () {
+
         return this.topicInstance.instanceName;
     }
 
     public get begun () {
+
         return this.topicInstance.begun;
     }
 
     public set begun (
         begun: boolean,
     ) {
+
         this.topicInstance.begun = begun;
     }
 
     private returnStatus = TopicReturnStatus.noReturn;
     public return?: Return;
 
-    private topicInstance: TopicInstance<State>;
+    private topicInstance!: TopicInstance<State>;
 
     public context!: Context;
 
@@ -140,6 +149,7 @@ export abstract class Topic <
         context: Context,
         constructorArgs?: Constructor,
     ) {
+
         const topicName = this.name;
 
         if (!Topic.topics[topicName])
@@ -167,6 +177,7 @@ export abstract class Topic <
         topicClass: T,
         constructorArgs?: Constructor,
     ) {
+
         return (topicClass as any).createInstance(this.context, constructorArgs);
     }
 
@@ -177,7 +188,9 @@ export abstract class Topic <
         instanceName: string,
         beginArgs?: any,
     ): Promise<Topic<any, any, any, any, Context> | undefined> {
+
         const topic = Topic.loadInstance(parentOrContext, instanceName);
+
         // await this.sendTelemetry(context, newInstance, 'init.begin');
 
         topic.begun = true;
@@ -228,6 +241,7 @@ export abstract class Topic <
     public returnToParent(
         args?: Return,
     ) {
+
         if (this.returnStatus != TopicReturnStatus.noReturn)
             throw "already returned";
 
@@ -239,12 +253,14 @@ export abstract class Topic <
         context: TurnContext,
         instanceName: string,
     ) {
+
         delete Topic.topicalState.get(context)!.instances[instanceName];
     }
 
     protected static rootInstanceName(
         context: TurnContext,
     ) {
+
         return Topic.topicalState.get(context)!.rootInstanceName;
     }
 
@@ -259,6 +275,7 @@ export abstract class Topic <
         beginArgs?: Begin,
         constructorArgs?: Constructor,
     ) {
+
         if (this === Topic as any)
             throw "You can only `do' a child of Topic.";
 
@@ -272,6 +289,7 @@ export abstract class Topic <
         const state = Topic.topicalState.get(context);
 
         if (topical.rootInstanceName) {
+
             const rootInstanceName = topical.rootInstanceName;
             const instance = Topic.getInstanceFromName(context, rootInstanceName);
             const topic = Topic.loadInstance(context, instance);
@@ -304,6 +322,7 @@ export abstract class Topic <
 
             // await topic.sendTelemetry(context, instance, 'endOfTurn');
         } else {
+
             topical.instances = {};
             topical.rootInstanceName = (this as any).createInstance(context, constructorArgs);
             if (!await Topic.beginInstance(context, topical.rootInstanceName!, beginArgs))
@@ -321,6 +340,7 @@ export abstract class Topic <
         context: TurnContext,
         instanceName: string,
     ) {
+
         const instance = Topic.topicalState.get(context)!.instances[instanceName];
 
         if (!instance)
@@ -332,6 +352,7 @@ export abstract class Topic <
     public async dispatchTo (
         instanceName: string | undefined,
     ) {
+
         if (!instanceName)
             return false;
 
@@ -354,6 +375,7 @@ export abstract class Topic <
     }
 
     private async returnedToParent (): Promise<boolean> {
+
         if (this.returnStatus !== TopicReturnStatus.signalled)
             return false;
 
@@ -408,6 +430,7 @@ export abstract class Topic <
     }
 
     public listChildren (): string[] {
+
         return [];
     }
 }

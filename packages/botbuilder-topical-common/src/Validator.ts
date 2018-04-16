@@ -42,6 +42,6 @@ export class Validator <V> {
                 return { reason: result.reason };
 
             return constraint(activity, result.value!);
-        })
+        });
     }
 }
