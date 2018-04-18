@@ -49,11 +49,11 @@ class Root extends Topic {
 
     async onTurn() {
 
-        if (await this.dispatchToChild())
-            return;
-
         if (this.text === 'knock knock')
             await this.beginChild(KnockKnock);
+
+        if (await this.dispatchToChild())
+            return;
     }
 
     async onChildReturn(child: KnockKnock) {

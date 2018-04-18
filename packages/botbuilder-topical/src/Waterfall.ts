@@ -5,7 +5,7 @@ export interface WaterfallState {
     index: number;
 }
 
-type Step = () => Promise<true | any>;
+export type Step = () => Promise<true | any>;
 
 export class Waterfall <
     Begin = any,
