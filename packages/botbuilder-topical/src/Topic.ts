@@ -1,7 +1,7 @@
 import { Promiseable, Activity, TurnContext, Storage, BotState } from 'botbuilder';
 import { toPromise, returnsPromiseVoid, Telemetry, TelemetryAction } from './topical';
 
-interface TopicInstance <State = any, Constructor = any> {
+export interface TopicInstance <State = any, Constructor = any> {
     instanceName: string;
     topicName: string;
     begun: boolean;

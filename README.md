@@ -144,6 +144,13 @@ The [triggers](/packages/topical-lite/samples/triggers.ts) sample demonstrates t
 * `npm run build`
 * `node lib/samples/triggers.js`
 
+The [knock knock](/packages/topical-lite/samples/knockKnock.ts) sample demonstrates the use of Waterfalls.
+
+* clone this repo
+* `npm install`
+* `npm run build`
+* `node lib/samples/knockKnock.js`
+
 ## Can I publish my own Topics?
 
 Please do! [SimpleForm](/packages/topical-lite/src/SimpleForm.ts) is a (simple) example of a "form fill" `Topic` that could be of general use (as in the alarm bot sample). It also demonstrates how to express a dependency on another `Topic` (`TextPrompt`).

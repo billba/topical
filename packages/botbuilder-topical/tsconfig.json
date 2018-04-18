@@ -59,6 +59,7 @@
       "samples/customContext",
       "samples/culture",
       "samples/triggers",
+      "samples/knockKnock",
     ]
   }
   
