@@ -5,9 +5,7 @@ export interface WaterfallState {
     index: number;
 }
 
-interface Step {
-    (next: () => void): Promise<void>;
-}
+type Step = () => Promise<true | any>;
 
 export class Waterfall <
     Begin = any,
@@ -18,21 +16,17 @@ export class Waterfall <
 > extends Topic <Begin, State, Return, Constructor, Context> {
 
     async waterfall(... steps: Step[]) {
-        if (this.state.index === undefined) {
+
+        if (this.state.index === undefined)
             this.state.index = 0;
-        }
 
         let next = true;
 
         while (next && this.state.index < steps.length) {
-            next = false;
-
-            await steps[this.state.index](() => {
-                next = true;
-            });
+            next = await steps[this.state.index]() === true;
 
             this.state.index++;
-        } 
+        }
 
         return this.state.index >= steps.length;    
     }

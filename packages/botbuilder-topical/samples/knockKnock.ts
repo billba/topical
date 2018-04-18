@@ -24,15 +24,14 @@ class KnockKnock extends Waterfall  {
             async () => {
                 await this.context.sendActivity(`Who's there?`);
             },
-            async (next) => {
-                if (this.text === 'cheat') {
-                    next();
-                    return;
-                }
+            async () => {
+                if (this.text === 'cheat')
+                    return true;
+
                 await this.context.sendActivity(`${this.text} who?`);
             },
             async () => {
-                await this.context.sendActivity(`Hilarious!`)
+                await this.context.sendActivity(`Hilarious!`);
             },
         ))
             this.returnToParent();
@@ -58,6 +57,8 @@ class Root extends Topic {
     }
 
     async onChildReturn(child: KnockKnock) {
+
+        this.clearChildren();
 
         await this.context.sendActivity(`That was fun. Tell me another.`);
     }
