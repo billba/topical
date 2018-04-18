@@ -31,7 +31,7 @@ For single-user in-process applications, the Topics pattern is easily implemente
 `topical-lite` supplies a [`Topic`](/packages/topical-lite/src/Topic.ts) class. Here's a simple version of the Root topic illustrated above:
 
 ```ts
-class Root extends TopicWithChild {
+class Root extends Topic {
     async onBegin(args) {
         await this.context.sendActivity("How can I help you today?");
     }
@@ -44,7 +44,7 @@ class Root extends TopicWithChild {
             await this.beginChild(TravelTopic,
                 async (context, return) => {
                     await context.sendActivity(`Welcome back to the Root!`);
-                    this.clearChild();
+                    this.clearChildren();
                 }
             );
         }
@@ -59,7 +59,7 @@ Traditional object-oriented programming won't work for many-users-to-many-instan
 `topical` hides most of these differences: 
 
 ```ts
-class Root extends TopicWithChild {
+class Root extends Topic {
 
     async onBegin(args) {
         await this.context.sendActivity("How can I help you today?");
@@ -76,7 +76,7 @@ class Root extends TopicWithChild {
 
     async onChildReturn(child) {
         await this.context.sendActivity(`Welcome back to the Root!`);
-        this.clearChild();
+        this.clearChildren();
     }
 }
 
@@ -89,15 +89,13 @@ The main visible differences are:
 
 As you can see, you can code topics in distributed web services largely the same way as standard applications. This is the magic of *Topical*.
 
-## What if I want a Topic to have many children?
+## Tell me about Topics and children
 
-Each topic defines and maintains its own state, including any notion of heirarchy. A given topic could have:
+A given topic can have:
 
 * no children
 * a single child
-* a map of children (allowing fast access to the right one)
-* an array of children (for instance an array of open questions ordered by recency)
-* ... or anything else
+* multiple children
 
 ## What goes into a Topic?
 
@@ -181,11 +179,11 @@ In any method of a given topic, you *begin* a subclass of `Topic` of by calling 
 
 * creates a conceptual instance of `SubclassOfTopic`, including a unique name. This will be persisted to the state store at the end of the turn
 * calls `new SubclassOfTopic(constructorArgs)`, sets its `.instanceName` and `.state`, and calls its `.onBegin(beginArgs)`
-* sets `this.state.child` of the calling turn instance to the `.instanceName` of the just-created turn instance of `SubclassOfTopic`
+* sets `this.children[0]` of the calling turn instance to the `.instanceName` of the just-created turn instance of `SubclassOfTopic`
 
 Subsequently (either in the same turn or on a later turn) you can call `this.dispatchToChild()`, usually (but not always) from within the `onTurn` method of a given topic. This:
 
-* gets the conceptual instance name from the turn intance of the method's topic's `this.state.child`
+* gets the conceptual instance name from the turn intance of the method's topic's `this.children[0]`
 * loads the conceptual instance from the state store
 * looks up `SubclassOfTopic` in *Topical*'s Registration map
 * calls `new SubclassOfTopic(constructorArgs)`, sets its `.instanceName` and `.state`, and calls its `.onTurn()`
