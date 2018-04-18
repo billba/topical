@@ -100,6 +100,7 @@ class DeleteAlarm extends Topic<DeleteAlarmBegin, DeleteAlarmState, DeleteAlarmR
             throw "unexpected child topic";
 
         switch (child.return!.name) {
+
             case 'whichAlarm':
                 this.state.alarmName = child.return!.result.value!;
                 await this.beginChild(PromptForText, {
@@ -151,6 +152,7 @@ class AlarmBot extends Topic<any, AlarmBotState> {
         if (this.text) {
 
             if (/set|add|create/i.test(this.text)) {
+
                 await this.beginChild(SimpleForm, {
                     schema: {
                         name: {
@@ -164,14 +166,17 @@ class AlarmBot extends Topic<any, AlarmBotState> {
                     }
                 });
             } else if (/show|list/i.test(this.text)) {
+
                 await this.beginChild(ShowAlarms, {
                     alarms: this.state.alarms
                 });
             } else if (/delete|remove/i.test(this.text)) {
+
                 await this.beginChild(DeleteAlarm, {
                     alarms: this.state.alarms
                 });
             } else {
+
                 await this.context.sendActivity(helpText);
             }
         }
@@ -180,9 +185,11 @@ class AlarmBot extends Topic<any, AlarmBotState> {
     async onChildReturn(child: Topic) {
 
         if (child instanceof SimpleForm) {
+
             this.state.alarms.push({ ... child.return!.form } as any as Alarm);
             await this.context.sendActivity(`Alarm successfully added!`);
         } else if (child instanceof DeleteAlarm) {
+
             if (child.return) {
                 this.state.alarms = this.state.alarms
                     .filter(alarm => alarm.name !== child.return!.alarmName);
@@ -192,8 +199,10 @@ class AlarmBot extends Topic<any, AlarmBotState> {
                 await this.context.sendActivity(`Okay, the status quo has been preserved.`)
             }
         } else if (!(child instanceof ShowAlarms)) {
+
             throw `unexpected child topic`;
-        } 
+        }
+
         this.clearChildren();
     }
 }
