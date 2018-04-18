@@ -6,6 +6,7 @@ interface TopicInstance <State = any, Constructor = any> {
     topicName: string;
     begun: boolean;
     constructorArgs: Constructor,
+    children: string[];
     state: State;
 }
 
@@ -124,6 +125,18 @@ export abstract class Topic <
         this.topicInstance.begun = begun;
     }
 
+    public get children () {
+
+        return this.topicInstance.children;
+    }
+
+    public set children (
+        children: string[],
+    ) {
+
+        this.topicInstance.children = children;
+    }
+
     private returnStatus = TopicReturnStatus.noReturn;
     public return?: Return;
 
@@ -162,6 +175,7 @@ export abstract class Topic <
             topicName,
             constructorArgs,
             state: {},
+            children: [],
             begun: false,
         }
 
@@ -176,33 +190,9 @@ export abstract class Topic <
     > (
         topicClass: T,
         constructorArgs?: Constructor,
-    ) {
+    ): string {
 
         return (topicClass as any).createInstance(this.context, constructorArgs);
-    }
-
-    protected static async beginInstance <
-        Context extends TurnContext,
-    > (
-        parentOrContext: Topic<any, any, any, any, Context> | Context,
-        instanceName: string,
-        beginArgs?: any,
-    ): Promise<Topic<any, any, any, any, Context> | undefined> {
-
-        const topic = Topic.loadInstance(parentOrContext, instanceName);
-
-        // await this.sendTelemetry(context, newInstance, 'init.begin');
-
-        topic.begun = true;
-
-        await topic.onBegin(beginArgs);
-
-        if (await topic.returnedToParent())
-            return undefined;
-
-        // await this.sendTelemetry(context, newInstance, 'init.end');
-
-        return topic;
     }
 
     private static loadInstance <Context extends TurnContext> (
@@ -236,6 +226,52 @@ export abstract class Topic <
         topic.text = context.activity.type === 'message' ? context.activity.text.trim() : undefined;
 
         return topic;
+    }
+
+    private loadTopicInstance (
+        instance: string | TopicInstance,
+    ): Topic<any, any, any, any, Context> {
+
+        return Topic.loadInstance(this, instance);
+    }
+
+    protected static async beginInstance <
+        Context extends TurnContext,
+    > (
+        parentOrContext: Topic<any, any, any, any, Context> | Context,
+        instanceName: string,
+        beginArgs?: any,
+    ): Promise<Topic<any, any, any, any, Context> | undefined> {
+
+        const topic = Topic.loadInstance(parentOrContext, instanceName);
+
+        // await this.sendTelemetry(context, newInstance, 'init.begin');
+
+        topic.begun = true;
+
+        await topic.onBegin(beginArgs);
+
+        if (await topic.returnedToParent())
+            return undefined;
+
+        // await this.sendTelemetry(context, newInstance, 'init.end');
+
+        return topic;
+    }
+
+    async beginTopicInstance <
+        T extends Topicable<Begin, any, any, Constructor, Context>,
+        Begin,
+        Constructor,
+    > (
+        topicClass: T,
+        beginArgs?: Begin,
+        constructorArgs?: Constructor,
+    ): Promise<string | undefined> {
+
+        const instanceName = this.createTopicInstance(topicClass, constructorArgs);
+        const topic = await Topic.beginInstance(this, instanceName, beginArgs);
+        return topic && instanceName;
     }
 
     public returnToParent(
@@ -289,12 +325,7 @@ export abstract class Topic <
         const state = Topic.topicalState.get(context);
 
         if (topical.rootInstanceName) {
-
-            const rootInstanceName = topical.rootInstanceName;
-            const instance = Topic.getInstanceFromName(context, rootInstanceName);
-            const topic = Topic.loadInstance(context, instance);
-
-            await topic.onTurn();
+            await Topic.loadInstance(context, topical.rootInstanceName).onTurn();
 
             // garbage collect orphaned instances
 
@@ -361,7 +392,7 @@ export abstract class Topic <
         if (!instance)
             return false;
 
-        const topic = Topic.loadInstance(this, instance);
+        const topic = this.loadTopicInstance(instance);
 
         if (!topic.begun)
             throw `An attempt was made to dispatch to ${topic.instanceName}, which has not yet begun.`;
@@ -414,6 +445,49 @@ export abstract class Topic <
     //     });
     // }
 
+    public async clearChildren () {
+        for (const child in this.children) {
+            Topic.deleteInstance(this.context, child);
+        }
+
+        this.children = [];
+    }
+
+    public async removeChild (
+        child: string,
+    ) {
+        Topic.deleteInstance(this.context, child);
+        this.children = this.children.filter(_child => _child !== child);
+    }
+
+    public setChild (
+        childInstanceName: string | undefined,
+    ) {
+        this.clearChildren();
+        if (childInstanceName)
+            this.children[0] = childInstanceName;
+    }
+
+    async beginChild <
+        T extends Topicable<Begin, any, any, Constructor, Context>,
+        Begin,
+        Constructor,
+    > (
+        topicClass: T,
+        beginArgs?: Begin,
+        constructorArgs?: Constructor,
+    ) {
+        this.setChild(await this.beginTopicInstance(topicClass, beginArgs, constructorArgs))
+    }
+
+    public hasChildren () {
+        return this.children.length !== 0;
+    }
+
+    public async dispatchToChild () {
+        return this.dispatchTo(this.children.length ? this.children[0] : undefined);
+    }
+
     // These four default methods are optionally overrideable by subclasses
 
     public async onBegin (
@@ -427,11 +501,6 @@ export abstract class Topic <
     public async onChildReturn(
         child: Topic<any, any, any, any, Context>,
     ) {
-    }
-
-    public listChildren (): string[] {
-
-        return [];
     }
 }
 

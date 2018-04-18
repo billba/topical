@@ -1,4 +1,4 @@
-import { Topic, TextPrompt, TopicWithChild, ValidatorResult } from '../src/topical';
+import { Topic, TextPrompt, ValidatorResult } from '../src/topical';
 
 export interface SimpleFormMetadata {
     type: string;
@@ -16,7 +16,6 @@ export interface SimpleFormData {
 export interface SimpleFormState {
     form: SimpleFormData;
     schema: SimpleFormSchema;
-    child: string;
 }
 
 export interface SimpleFormInit {
@@ -36,7 +35,7 @@ export class PromptForValue extends TextPrompt<string> {
     }
 }
 
-export class SimpleForm extends TopicWithChild<SimpleFormInit, SimpleFormState, SimpleFormReturn> {
+export class SimpleForm extends Topic<SimpleFormInit, SimpleFormState, SimpleFormReturn> {
     
     static subtopics = [PromptForValue];
 
@@ -65,7 +64,7 @@ export class SimpleForm extends TopicWithChild<SimpleFormInit, SimpleFormState, 
             }
         }
 
-        if (!this.hasChild()) {
+        if (!this.hasChildren()) {
             this.returnToParent({
                 form: this.state.form
             });
@@ -84,7 +83,7 @@ export class SimpleForm extends TopicWithChild<SimpleFormInit, SimpleFormState, 
             throw `not expecting type "${metadata.type}"`;
 
         this.state.form[child.return!.name] = child.return!.result.value!;
-        this.clearChild();
+        this.clearChildren();
 
         await this.next();
     }

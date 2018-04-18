@@ -1,5 +1,5 @@
 const { MemoryStorage, ConsoleAdapter } = require('botbuilder');
-const { Topic, TopicWithChild } = require ('../lib/src/topical.js');
+const { Topic } = require ('../lib/src/topical.js');
 
 Topic.init(new MemoryStorage());
 
@@ -26,7 +26,7 @@ class ChildTopic extends Topic {
     }
 }
 
-class RootTopic extends TopicWithChild {
+class RootTopic extends Topic {
 
     async onBegin() {
         await this.context.sendActivity(`Welcome to my root topic!`);
@@ -34,8 +34,8 @@ class RootTopic extends TopicWithChild {
     
     async onTurn() {
         if (this.text === 'end child') {
-            if (this.hasChild()) {
-                this.clearChild();
+            if (this.hasChildren()) {
+                this.clearChildren();
                 await this.context.sendActivity(`I have ended the child topic.`);
             } else {
                 await this.context.sendActivity(`There is no child to end`);
@@ -58,7 +58,7 @@ class RootTopic extends TopicWithChild {
     async onChildReturn(child)
     {
         await this.context.sendActivity(`13 * ${child.return.num} = ${13 * child.return.num}`);
-        this.clearChild();
+        this.clearChildren();
     }
 
 }

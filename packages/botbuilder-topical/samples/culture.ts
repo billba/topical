@@ -1,5 +1,5 @@
 import { MemoryStorage, ConsoleAdapter } from 'botbuilder';
-import { Topic, Culture, NumberPrompt, TopicWithChild, prettyConsole, WSTelemetry, Prompt, hasText } from '../src/topical';
+import { Topic, Culture, NumberPrompt, prettyConsole, WSTelemetry, Prompt, hasText } from '../src/topical';
 
 // const wst = new WSTelemetry('ws://localhost:8080/server');
 // Topic.telemetry = action => wst.send(action);
@@ -35,7 +35,7 @@ class PromptForNumber extends NumberPrompt<string> {
     }
 }
 
-class FavoriteNumber extends TopicWithChild  {
+class FavoriteNumber extends Topic  {
 
     static subtopics = [PromptForCulture, PromptForNumber];
 
@@ -69,7 +69,7 @@ class FavoriteNumber extends TopicWithChild  {
         } else if (child instanceof PromptForNumber) {
 
             await this.context.sendActivity(`${child.return!.result.value}? That's my favorite too!`);
-            this.clearChild();
+            this.clearChildren();
         }
     }
 }

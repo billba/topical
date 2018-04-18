@@ -1,5 +1,5 @@
 import { MemoryStorage, ConsoleAdapter } from 'botbuilder';
-import { Topic, TextPrompt, TopicWithChild, prettyConsole, WSTelemetry } from '../src/topical';
+import { Topic, TextPrompt, prettyConsole, WSTelemetry } from '../src/topical';
 import { SimpleForm } from './SimpleForm';
 
 // const wst = new WSTelemetry('ws://localhost:8080/server');
@@ -66,7 +66,7 @@ class PromptForText extends TextPrompt {
     }
 }
 
-class DeleteAlarm extends TopicWithChild<DeleteAlarmBegin, DeleteAlarmState, DeleteAlarmReturn> {
+class DeleteAlarm extends Topic<DeleteAlarmBegin, DeleteAlarmState, DeleteAlarmReturn> {
 
     static subtopics = [PromptForText];
 
@@ -111,7 +111,7 @@ class DeleteAlarm extends TopicWithChild<DeleteAlarmBegin, DeleteAlarmState, Del
                 break;
 
             case 'confirm':
-                this.clearChild();
+                this.clearChildren();
                 this.returnToParent(child.return!.result.value === 'yes'
                     ? {
                         alarmName: this.state.alarmName
@@ -128,13 +128,12 @@ class DeleteAlarm extends TopicWithChild<DeleteAlarmBegin, DeleteAlarmState, Del
 }
 
 interface AlarmBotState {
-    child: string;
     alarms: Alarm[];
 }
 
 const helpText = `I know how to set, show, and delete alarms.`;
 
-class AlarmBot extends TopicWithChild<any, AlarmBotState> {
+class AlarmBot extends Topic<any, AlarmBotState> {
 
     static subtopics = [DeleteAlarm, ShowAlarms, SimpleForm];
 
@@ -195,6 +194,6 @@ class AlarmBot extends TopicWithChild<any, AlarmBotState> {
         } else if (!(child instanceof ShowAlarms)) {
             throw `unexpected child topic`;
         } 
-        this.clearChild();
+        this.clearChildren();
     }
 }

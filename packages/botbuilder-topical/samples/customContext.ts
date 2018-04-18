@@ -1,5 +1,5 @@
 import { TurnContext, MemoryStorage, ConsoleAdapter } from 'botbuilder';
-import { Topic, TextPrompt, TopicWithChild, prettyConsole, WSTelemetry } from '../src/topical';
+import { Topic, TextPrompt, prettyConsole, WSTelemetry } from '../src/topical';
 
 // const wst = new WSTelemetry('ws://localhost:8080/server');
 // Topic.telemetry = action => wst.send(action);
@@ -17,7 +17,7 @@ adapter
     .listen(async context => {
 
         const customContext = new CustomContext(context);
-        await Foo.do(customContext);
+        await Root.do(customContext);
     });
 
 
@@ -39,7 +39,7 @@ class PromptForText extends TextPrompt<string, CustomContext> {
     }
 }
 
-class Foo extends TopicWithChild<any, any, any, any, CustomContext> {
+class Root extends Topic<any, any, any, any, CustomContext> {
 
     static subtopics = [Child, PromptForText];
 
@@ -64,7 +64,7 @@ class Foo extends TopicWithChild<any, any, any, any, CustomContext> {
         } else if (child instanceof PromptForText) {
             console.log("I got here");
             await this.context.sendActivity(`You said ${child.return!.result.value}`);
-            this.clearChild();
+            this.clearChildren();
         } else
             throw "mystery child topic";
     }
