@@ -1,6 +1,6 @@
 {
   "name": "botbuilder-topical",
-  "version": "0.9.6",
+  "version": "0.9.7",
   "description": "Topics abstraction for BotBuilder 4.x",
   "main": "lib/src/topical.js",
   "types": "lib/src/topical.d.ts",
@@ -12,13 +12,12 @@
   "author": "Bill Barnes",
   "license": "MIT",
   "devDependencies": {
-    "@types/jsonwebtoken": "^7.2.6",
     "nodemon": "1.17.3",
-    "typescript": "^2.7.2"
+    "typescript": "2.8.1"
   },
   "dependencies": {
-    "@microsoft/recognizers-text-suite": "^1.0.0",
-    "botbuilder": "^4.0.0-m3.0",
+    "@microsoft/recognizers-text-suite": "1.0.0",
+    "botbuilder": "4.0.0-m3.0",
     "botbuilder-topical-common": "0.8.5"
   }
 }
