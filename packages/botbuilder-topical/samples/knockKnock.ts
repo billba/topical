@@ -14,6 +14,7 @@ adapter
 class KnockKnock extends Waterfall  {
 
     async onBegin() {
+
         await this.onTurn();
     }
 
@@ -43,10 +44,12 @@ class Root extends Topic {
     static subtopics = [KnockKnock];
 
     async onBegin() {
+
         await this.context.sendActivity(`Tell me a knock knock joke`);
     }
 
     async onTurn() {
+
         if (await this.dispatchToChild())
             return;
 
@@ -55,6 +58,7 @@ class Root extends Topic {
     }
 
     async onChildReturn(child: KnockKnock) {
+
         await this.context.sendActivity(`That was fun. Tell me another.`);
     }
 }
