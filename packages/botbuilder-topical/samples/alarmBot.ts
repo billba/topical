@@ -1,6 +1,6 @@
 import { MemoryStorage, ConsoleAdapter } from 'botbuilder';
 import { Topic, TextPrompt, prettyConsole, WSTelemetry } from '../src/topical';
-import { SimpleForm } from './SimpleForm';
+import { SimpleForm, SimpleFormSchema } from './SimpleForm';
 
 // const wst = new WSTelemetry('ws://localhost:8080/server');
 // Topic.telemetry = action => wst.send(action);
@@ -94,10 +94,7 @@ class DeleteAlarm extends Topic<DeleteAlarmBegin, DeleteAlarmState, DeleteAlarmR
         await this.dispatchToChild();
     }
 
-    async onChildReturn(child: Topic) {
-
-        if (!(child instanceof PromptForText))
-            throw "unexpected child topic";
+    async onChildReturn(child: PromptForText) {
 
         switch (child.return!.name) {
 
@@ -154,17 +151,15 @@ class AlarmBot extends Topic<any, AlarmBotState> {
             if (/set|add|create/i.test(this.text)) {
 
                 await this.beginChild(SimpleForm, {
-                    schema: {
-                        name: {
-                            type: 'string',
-                            prompt: 'What do you want to call it?'
-                        },
-                        when: {
-                            type: 'string',
-                            prompt: 'For when do you want to set it?'
-                        }
-                    }
-                });
+                    name: {
+                        type: 'string',
+                        prompt: 'What do you want to call it?',
+                    },
+                    when: {
+                        type: 'string',
+                        prompt: 'For when do you want to set it?',
+                    },
+                } as SimpleFormSchema);
             } else if (/show|list/i.test(this.text)) {
 
                 await this.beginChild(ShowAlarms, {
@@ -182,7 +177,9 @@ class AlarmBot extends Topic<any, AlarmBotState> {
         }
     }
 
-    async onChildReturn(child: Topic) {
+    async onChildReturn(
+        child: Topic,
+    ) {
 
         if (child instanceof SimpleForm) {
 

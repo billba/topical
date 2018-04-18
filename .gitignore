@@ -3,3 +3,5 @@ node_modules
 todo.md
 .vscode/launch.json
 npm-debug.log
+
+packages/botbuilder-topical/.vscode/launch.json

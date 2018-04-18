@@ -39,6 +39,11 @@ export interface TopicInitOptions {
     telemetry: Telemetry;
 }
 
+export interface TriggerResult <Begin> {
+    beginArgs?: Begin;
+    score: number;
+}
+
 export abstract class Topic <
     Begin = any,
     State = any,
@@ -195,7 +200,7 @@ export abstract class Topic <
         return (topicClass as any).createInstance(this.context, constructorArgs);
     }
 
-    private static loadInstance <Context extends TurnContext> (
+    protected static loadInstance <Context extends TurnContext> (
         parentOrContext: Topic<any, any, any, any, Context> | Context,
         instance: string | TopicInstance,
     ): Topic<any, any, any, any, Context> {
@@ -228,7 +233,7 @@ export abstract class Topic <
         return topic;
     }
 
-    private loadTopicInstance (
+    protected loadTopicInstance (
         instance: string | TopicInstance,
     ): Topic<any, any, any, any, Context> {
 
@@ -395,7 +400,7 @@ export abstract class Topic <
         const topic = this.loadTopicInstance(instance);
 
         if (!topic.begun)
-            throw `An attempt was made to dispatch to ${topic.instanceName}, which has not yet begun.`;
+            return false;
 
         // await topic.sendTelemetry(context, instance, 'onReceive.begin');
         await topic.onTurn();
@@ -488,7 +493,29 @@ export abstract class Topic <
         return this.dispatchTo(this.children.length ? this.children[0] : undefined);
     }
 
+    public async tryTriggers () {
+        const results = (await Promise.all(this
+            .children
+            .map(child => this.loadTopicInstance(child).trigger().then(result => ({ child, result })))
+        ))
+        .filter(i => i.result.score && i.result.score > 0)
+        .sort((a, b) => b.result.score - a.result.score);
+
+        if (results.length) {
+            await Topic.beginInstance(this, results[0].child, results[0].result.beginArgs);
+            return true;
+        }
+
+        return false;
+    }
+
     // These four default methods are optionally overrideable by subclasses
+
+    public async trigger () {
+        return {
+            score: 0
+        } as TriggerResult<Begin>;
+    }
 
     public async onBegin (
         args?: Begin,

@@ -137,6 +137,13 @@ The [culture](/packages/topical-lite/samples/culture.ts) sample demonstrates the
 * `npm run build`
 * `node lib/samples/culture.js`
 
+The [triggers](/packages/topical-lite/samples/triggers.ts) sample demonstrates the use of triggers.
+
+* clone this repo
+* `npm install`
+* `npm run build`
+* `node lib/samples/triggers.js`
+
 ## Can I publish my own Topics?
 
 Please do! [SimpleForm](/packages/topical-lite/src/SimpleForm.ts) is a (simple) example of a "form fill" `Topic` that could be of general use (as in the alarm bot sample). It also demonstrates how to express a dependency on another `Topic` (`TextPrompt`).

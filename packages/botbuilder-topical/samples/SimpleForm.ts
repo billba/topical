@@ -18,10 +18,6 @@ export interface SimpleFormState {
     schema: SimpleFormSchema;
 }
 
-export interface SimpleFormInit {
-    schema: SimpleFormSchema;
-}
-
 export interface SimpleFormReturn {
     form: SimpleFormData;
 }
@@ -35,14 +31,14 @@ export class PromptForValue extends TextPrompt<string> {
     }
 }
 
-export class SimpleForm extends Topic<SimpleFormInit, SimpleFormState, SimpleFormReturn> {
+export class SimpleForm extends Topic<SimpleFormSchema, SimpleFormState, SimpleFormReturn> {
     
     static subtopics = [PromptForValue];
 
     async onBegin(
-        args?: SimpleFormInit,
+        args?: SimpleFormSchema,
     ) {
-        this.state.schema = args!.schema;
+        this.state.schema = args!;
         this.state.form = {};
 
         await this.next();
@@ -76,7 +72,10 @@ export class SimpleForm extends Topic<SimpleFormInit, SimpleFormState, SimpleFor
             throw "a prompt should always be active";
     }
 
-    async onChildReturn(child: PromptForValue) {
+    async onChildReturn(
+        child: PromptForValue,
+    ) {
+
         const metadata = this.state.schema[child.return!.name];
 
         if (metadata.type !== 'string')

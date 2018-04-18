@@ -58,6 +58,7 @@
       "samples/alarmBot",
       "samples/customContext",
       "samples/culture",
+      "samples/triggers",
     ]
   }
   
