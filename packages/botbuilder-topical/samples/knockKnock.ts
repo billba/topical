@@ -19,7 +19,7 @@ class KnockKnock extends Waterfall  {
 
     async onTurn() {
     
-        this.waterfall(
+        if (await this.waterfall(
             async () => {
                 await this.context.sendActivity(`Who's there?`);
             },
@@ -33,7 +33,8 @@ class KnockKnock extends Waterfall  {
             async () => {
                 await this.context.sendActivity(`Hilarious!`)
             },
-        )
+        ))
+            this.returnToParent();
     }
 }
 
@@ -51,5 +52,9 @@ class Root extends Topic {
 
         if (this.text === 'knock knock')
             await this.beginChild(KnockKnock);
+    }
+
+    async onChildReturn(child: KnockKnock) {
+        await this.context.sendActivity(`That was fun. Tell me another.`);
     }
 }
