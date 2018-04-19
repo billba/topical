@@ -13,43 +13,26 @@ adapter
 
 class KnockKnock extends Waterfall {
 
-    async onBegin() {
+    waterfall = () => [
+        () => this.context.sendActivity(`Who's there?`),
 
-        await this.onTurn();
-    }
+        () => this.context.sendActivity(`${this.text} who?`),
 
-    async onTurn() {
+        () => this.context.sendActivity(`Hilarious!`),
+    ];
 
-        if (await this.waterfall(
-
-            async () => {
-                await this.context.sendActivity(`Who's there?`);
-            },
-            async () => {
-                if (this.text === 'cheat')
-                    return true;
-
-                await this.context.sendActivity(`${this.text} who?`);
-            },
-            async () => {
-                await this.context.sendActivity(`Hilarious!`);
-            },
-        ))
-            this.returnToParent();
-    }
+    // uses default onBegin, onTurn, onChildReturn
 }
 
 class Root extends Topic {
 
     static subtopics = [KnockKnock];
 
-    async onBegin() {
-
+    async onBegin () {
         await this.context.sendActivity(`Tell me a knock knock joke`);
     }
 
-    async onTurn() {
-
+    async onTurn () {
         if (this.text === 'knock knock') {
             await this.beginChild(KnockKnock);
             return;
@@ -59,8 +42,7 @@ class Root extends Topic {
             return;
     }
 
-    async onChildReturn(child: KnockKnock) {
-
+    async onChildReturn (child: KnockKnock) {
         this.clearChildren();
 
         await this.context.sendActivity(`That was fun. Tell me another.`);

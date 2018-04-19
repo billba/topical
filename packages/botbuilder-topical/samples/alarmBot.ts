@@ -73,7 +73,6 @@ class DeleteAlarm extends Topic<DeleteAlarmBegin, DeleteAlarmState, DeleteAlarmR
     async onBegin (
         args: DeleteAlarmBegin,
     ) {
-
         if (args.alarms.length === 0) {
             await this.context.sendActivity(`You don't have any alarms.`);
             return this.returnToParent();
@@ -90,12 +89,10 @@ class DeleteAlarm extends Topic<DeleteAlarmBegin, DeleteAlarmState, DeleteAlarmR
     }
 
     async onTurn () {
-
         await this.dispatchToChild();
     }
 
     async onChildReturn(child: PromptForText) {
-
         switch (child.return!.name) {
 
             case 'whichAlarm':
@@ -136,18 +133,15 @@ class AlarmBot extends Topic<any, AlarmBotState> {
     static subtopics = [DeleteAlarm, ShowAlarms, SimpleForm];
 
     async onBegin () {
-
         await this.context.sendActivity(`Welcome to Alarm Bot!\n${helpText}`);
         this.state.alarms = [];
     }
 
     async onTurn () {
-
         if (await this.dispatchToChild())
             return;
 
         if (this.text) {
-
             if (/set|add|create/i.test(this.text)) {
 
                 await this.beginChild(SimpleForm, {
@@ -180,7 +174,6 @@ class AlarmBot extends Topic<any, AlarmBotState> {
     async onChildReturn(
         child: Topic,
     ) {
-
         if (child instanceof SimpleForm) {
 
             this.state.alarms.push({ ... child.return!.form } as any as Alarm);

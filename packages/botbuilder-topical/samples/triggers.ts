@@ -18,7 +18,6 @@ interface FlightsBegin {
 class Flights extends Topic {
 
     async trigger() {
-
         return this.text && this.text.includes('flight')
             ? {
                 beginArgs: {
@@ -31,12 +30,10 @@ class Flights extends Topic {
     }
 
     async onBegin(args?: FlightsBegin) {
-
         await this.context.sendActivity(`Let's fly to ${ args ? args.destination : 'a city'}!`)
     }
 
     async onTurn() {
-
         if (this.text === 'restart') {
             this.begun = false;
             return;
@@ -53,12 +50,10 @@ interface HotelsBegin {
 class Hotels extends Topic <HotelsBegin> {
 
     async onBegin(args?: HotelsBegin) {
-
         await this.context.sendActivity(`Let's stay at a ${ args ? args.chain : 'hotel'}!`)
     }
 
     async trigger() {
-
         return this.text && this.text.includes('hotel')
             ? {
                 beginArgs: {
@@ -71,7 +66,6 @@ class Hotels extends Topic <HotelsBegin> {
     }
 
     async onTurn() {
-
         if (this.text === 'restart') {
             this.begun = false;
             return;
@@ -86,14 +80,12 @@ class Travel extends Topic  {
     static subtopics = [Flights, Hotels];
 
     async onBegin() {
-
         await this.context.sendActivity(`I can book flights and hotels.`);
         this.children = Travel.subtopics.map(T => this.createTopicInstance(T));
         console.log();
     }
 
     async onTurn() {
-
         if (await this.dispatchToChild())
             return;
         

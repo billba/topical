@@ -15,7 +15,6 @@ class CustomContext extends TurnContext {
 adapter
     .use(prettyConsole)
     .listen(async context => {
-
         const customContext = new CustomContext(context);
         await Root.do(customContext);
     });
@@ -24,7 +23,6 @@ adapter
 class Child extends Topic<any, any, any, any, CustomContext> {
 
     async onBegin() {
-
         await this.context.sendActivity(this.context.foo);
         this.returnToParent();
     }
@@ -33,7 +31,6 @@ class Child extends Topic<any, any, any, any, CustomContext> {
 class PromptForText extends TextPrompt<string, CustomContext> {
 
     async prompter() {
-
         await this.context.sendActivity(this.context.foo);
         await this.context.sendActivity(this.state.args);
     }
@@ -44,17 +41,14 @@ class Root extends Topic<any, any, any, any, CustomContext> {
     static subtopics = [Child, PromptForText];
 
     async onBegin() {
-
         this.beginChild(Child);
     }
 
     async onTurn() {
-
         await this.dispatchToChild();
     }
 
     async onChildReturn(child: Topic) {
-
         if (child instanceof Child) {
             await this.context.sendActivity(this.context.foo);
             this.beginChild(PromptForText, {

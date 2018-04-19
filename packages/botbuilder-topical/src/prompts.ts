@@ -18,8 +18,6 @@ export abstract class NumberPrompt <
     Context extends TurnContext = TurnContext,
 > extends Prompt<number, PromptArgs, CultureConstructor, Context> {
 
-    validator: Validator<number>;
-
     constructor(construct: CultureConstructor) {
         super(construct);
         this.validator = hasNumber(construct.culture);

@@ -10,6 +10,7 @@ adapter.listen(async context => {
 });
         
 class ChildTopic extends Topic {
+
     async onBegin(args) {
         await this.context.sendActivity(`Welcome to the child topic!\nWhat multiple of ${args["foo"]} do you want to return?`);
     }

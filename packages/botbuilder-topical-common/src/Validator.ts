@@ -8,13 +8,16 @@ export interface ValidatorResult <V> {
 
 export type Validate <V> = (activity: Partial<Activity>) => Promiseable<ValidatorResult<V> | V>;
 export type StrictlyValidate <V> = (activity: Partial<Activity>) => Promise<ValidatorResult<V>>;
-export type Constraint <V, W> = (activity: Partial<Activity>, value: V) => Promiseable<ValidatorResult<W> | W>;
+export type Constrain <V> = (activity: Partial<Activity>, value: V) => Promiseable<boolean | string | ValidatorResult<V>>;
+export type Transform <V, W> = (activity: Partial<Activity>, value: V) => Promiseable<ValidatorResult<W> | W>;
 
 export class Validator <V> {
 
     validate: StrictlyValidate<V>;
 
-    constructor(validate: Validate<V>) {
+    constructor(
+        validate: Validate<V>,
+    ) {
 
         this.validate = async (activity) => {
 
@@ -30,18 +33,42 @@ export class Validator <V> {
         }
     }
 
-    and <W = V> (
-        constraint: Constraint<V, W>
+    and (
+        constrain: Constrain<V>,
+    ) {
+
+        return new Validator<V>(async activity => {
+
+            const validateResult = await this.validate(activity);
+
+            if (validateResult.reason)
+                return { reason: validateResult.reason };
+
+            const constraintResult = await constrain(activity, validateResult.value!);
+
+            if (constraintResult === true)
+                return { value : validateResult.value }
+            else if (constraintResult === false || constraintResult == null)
+                return { reason: 'failed_constraint' }
+            else if (typeof constraintResult === 'string')
+                return { reason: constraintResult }
+            else
+                return constraintResult;
+        });
+    }
+
+    transform <W = V>(
+        transform: Transform<V, W>,
     ) {
 
         return new Validator<W>(async activity => {
 
-            const result = await this.validate(activity);
+            const validateResult = await this.validate(activity);
 
-            if (result.reason)
-                return { reason: result.reason };
+            if (validateResult.reason)
+                return { reason: validateResult.reason };
 
-            return constraint(activity, result.value!);
+            return transform(activity, validateResult.value!);
         });
     }
 }

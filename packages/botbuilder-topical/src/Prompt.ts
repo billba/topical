@@ -64,5 +64,7 @@ export abstract class Prompt <
  
     abstract async prompter (result?: ValidatorResult<V>): Promise<void>;
 
-    abstract validator: Validator<V>;
+    validator = new Validator<V>(() => {
+        throw "no validator provided";
+    });
 }

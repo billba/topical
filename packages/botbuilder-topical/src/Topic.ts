@@ -496,7 +496,10 @@ export abstract class Topic <
     public async tryTriggers () {
         const results = (await Promise.all(this
             .children
-            .map(child => this.loadTopicInstance(child).trigger().then(result => ({ child, result })))
+            .map(child => this.loadTopicInstance(child).trigger().then(result => ({
+                child,
+                result: result || { score: 0}
+            })))
         ))
         .filter(i => i.result.score && i.result.score > 0)
         .sort((a, b) => b.result.score - a.result.score);
@@ -523,11 +526,14 @@ export abstract class Topic <
     }
 
     public async onTurn () {
+        if (await this.dispatchToChild())
+            return;
     }
 
     public async onChildReturn(
         child: Topic<any, any, any, any, Context>,
     ) {
+        this.clearChildren();
     }
 }
 

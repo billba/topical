@@ -144,12 +144,19 @@ The [triggers](/packages/topical-lite/samples/triggers.ts) sample demonstrates t
 * `npm run build`
 * `node lib/samples/triggers.js`
 
-The [knock knock](/packages/topical-lite/samples/knockKnock.ts) sample demonstrates the use of Waterfalls.
+The [knock knock](/packages/topical-lite/samples/knockKnock.ts) sample demonstrates the use of a simple waterfall.
 
 * clone this repo
 * `npm install`
 * `npm run build`
 * `node lib/samples/knockKnock.js`
+
+The [waterfall](/packages/topical-lite/samples/knockKnock.ts) sample demonstrates the use of Prompts in a waterfall.
+
+* clone this repo
+* `npm install`
+* `npm run build`
+* `node lib/samples/waterfall.js`
 
 ## Can I publish my own Topics?
 

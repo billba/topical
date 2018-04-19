@@ -7,7 +7,7 @@ export const isMessage = new Validator<Partial<Activity>>(activity => activity.t
 );
 
 export const hasText = isMessage
-    .and<string>((activity, value) => {
+    .transform<string>((activity, value) => {
 
         const text = value.text!.trim();
 
@@ -19,7 +19,7 @@ export const hasText = isMessage
 import { NumberRecognizer } from '@microsoft/recognizers-text-number';
 
 export const hasNumbers = (culture: string) => hasText
-    .and<number[]>(async (activity, text) => {
+    .transform<number[]>(async (activity, text) => {
 
         const numbers = new NumberRecognizer(culture)
             .getNumberModel()
@@ -34,6 +34,6 @@ export const hasNumbers = (culture: string) => hasText
     });
 
 export const hasNumber = (culture: string) => hasNumbers(culture)
-    .and<number>(async (activity, numbers) => numbers[0] );
+    .transform<number>(async (activity, numbers) => numbers[0] );
 
 export { Culture } from '@microsoft/recognizers-text-number';
