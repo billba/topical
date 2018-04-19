@@ -11,7 +11,7 @@ adapter
         await Root.do(context);
     });
 
-class KnockKnock extends Waterfall  {
+class KnockKnock extends Waterfall {
 
     async onBegin() {
 
@@ -19,8 +19,9 @@ class KnockKnock extends Waterfall  {
     }
 
     async onTurn() {
-    
+
         if (await this.waterfall(
+
             async () => {
                 await this.context.sendActivity(`Who's there?`);
             },
@@ -49,8 +50,10 @@ class Root extends Topic {
 
     async onTurn() {
 
-        if (this.text === 'knock knock')
+        if (this.text === 'knock knock') {
             await this.beginChild(KnockKnock);
+            return;
+        }
 
         if (await this.dispatchToChild())
             return;

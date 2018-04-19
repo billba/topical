@@ -1,11 +1,32 @@
-import { Topic } from "./topical";
 import { TurnContext } from "botbuilder";
+import { Topic } from "./topical";
 
 export interface WaterfallState {
-    index: number;
+    stepIndex: number;
 }
 
 export type Step = () => Promise<true | any>;
+
+export const waterfall = async <
+    S extends WaterfallState,
+> (
+    state: S,
+    ... steps: Step[]
+) => {
+
+    if (state.stepIndex === undefined)
+        state.stepIndex = 0;
+
+    let next = true;
+
+    while (next && state.stepIndex < steps.length) {
+        next = await steps[state.stepIndex]() === true;
+
+        state.stepIndex++;
+    }
+
+    return state.stepIndex >= steps.length;    
+}
 
 export class Waterfall <
     Begin = any,
@@ -15,20 +36,9 @@ export class Waterfall <
     Context extends TurnContext = TurnContext
 > extends Topic <Begin, State, Return, Constructor, Context> {
 
-    async waterfall(... steps: Step[]) {
-
-        if (this.state.index === undefined)
-            this.state.index = 0;
-
-        let next = true;
-
-        while (next && this.state.index < steps.length) {
-            next = await steps[this.state.index]() === true;
-
-            this.state.index++;
-        }
-
-        return this.state.index >= steps.length;    
+    waterfall (
+        ... steps: Step[]
+    ) {
+        return waterfall(this.state, ... steps);
     }
 }
-
