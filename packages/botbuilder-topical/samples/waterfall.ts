@@ -17,13 +17,14 @@ class PromptForAge extends Prompt<number, any, CultureConstructor> {
 
     constructor(construct: CultureConstructor) {
         super(construct);
+
         this.validator = hasNumber(construct.culture)
             .and((activity, num) => num > 0 && num < 150 || 'invalid_age');
     }
 
     async prompter(result?: ValidatorResult<number>) {
         await this.context.sendActivity(result
-            ? `Please provide a valid range.`
+            ? `Please provide a valid age.`
             : `How old are you?`
         );
     }
