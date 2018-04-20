@@ -13,8 +13,6 @@ adapter
 
 class PromptForAge extends Prompt<number, any, CultureConstructor> {
 
-    validator: Validator<number>;
-
     constructor(construct: CultureConstructor) {
         super(construct);
 
