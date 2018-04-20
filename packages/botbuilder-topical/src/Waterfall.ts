@@ -64,7 +64,7 @@ export class Waterfall <
     }
 
     async onBegin() {
-        this.onTurn();
+        await this.onTurn();
     }
 
     async onTurn() {
