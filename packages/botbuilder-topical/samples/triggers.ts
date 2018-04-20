@@ -18,14 +18,12 @@ interface FlightsBegin {
 class Flights extends Topic {
 
     async trigger() {
-        return this.text && this.text.includes('flight')
-            ? {
+        if (this.text && this.text.includes('flight'))
+            return {
                 beginArgs: {
                     destination: 'Paris'
                 },
                 score: .5
-            } : {
-                score: 0
             }
     }
 
@@ -54,14 +52,12 @@ class Hotels extends Topic <HotelsBegin> {
     }
 
     async trigger() {
-        return this.text && this.text.includes('hotel')
-            ? {
+        if (this.text && this.text.includes('hotel'))
+            return {
                 beginArgs: {
                     chain: 'Hyatt'
                 },
                 score: .6
-            } : {
-                score: 0
             }
     }
 

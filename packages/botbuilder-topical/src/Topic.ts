@@ -501,7 +501,7 @@ export abstract class Topic <
                 result: result || { score: 0}
             })))
         ))
-        .filter(i => i.result.score && i.result.score > 0)
+        .filter(i => i.result.score > 0)
         .sort((a, b) => b.result.score - a.result.score);
 
         if (results.length) {
@@ -514,10 +514,7 @@ export abstract class Topic <
 
     // These four default methods are optionally overrideable by subclasses
 
-    public async trigger () {
-        return {
-            score: 0
-        } as TriggerResult<Begin>;
+    public async trigger (): Promise<TriggerResult<Begin> | void> {
     }
 
     public async onBegin (
