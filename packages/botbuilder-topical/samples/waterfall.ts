@@ -32,7 +32,7 @@ class Age extends Waterfall {
 
     static subtopics = [PromptForAge];
 
-    waterfall = next => [
+    waterfall = (next: (arg?: any) => void) => [
         async () => {
             await this.context.sendActivity(`What's your name?`);
         },
