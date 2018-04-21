@@ -1,3 +1,6 @@
 node_modules
 samples
 src
+.vscode
+Topics.gif
+tsconfig.json

@@ -8,8 +8,6 @@
 
 ## How do I install *Topical*?
 
-Standard applications: `npm install -S botbuilder-topical-lite`
-
 Scalable web services: `npm install -S botbuilder-topical`
 
 ## The *Topics* pattern
@@ -20,43 +18,9 @@ The Topics pattern models conversations as a dynamic heirarchy of independent co
 
 **Note**: this graphic is now a little out of date, but the basic idea is correct
 
-The Topical library is simply meant to provide low-level support for this pattern. Classes are provided for two kinds of applications: standard applications and scalable web services.
+The Topical library is simply meant to provide low-level support for this pattern.
 
-## Standard applications
-
-** Note: `topical-lite` is currently lagging behind `topical` **
-
-For single-user in-process applications, the Topics pattern is easily implemented with traditional object-oriented programming.
-
-`topical-lite` supplies a [`Topic`](/packages/topical-lite/src/Topic.ts) class. Here's a simple version of the Root topic illustrated above:
-
-```ts
-class Root extends Topic {
-    async onBegin(args) {
-        await this.context.sendActivity("How can I help you today?");
-    }
-
-    async onTurn() {
-        if (await this.dispatchToChild())
-            return;
-
-        if (this.context.request.text === "book travel") {
-            await this.beginChild(TravelTopic,
-                async (context, return) => {
-                    await context.sendActivity(`Welcome back to the Root!`);
-                    this.clearChildren();
-                }
-            );
-        }
-    }
-}
-```
-
-## Scalable web services
-
-Traditional object-oriented programming won't work for many-users-to-many-instances web apps. The heirarchy of topics for each conversation must be maintained in a centralized store. Moreover, child topics may complete in entirely different instances (and in extended timeframes), making it impossible to utilize traditional completion handlers.
-
-`topical` hides most of these differences: 
+## Topical in action
 
 ```ts
 class Root extends Topic {
@@ -82,12 +46,6 @@ class Root extends Topic {
 
 Root.subtopics = [TravelTopic];
 ```
-The main visible differences are:
-* something called "subtopics" (explained shortly)
-* the way child topics return values
-* (not illustrated) a restriction for constructing `Topic`s.
-
-As you can see, you can code topics in distributed web services largely the same way as standard applications. This is the magic of *Topical*.
 
 ## Tell me about Topics and children
 
@@ -111,47 +69,47 @@ Midway through booking a flight, as illustrated above, a user might want to look
 
 ## Do you have samples?
 
-The [simple sample](/packages/topical-lite/samples/simple.js) is a JavaScript bot demonstrates a simple conversation with parent-child topics. To run it:
+The [simple sample](/samples/simple.js) is a JavaScript bot demonstrates a simple conversation with parent-child topics. To run it:
 
 * clone this repo
 * `node samples/simple.js`
 
-The [alarm bot](/packages/topical-lite/samples/alarmBot.ts) is a TypeScript bot with a little more depth. To run it:
+The [alarm bot](/samples/alarmBot.ts) is a TypeScript bot with a little more depth. To run it:
 
 * clone this repo
 * `npm install`
 * `npm run build`
 * `node lib/samples/alarmBot.js`
 
-The [custom context](/packages/topical-lite/samples/customContext.ts) sample demonstrates the use of a custom `TurnContext`.
+The [custom context](/samples/customContext.ts) sample demonstrates the use of a custom `TurnContext`.
 
 * clone this repo
 * `npm install`
 * `npm run build`
 * `node lib/samples/customContext.js`
 
-The [culture](/packages/topical-lite/samples/culture.ts) sample demonstrates the use of a custom promp validator and `NumberPrompt`, which requires providing a constructor argument.
+The [culture](/samples/culture.ts) sample demonstrates the use of a custom promp validator and `NumberPrompt`, which requires providing a constructor argument.
 
 * clone this repo
 * `npm install`
 * `npm run build`
 * `node lib/samples/culture.js`
 
-The [triggers](/packages/topical-lite/samples/triggers.ts) sample demonstrates the use of triggers.
+The [triggers](/samples/triggers.ts) sample demonstrates the use of triggers.
 
 * clone this repo
 * `npm install`
 * `npm run build`
 * `node lib/samples/triggers.js`
 
-The [knock knock](/packages/topical-lite/samples/knockKnock.ts) sample demonstrates the use of a simple waterfall.
+The [knock knock](/samples/knockKnock.ts) sample demonstrates the use of a simple waterfall.
 
 * clone this repo
 * `npm install`
 * `npm run build`
 * `node lib/samples/knockKnock.js`
 
-The [waterfall](/packages/topical-lite/samples/knockKnock.ts) sample demonstrates the use of Prompts in a waterfall.
+The [waterfall](/samples/knockKnock.ts) sample demonstrates the use of Prompts in a waterfall.
 
 * clone this repo
 * `npm install`
@@ -160,7 +118,7 @@ The [waterfall](/packages/topical-lite/samples/knockKnock.ts) sample demonstrate
 
 ## Can I publish my own Topics?
 
-Please do! [SimpleForm](/packages/topical-lite/src/SimpleForm.ts) is a (simple) example of a "form fill" `Topic` that could be of general use (as in the alarm bot sample). It also demonstrates how to express a dependency on another `Topic` (`TextPrompt`).
+Please do! [SimpleForm](/src/SimpleForm.ts) is a (simple) example of a "form fill" `Topic` that could be of general use (as in the alarm bot sample). It also demonstrates how to express a dependency on another `Topic` (`TextPrompt`).
 
 ## Using Topical
 
