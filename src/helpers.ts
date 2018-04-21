@@ -70,7 +70,7 @@ export const doTopic = async <
     constructorArgs?: Constructor,
 ) => {
     if (context.activity.type === 'conversationUpdate') {
-        for (const member of context.activity.membersAdded) {
+        for (const member of context.activity.membersAdded!) {
             if (member.id != context.activity.recipient.id) {
                 await (topic as any).begin(context, beginArgs, constructorArgs);
             }
