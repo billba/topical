@@ -1,24 +1,9 @@
 import { TurnContext, MemoryStorage, ConsoleAdapter } from 'botbuilder';
-import { Topic, TextPrompt, prettyConsole, WSTelemetry } from '../src/topical';
-
-// const wst = new WSTelemetry('ws://localhost:8080/server');
-// Topic.telemetry = action => wst.send(action);
-
-Topic.init(new MemoryStorage());
-
-const adapter = new ConsoleAdapter();
+import { Topic, TextPrompt, prettyConsole, WSTelemetry, consoleOnTurn, doTopic } from '../src/topical';
 
 class CustomContext extends TurnContext {
     foo = "hey"
 }
-
-adapter
-    .use(prettyConsole)
-    .listen(async context => {
-        const customContext = new CustomContext(context);
-        await Root.do(customContext);
-    });
-
 
 class Child extends Topic<any, any, any, any, CustomContext> {
 
@@ -64,3 +49,16 @@ class Root extends Topic<any, any, any, any, CustomContext> {
     }
 
 }
+
+
+
+// const wst = new WSTelemetry('ws://localhost:8080/server');
+// Topic.telemetry = action => wst.send(action);
+
+Topic.init(new MemoryStorage());
+
+consoleOnTurn(
+    new ConsoleAdapter()
+        .use(prettyConsole),
+    context => doTopic(Root, new CustomContext(context))
+);

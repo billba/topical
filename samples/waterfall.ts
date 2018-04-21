@@ -1,15 +1,5 @@
 import { MemoryStorage, ConsoleAdapter } from 'botbuilder';
-import { Topic, prettyConsole, Waterfall, NumberPrompt, ValidatorResult, CultureConstructor, Prompt, hasNumber, Validator } from '../src/topical';
-
-Topic.init(new MemoryStorage());
-
-const adapter = new ConsoleAdapter();
-
-adapter
-    .use(prettyConsole)
-    .listen(async context => {
-        await Root.do(context);
-    });
+import { Topic, prettyConsole, Waterfall, NumberPrompt, ValidatorResult, CultureConstructor, Prompt, hasNumber, Validator, consoleOnTurn, doTopic } from '../src/topical';
 
 class PromptForAge extends Prompt<number, any, CultureConstructor> {
 
@@ -65,3 +55,14 @@ class Root extends Topic {
 
     // uses default onTurn, onChildReturn
 }
+
+// const wst = new WSTelemetry('ws://localhost:8080/server');
+// Topic.telemetry = action => wst.send(action);
+
+Topic.init(new MemoryStorage());
+
+consoleOnTurn(
+    new ConsoleAdapter()
+        .use(prettyConsole),
+    context => doTopic(Root, context)
+);

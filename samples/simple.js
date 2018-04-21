@@ -1,14 +1,6 @@
 const { MemoryStorage, ConsoleAdapter } = require('botbuilder');
-const { Topic } = require ('../lib/src/topical.js');
+const { Topic, prettyConsole, consoleOnTurn, doTopic } = require ('../lib/src/topical.js');
 
-Topic.init(new MemoryStorage());
-
-const adapter = new ConsoleAdapter();
-
-adapter.listen(async context => {
-    await RootTopic.do(context)
-});
-        
 class ChildTopic extends Topic {
 
     async onBegin(args) {
@@ -61,7 +53,13 @@ class RootTopic extends Topic {
         await this.context.sendActivity(`13 * ${child.return.num} = ${13 * child.return.num}`);
         this.clearChildren();
     }
-
 }
-
 RootTopic.subtopics = [ChildTopic];
+
+
+Topic.init(new MemoryStorage());
+
+const adapter = new ConsoleAdapter()
+    .use(prettyConsole);
+
+consoleOnTurn(adapter, context => doTopic(RootTopic, context));

@@ -1,19 +1,6 @@
 import { MemoryStorage, ConsoleAdapter } from 'botbuilder';
-import { Topic, TextPrompt, prettyConsole, WSTelemetry } from '../src/topical';
+import { Topic, TextPrompt, prettyConsole, WSTelemetry, consoleOnTurn, doTopic } from '../src/topical';
 import { SimpleForm, SimpleFormSchema } from './SimpleForm';
-
-// const wst = new WSTelemetry('ws://localhost:8080/server');
-// Topic.telemetry = action => wst.send(action);
-
-Topic.init(new MemoryStorage());
-
-const adapter = new ConsoleAdapter();
-
-adapter
-    .use(prettyConsole)
-    .listen(async c => {
-        await AlarmBot.do(c);
-    });
 
 interface Alarm {
     name: string;
@@ -196,3 +183,15 @@ class AlarmBot extends Topic<any, AlarmBotState> {
         this.clearChildren();
     }
 }
+
+
+// const wst = new WSTelemetry('ws://localhost:8080/server');
+// Topic.telemetry = action => wst.send(action);
+
+Topic.init(new MemoryStorage());
+
+const adapter = new ConsoleAdapter()
+    .use(prettyConsole);
+
+consoleOnTurn(adapter, context => doTopic(AlarmBot, context));
+

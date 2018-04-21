@@ -1,15 +1,5 @@
 import { MemoryStorage, ConsoleAdapter } from 'botbuilder';
-import { Topic, prettyConsole } from '../src/topical';
-
-Topic.init(new MemoryStorage());
-
-const adapter = new ConsoleAdapter();
-
-adapter
-    .use(prettyConsole)
-    .listen(async context => {
-        await Travel.do(context);
-    });
+import { Topic, prettyConsole, consoleOnTurn, doTopic } from '../src/topical';
 
 interface FlightsBegin {
     destination: string;
@@ -89,3 +79,14 @@ class Travel extends Topic  {
             await this.context.sendActivity(`I can't do that.`);
     }
 }
+
+// const wst = new WSTelemetry('ws://localhost:8080/server');
+// Topic.telemetry = action => wst.send(action);
+
+Topic.init(new MemoryStorage());
+
+consoleOnTurn(
+    new ConsoleAdapter()
+        .use(prettyConsole),
+    context => doTopic(Travel, context)
+);

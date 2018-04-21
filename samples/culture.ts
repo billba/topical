@@ -1,18 +1,5 @@
 import { MemoryStorage, ConsoleAdapter } from 'botbuilder';
-import { Topic, Culture, NumberPrompt, prettyConsole, WSTelemetry, Prompt, hasText } from '../src/topical';
-
-// const wst = new WSTelemetry('ws://localhost:8080/server');
-// Topic.telemetry = action => wst.send(action);
-
-Topic.init(new MemoryStorage());
-
-const adapter = new ConsoleAdapter();
-
-adapter
-    .use(prettyConsole)
-    .listen(async context => {
-        await FavoriteNumber.do(context);
-    });
+import { Topic, Culture, NumberPrompt, prettyConsole, WSTelemetry, Prompt, hasText, consoleOnTurn, doTopic } from '../src/topical';
 
 class PromptForCulture extends Prompt<string, string> {
 
@@ -63,3 +50,15 @@ class FavoriteNumber extends Topic  {
         }
     }
 }
+
+
+// const wst = new WSTelemetry('ws://localhost:8080/server');
+// Topic.telemetry = action => wst.send(action);
+
+Topic.init(new MemoryStorage());
+
+consoleOnTurn(
+    new ConsoleAdapter()
+        .use(prettyConsole),
+    context => doTopic(FavoriteNumber, context)
+);

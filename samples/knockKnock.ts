@@ -1,15 +1,5 @@
 import { MemoryStorage, ConsoleAdapter } from 'botbuilder';
-import { Topic, prettyConsole, Waterfall } from '../src/topical';
-
-Topic.init(new MemoryStorage());
-
-const adapter = new ConsoleAdapter();
-
-adapter
-    .use(prettyConsole)
-    .listen(async context => {
-        await Root.do(context);
-    });
+import { Topic, prettyConsole, Waterfall, consoleOnTurn, doTopic } from '../src/topical';
 
 class KnockKnock extends Waterfall {
 
@@ -48,3 +38,15 @@ class Root extends Topic {
         await this.context.sendActivity(`That was fun. Tell me another.`);
     }
 }
+
+
+// const wst = new WSTelemetry('ws://localhost:8080/server');
+// Topic.telemetry = action => wst.send(action);
+
+Topic.init(new MemoryStorage());
+
+consoleOnTurn(
+    new ConsoleAdapter()
+        .use(prettyConsole),
+    context => doTopic(Root, context)
+);

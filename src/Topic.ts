@@ -1,4 +1,4 @@
-import { Promiseable, Activity, TurnContext, Storage, BotState } from 'botbuilder';
+import { Promiseable, Activity, TurnContext, Storage, ConversationState } from 'botbuilder';
 import { toPromise, returnsPromiseVoid, Telemetry, TelemetryAction } from './topical';
 
 export interface TopicInstance <State = any, Constructor = any> {
@@ -49,7 +49,7 @@ export abstract class Topic <
     Constructor = any,
     Context extends TurnContext = TurnContext, 
 > {
-    private static topicalState: BotState<Topical>;
+    private static topicalState: ConversationState<Topical>;
 
     private static telemetry: Telemetry;
 
@@ -60,7 +60,7 @@ export abstract class Topic <
         if (Topic.topicalState)
             throw "you should only call Topic.init once.";
 
-        Topic.topicalState = new BotState<Topical>(storage, context => `topical:${context.activity.channelId}.${context.activity.conversation.id}`);
+        Topic.topicalState = new ConversationState<Topical>(storage, "github.com/billba/topical");
 
         if (options) {
             if (options.telemetry)
@@ -301,7 +301,7 @@ export abstract class Topic <
         return Topic.topicalState.get(context)!.rootInstanceName;
     }
 
-    public static async do <
+    public static async begin <
         T extends Topicable<Begin, any, any, Constructor, Context>,
         Begin,
         Constructor,
@@ -312,58 +312,75 @@ export abstract class Topic <
         beginArgs?: Begin,
         constructorArgs?: Constructor,
     ) {
-
         if (this === Topic as any)
-            throw "You can only `do' a child of Topic.";
+            throw "You can only 'begin' a child of Topic.";
 
         if (!Topic.topicalState)
-            throw "You must call Topic.init before calling YourTopic.do";
+            throw `You must call Topic.init before calling ${this.name}.do`;
 
         if (!Topic.topics[this.name])
             (this as any).register();
 
-        const topical = await Topic.topicalState.read(context) as Topical | Partial<Topical>;
-        const state = Topic.topicalState.get(context);
+        const topical = await Topic.topicalState.read(context) as Partial<Topical>;
 
-        if (topical.rootInstanceName) {
-            await Topic.loadInstance(context, topical.rootInstanceName).onTurn();
+        if (topical.rootInstanceName)
+            throw `You must only call ${this.name}.begin once.`;
 
-            // garbage collect orphaned instances
+        topical.instances = {};
+        topical.rootInstanceName = (this as any).createInstance(context, constructorArgs);
 
-            // const orphans = { ... topical.instances };
+        if (!await Topic.beginInstance(context, topical.rootInstanceName!, beginArgs))
+            throw "Root topics shouldn't even returnToParent."
 
-            // const deorphanize = (instanceName: string) => {
-            //     const instance = orphans[instanceName];
-            //     if (!instance)
-            //         throw "unexpected";
+        // const instance = Topic.getInstanceFromName(context, topical.rootInstanceName);
+        // const topic = Topic.load(context, instance);
+        // await topic.sendTelemetry(context, instance, 'assignRootTopic');
 
-            //     const topic = Topic.load(context, instance);
+        await Topic.topicalState.write(context);
+    }
 
-            //     delete orphans[instanceName];
-        
-            //     for (let child of topic.listChildren())
-            //         deorphanize(child);
-            // }
+    public static async onTurn <
+        T extends Topicable<any, any, any, any, Context>,
+        Context extends TurnContext = TurnContext
+    > (
+        this: T,
+        context: Context,
+    ) {
+        if (this === Topic as any)
+            throw "You can only `onTurn' a child of Topic.";
 
-            // deorphanize(rootInstanceName);
+        const topical = await Topic.topicalState.read(context) as Topical;
 
-            // for (const orphan of Object.keys(orphans)) {
-            //     console.warn(`Garbage collecting instance ${orphan} -- you should have called Topic.deleteInstance()`)
-            //     Topic.deleteInstance(context, orphan);
-            // }
+        if (!topical.rootInstanceName)
+            throw `You must call ${this.name}.begin before calling ${this.name}.onTurn.`;
 
-            // await topic.sendTelemetry(context, instance, 'endOfTurn');
-        } else {
+        await Topic.loadInstance(context, topical.rootInstanceName).onTurn();
 
-            topical.instances = {};
-            topical.rootInstanceName = (this as any).createInstance(context, constructorArgs);
-            if (!await Topic.beginInstance(context, topical.rootInstanceName!, beginArgs))
-                throw "Root topics shouldn't even returnToParent."
+        // garbage collect orphaned instances
 
-            // const instance = Topic.getInstanceFromName(context, topical.rootInstanceName);
-            // const topic = Topic.load(context, instance);
-            // await topic.sendTelemetry(context, instance, 'assignRootTopic');
-        }
+        // const orphans = { ... topical.instances };
+
+        // const deorphanize = (instanceName: string) => {
+        //     const instance = orphans[instanceName];
+        //     if (!instance)
+        //         throw "unexpected";
+
+        //     const topic = Topic.load(context, instance);
+
+        //     delete orphans[instanceName];
+    
+        //     for (let child of topic.listChildren())
+        //         deorphanize(child);
+        // }
+
+        // deorphanize(rootInstanceName);
+
+        // for (const orphan of Object.keys(orphans)) {
+        //     console.warn(`Garbage collecting instance ${orphan} -- you should have called Topic.deleteInstance()`)
+        //     Topic.deleteInstance(context, orphan);
+        // }
+
+        // await topic.sendTelemetry(context, instance, 'endOfTurn');
 
         await Topic.topicalState.write(context);
     }
