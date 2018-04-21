@@ -33,7 +33,7 @@ class Root extends Topic {
         if (await this.dispatchToChild())
             return;
 
-        if (this.context.request.text === "book travel") {
+        if (this.context.activity.text === "book travel") {
             await this.beginChild(TravelTopic);
         }
     }
