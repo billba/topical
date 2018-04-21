@@ -186,23 +186,37 @@ Then initialize *Topical* by calling `Topic.init` with a state storage provider.
 Topic.init(new MemoryStorage());
 ```
 
-Your *Topical* application is bootstrapped as follows:
+Your *Topical* application is typically bootstrapped as follows:
 
 ```ts
-adapter.listen(async context => {
-    await YourRootTopic.do(context, beginArgs?, constructorArgs?);
-})
+yourMessageLoop(async context => {
+     if (context.activity.type === 'conversationUpdate') {
+        for (const member of context.activity.membersAdded) {
+            if (member.id != context.activity.recipient.id) {
+                await YourRootTopic.begin(context, beginArgs?, constructorArgs?);
+            }
+        }
+    } else {
+        await YourRootTopic.onTurn(context);
+    }
+});
 ```
 
-When it's called the first time, `YourRootTopic.do`:
+This is such a common pattern that there's a helper:
+```ts
+yourMessageLoop(context => doTopic(YourRootTopic, beginArgs?, constructorArgs?));
+```
+
+
+When it's called the first time, `YourRootTopic.begin`:
 * throws if `Topic.init` hasn't already been called
 * calls `YourRootTopic.register()`, recursively registering `YourRootTopic`, its subtopics, all *their* subtopics, and so on.
 
-The first time an activity is received for a given user in a conversation, `YourRootTopic.do`:
+On every call `YourRootTopic.begin`:
 * begins a conceptual instance of `YourRootTopic` (as noted above, this calls `.onBegin(beginArgs)`)
 * sets it as your root topic instance
 
-On subsequent turns for a given user in a conversation, `YourRootTopic.do`:
+On every call `YourRootTopic.onTurn`:
 * dispatches to the root topic instance (as noted above, this calls `.onTurn()`)
 
 ## Overly Quick Reference for *Topical*
