@@ -5,13 +5,9 @@ export interface SimpleFormMetadata {
     prompt: string;
 }
 
-export interface SimpleFormSchema {
-    [field: string]: SimpleFormMetadata;
-}
+export type SimpleFormSchema = Record<string, SimpleFormMetadata>;
 
-export interface SimpleFormData {
-    [field: string]: string;
-}
+export type SimpleFormData = Record<string, string>;
 
 export interface SimpleFormState {
     form: SimpleFormData;

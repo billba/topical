@@ -11,9 +11,7 @@ export interface TopicInstance <State = any, Constructor = any> {
 }
 
 interface Topical {
-    instances: {
-        [instanceName: string]: TopicInstance;
-    },
+    instances: Record<string, TopicInstance>,
     rootInstanceName: string;
 }
 
@@ -70,9 +68,7 @@ export abstract class Topic <
         }
     }
 
-    private static topics: {
-        [name: string]: Topicable;
-    } = {}
+    private static topics: Record<string, Topicable> = {};
 
     protected static subtopics = [] as Topicable[];
 
