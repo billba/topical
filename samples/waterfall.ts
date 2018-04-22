@@ -1,5 +1,5 @@
 import { MemoryStorage, ConsoleAdapter } from 'botbuilder';
-import { Topic, prettyConsole, Waterfall, NumberPrompt, ValidatorResult, CultureConstructor, Prompt, hasNumber, Validator, consoleOnTurn, doTopic } from '../src/topical';
+import { Topic, prettyConsole, Waterfall, ValidatorResult, CultureConstructor, Prompt, hasNumber, consoleOnTurn, doTopic } from '../src/topical';
 
 class PromptForAge extends Prompt<number, any, CultureConstructor> {
 
@@ -22,25 +22,27 @@ class Age extends Waterfall {
 
     static subtopics = [PromptForAge];
 
-    waterfall = (next: (arg?: any) => void) => [
-        async () => {
-            await this.context.sendActivity(`What's your name?`);
-        },
+    waterfall(next: (arg?: any) => void) {
+        return [
+            async () => {
+                await this.context.sendActivity(`What's your name?`);
+            },
 
-        async () => {
-            if (this.text === 'Bill Barnes')
-                next(51);
-            else
-                await this.beginChild(PromptForAge, {}, { culture: 'en-us'});
-        },
+            async () => {
+                if (this.text === 'Bill Barnes')
+                    next(51);
+                else
+                    await this.beginChild(PromptForAge, {}, { culture: 'en-us'});
+            },
 
-        async (age: number) => {
-            await this.context.sendActivity(age > 30
-                ? `You're ${age}? That's so old!`
-                : `Phew, you've still got a few good years left`
-            );
-        },
-    ];
+            async (age: number) => {
+                await this.context.sendActivity(age > 30
+                    ? `You're ${age}? That's so old!`
+                    : `Phew, you've still got a few good years left`
+                );
+            },
+        ];
+    }
 
     // uses default onBegin, onTurn, onChildReturn
 }

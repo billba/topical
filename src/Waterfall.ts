@@ -79,6 +79,8 @@ export class Waterfall <
         this.result = child.return!.result;
     }
 
-    waterfall: (next: (value?: any) => void) => Step[] = () => [];
+    waterfall(next: (value?: any) => void): Step[] {
+        return [];
+    }
 }
 

@@ -3,13 +3,15 @@ import { Topic, prettyConsole, Waterfall, consoleOnTurn, doTopic } from '../src/
 
 class KnockKnock extends Waterfall {
 
-    waterfall = () => [
-        () => this.context.sendActivity(`Who's there?`),
+    waterfall() {
+        return [
+            () => this.context.sendActivity(`Who's there?`),
 
-        () => this.context.sendActivity(`${this.text} who?`),
+            () => this.context.sendActivity(`${this.text} who?`),
 
-        () => this.context.sendActivity(`Hilarious!`),
-    ];
+            () => this.context.sendActivity(`Hilarious!`),
+        ];
+    }
 
     // uses default onBegin, onTurn, onChildReturn
 }
