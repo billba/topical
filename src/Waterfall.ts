@@ -20,11 +20,10 @@ export class Waterfall <
     async runWaterfall (
         getSteps: (next: (value?: any) => void) => Step[]
     ) {
-
         if (this.state.stepIndex === undefined)
             this.state.stepIndex = 0;
 
-        let next;
+        let next = true;
         let value: any = undefined;
 
         const steps = getSteps(
@@ -35,7 +34,6 @@ export class Waterfall <
         );
 
         if (this.hasChildren()) {
-
             next = false;
             this.result = undefined;
 
@@ -45,21 +43,17 @@ export class Waterfall <
                 next = true;
                 value = this.result!.value;
             }
-        } else {
-
-            next = true
         }
     
         while (next && this.state.stepIndex < steps.length) {
-
             next = false;
 
-            await steps[this.state.stepIndex++](value);
+            await steps[this.state.stepIndex ++](value);
 
             if (this.hasChildren())
                 next = false;
         }
-    
+
         return this.state.stepIndex >= steps.length;    
     }
 
