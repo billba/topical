@@ -18,7 +18,6 @@ export class Validator <V> {
     constructor(
         validate: Validate<V>,
     ) {
-
         this.validate = async (activity) => {
 
             const result = await toPromise(validate(activity))
@@ -36,7 +35,6 @@ export class Validator <V> {
     and (
         constrain: Constrain<V>,
     ) {
-
         return new Validator<V>(async activity => {
 
             const validateResult = await this.validate(activity);
@@ -60,7 +58,6 @@ export class Validator <V> {
     transform <W = V>(
         transform: Transform<V, W>,
     ) {
-
         return new Validator<W>(async activity => {
 
             const validateResult = await this.validate(activity);
