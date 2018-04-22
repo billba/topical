@@ -3,18 +3,18 @@ import { Topic } from "./topical";
 import { toPromise, returnsPromiseVoid, Validator, ValidatorResult } from 'botbuilder-topical-common';
 
 export interface PromptInit <PromptArgs> {
-    name: string;
-    args: PromptArgs;
+    name?: string;
+    args?: PromptArgs;
 }
 
 export interface PromptState <PromptArgs> {
-    name: string;
+    name?: string;
     turns: number;
-    args: PromptArgs;
+    args?: PromptArgs;
 }
 
 export interface PromptReturn <V> {
-    name: string;
+    name?: string;
     result: ValidatorResult<V>;
 }
 
@@ -26,12 +26,12 @@ export abstract class Prompt <
 > extends Topic<PromptInit<PromptArgs>, PromptState<PromptArgs>, PromptReturn<V>, Construct, Context> {
 
     async onBegin (
-        args: PromptInit<PromptArgs>,
+        args?: PromptInit<PromptArgs>,
     ) {
          this.state = {
-            name: args.name,
+            name: args ? args.name : undefined,
             turns: 0,
-            args: args.args,
+            args: args ? args.args : undefined
         }
 
         await this.prompter();

@@ -77,6 +77,8 @@ export class Waterfall <
             throw "waterfalls can only have Prompts as children";
         
         this.result = child.return!.result;
+
+        this.clearChildren();
     }
 
     waterfall(next: (value?: any) => void): Step[] {

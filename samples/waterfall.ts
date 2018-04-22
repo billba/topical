@@ -1,5 +1,18 @@
 import { MemoryStorage, ConsoleAdapter } from 'botbuilder';
-import { Topic, prettyConsole, Waterfall, ValidatorResult, CultureConstructor, Prompt, hasNumber, consoleOnTurn, doTopic } from '../src/topical';
+import { Topic, prettyConsole, Waterfall, ValidatorResult, CultureConstructor, Prompt, hasNumber, hasText, consoleOnTurn, doTopic } from '../src/topical';
+
+class PromptForName extends Prompt<string> {
+
+    validator = hasText
+        .and((activity, text) => text.length > 1 && text.length < 30 || 'invalid_name');
+
+    async prompter(result?: ValidatorResult<string>) {
+        await this.context.sendActivity(result
+            ? `Please tell me your name`
+            : `What's your name?`
+        );
+    }
+}
 
 class PromptForAge extends Prompt<number, any, CultureConstructor> {
 
@@ -20,19 +33,20 @@ class PromptForAge extends Prompt<number, any, CultureConstructor> {
 
 class Age extends Waterfall {
 
-    static subtopics = [PromptForAge];
+    static subtopics = [PromptForName, PromptForAge];
 
     waterfall(next: (arg?: any) => void) {
         return [
             async () => {
-                await this.context.sendActivity(`What's your name?`);
+                await this.beginChild(PromptForName);
             },
 
-            async () => {
-                if (this.text === 'Bill Barnes')
+            async (name: string) => {
+                await this.context.sendActivity(`Nice to meet you, ${this.text}!`);
+                if (name === 'Bill Barnes')
                     next(51);
                 else
-                    await this.beginChild(PromptForAge, {}, { culture: 'en-us'});
+                    await this.beginChild(PromptForAge, {}, { culture: 'en-us' });
             },
 
             async (age: number) => {
