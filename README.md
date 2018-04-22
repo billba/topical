@@ -127,7 +127,7 @@ First, initialize *Topical* by calling `Topic.init` with a state storage provide
 ```ts
 Topic.init(new MemoryStorage());
 ```
-Then, create a subclass of `Topic` which will be your "root". Every activity for every user in every conversation will flow through this topic. A typical root topic will create one or more children and dispatch messages to them -- that's the whole point of Topical!
+Then, create a subclass of `Topic` which will be your "root". Every activity for every user in every conversation will flow through this topic. A typical root topic will create one or more children and dispatch messages to them.
 ```ts
 class YourRootTopic extends Topic {
     // your topic here
@@ -154,10 +154,12 @@ yourMessageLoop(context => doTopic(YourRootTopic, beginArgs?, constructorArgs?))
 
 ## Next steps
 
-Learn about [waterfalls](/docs/waterfalls.md)
+Learn about [prompts](/docs/prompts.md) and [waterfalls](/docs/waterfalls.md).
 
 Learn how *Topical* [works](/docs/understanding.md).
 
-Walk through the process of creating a *Topical* application in the tutorial (not written yet, sorry!).
+## Docs To Be Written
 
-Learn the *Topical* API in the reference (not written yet, sorry!).
+Walk through the process of creating a *Topical* application in the [tutorial](/docs/tutorial.md).
+
+Learn the *Topical* API in the [reference](/docs/reference.md).
