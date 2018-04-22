@@ -22,7 +22,7 @@ The *Topical* library provides low-level support for this pattern.
 
 ## What does *Topical* code look like?
 
-Here's a snippet that shows a common pattern: a "root" topic creating a child, dispatching messages to it, and, when the child completes,  handling its return.
+Here's a snippet that shows a common pattern: a "root" topic creating a child, dispatching messages to it, and, when the child completes, handling its return.
 ```ts
 class Root extends Topic {
 
@@ -44,7 +44,6 @@ class Root extends Topic {
         this.clearChildren();
     }
 }
-
 Root.subtopics = [TravelTopic];
 ```
 
@@ -158,7 +157,7 @@ Learn about [prompts](/docs/prompts.md) and [waterfalls](/docs/waterfalls.md).
 
 Learn how *Topical* [works](/docs/understanding.md).
 
-## Docs To Be Written
+## Docs to be written
 
 Walk through the process of creating a *Topical* application in the [tutorial](/docs/tutorial.md).
 

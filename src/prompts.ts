@@ -1,7 +1,7 @@
 import { Prompt, hasText, hasNumber, Culture, Validator } from './topical';
 import { TurnContext } from 'botbuilder';
 
-export abstract class TextPrompt <
+export class TextPrompt <
     PromptArgs = any,
     Context extends TurnContext = TurnContext,
 > extends Prompt<string, PromptArgs, {}, Context> {
@@ -13,7 +13,7 @@ export interface CultureConstructor {
     culture: string;
 }
 
-export abstract class NumberPrompt <
+export class NumberPrompt <
     PromptArgs = any,
     Context extends TurnContext = TurnContext,
 > extends Prompt<number, PromptArgs, CultureConstructor, Context> {

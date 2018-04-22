@@ -1,29 +1,26 @@
 import { MemoryStorage, ConsoleAdapter } from 'botbuilder';
 import { Topic, Culture, NumberPrompt, prettyConsole, WSTelemetry, Prompt, hasText, consoleOnTurn, doTopic } from '../src/topical';
 
-class PromptForCulture extends Prompt<string, string> {
+async function prompter (
+    this: Prompt<any, string>
+) {
+    await this.context.sendActivity(this.state.args!);
+}
+
+class PromptForCulture extends Prompt {
 
     validator = hasText
         .and((activity, text) => Culture.getSupportedCultureCodes().includes(text) || 'unsupported_culture');
-
-    async prompter() {
-        await this.context.sendActivity(this.state.args!);
-    }
-}
-
-class PromptForNumber extends NumberPrompt<string> {
-
-    async prompter() {
-        await this.context.sendActivity(this.state.args!);
-    }
 }
 
 class FavoriteNumber extends Topic  {
 
-    static subtopics = [PromptForCulture, PromptForNumber];
+    static subtopics = [PromptForCulture, NumberPrompt];
 
     async onBegin() {
-        await this.beginChild(PromptForCulture, `Please pick a culture (${Culture.getSupportedCultureCodes().join(', ')}).`);
+        await this.beginChild(PromptForCulture, {
+            prompt: `Please pick a culture (${Culture.getSupportedCultureCodes().join(', ')}).`
+        });
     }
 
     async onTurn() {
@@ -35,10 +32,12 @@ class FavoriteNumber extends Topic  {
 
     async onChildReturn(child: Topic) {
         if (child instanceof PromptForCulture) {
-            await this.beginChild(PromptForNumber, `What's your favorite number?`, {
+            await this.beginChild(NumberPrompt, {
+                prompt: `What's your favorite number?`
+            }, {
                 culture: child.return!.result.value!, 
             });
-        } else if (child instanceof PromptForNumber) {
+        } else if (child instanceof NumberPrompt) {
             await this.context.sendActivity(`${child.return!.result.value}? That's my favorite too!`);
             this.clearChildren();
         }

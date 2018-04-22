@@ -1,5 +1,5 @@
 import { TurnContext, MemoryStorage, ConsoleAdapter } from 'botbuilder';
-import { Topic, TextPrompt, prettyConsole, WSTelemetry, consoleOnTurn, doTopic } from '../src/topical';
+import { Topic, TextPrompt, prettyConsole, WSTelemetry, consoleOnTurn, doTopic, PromptArgs } from '../src/topical';
 
 class CustomContext extends TurnContext {
     foo = "hey"
@@ -13,11 +13,11 @@ class Child extends Topic<any, any, any, any, CustomContext> {
     }
 }
 
-class PromptForText extends TextPrompt<string, CustomContext> {
+class PromptForText extends TextPrompt<PromptArgs, CustomContext> {
 
-    async prompter() {
+    prompter = async () => {
         await this.context.sendActivity(this.context.foo);
-        await this.context.sendActivity(this.state.args!);
+        await this.context.sendActivity(this.state.args!.prompt!);
     }
 }
 
@@ -36,9 +36,10 @@ class Root extends Topic<any, any, any, any, CustomContext> {
     async onChildReturn(child: Topic) {
         if (child instanceof Child) {
             await this.context.sendActivity(this.context.foo);
-            this.beginChild(PromptForText, 'Wassup?');
+            this.beginChild(PromptForText, {
+                prompt: 'Wassup?',
+            });
         } else if (child instanceof PromptForText) {
-            console.log("I got here");
             await this.context.sendActivity(`You said ${child.return!.result.value}`);
             this.clearChildren();
         } else

@@ -2,25 +2,41 @@ import { Promiseable, Activity, TurnContext } from 'botbuilder';
 import { Topic } from "./topical";
 import { toPromise, returnsPromiseVoid, Validator, ValidatorResult } from 'botbuilder-topical-common';
 
-export interface PromptState <PromptArgs> {
-    turns: number;
-    args?: PromptArgs;
+export interface PromptArgs {
+    name?: string;
+    prompt: string;
+    reprompt?: string;
 }
 
-export interface PromptReturn <V, PromptArgs> {
-    args?: PromptArgs;
+async function defaultPrompter (
+    this: Prompt<any, PromptArgs>,
+    result?: ValidatorResult<any>,
+) {
+    await this.context.sendActivity(result && this.state.args!.reprompt
+        ? this.state.args!.reprompt!
+        : this.state.args!.prompt
+    );
+}
+
+export interface PromptState <Args> {
+    turns: number;
+    args?: Args;
+}
+
+export interface PromptReturn <V, Args> {
+    args?: Args;
     result: ValidatorResult<V>;
 }
 
 export abstract class Prompt <
     V = any,
-    PromptArgs = any,
+    Args = PromptArgs,
     Construct = any,
     Context extends TurnContext = TurnContext,
-> extends Topic<PromptArgs, PromptState<PromptArgs>, PromptReturn<V, PromptArgs>, Construct, Context> {
+> extends Topic<Args, PromptState<Args>, PromptReturn<V, Args>, Construct, Context> {
 
     async onBegin (
-        args?: PromptArgs,
+        args?: Args,
     ) {
          this.state = {
             args,
@@ -53,9 +69,9 @@ export abstract class Prompt <
         return this.prompter(result);
     }
 
-    maxTurns = 3;
+    maxTurns = Number.MAX_SAFE_INTEGER;
  
-    abstract async prompter (result?: ValidatorResult<V>): Promise<void>;
+    prompter: (result?: ValidatorResult<V>) => Promise<void> = defaultPrompter;
 
     validator = new Validator<V>(() => {
         throw "no validator provided";

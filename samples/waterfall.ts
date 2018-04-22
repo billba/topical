@@ -1,33 +1,19 @@
 import { MemoryStorage, ConsoleAdapter } from 'botbuilder';
-import { Topic, prettyConsole, Waterfall, ValidatorResult, CultureConstructor, Prompt, hasNumber, hasText, consoleOnTurn, doTopic } from '../src/topical';
+import { Topic, prettyConsole, Waterfall, ValidatorResult, CultureConstructor, Prompt, hasNumber, hasText, consoleOnTurn, doTopic, PromptArgs, NumberPrompt, TextPrompt } from '../src/topical';
 
-class PromptForName extends Prompt<string> {
+class PromptForName extends TextPrompt {
 
     validator = hasText
         .and((activity, text) => text.length > 1 && text.length < 30 || 'invalid_name');
-
-    async prompter(result?: ValidatorResult<string>) {
-        await this.context.sendActivity(result
-            ? `Please tell me your name`
-            : `What's your name?`
-        );
-    }
 }
 
-class PromptForAge extends Prompt<number, any, CultureConstructor> {
+class PromptForAge extends NumberPrompt {
 
     constructor(construct: CultureConstructor) {
         super(construct);
 
         this.validator = hasNumber(construct.culture)
             .and((activity, num) => num > 0 && num < 150 || 'invalid_age');
-    }
-
-    async prompter(result?: ValidatorResult<number>) {
-        await this.context.sendActivity(result
-            ? `Please provide a valid age.`
-            : `How old are you?`
-        );
     }
 }
 
@@ -38,7 +24,10 @@ class Age extends Waterfall {
     waterfall(next: (arg?: any) => void) {
         return [
             async () => {
-                await this.beginChild(PromptForName);
+                await this.beginChild(PromptForName, {
+                    prompt: `What's your name?`,    
+                    reprompt: `Please tell me your name`,
+                });
             },
 
             async (name: string) => {
@@ -46,7 +35,11 @@ class Age extends Waterfall {
                 if (name === 'Bill Barnes')
                     next(51);
                 else
-                    await this.beginChild(PromptForAge, undefined, { culture: 'en-us' });
+                    await this.beginChild(PromptForAge, {
+                        prompt: `How old are you?`,
+                        reprompt: `Please tell me your age.`,   
+                    }, { culture: 'en-us' }
+                );
             },
 
             async (age: number) => {

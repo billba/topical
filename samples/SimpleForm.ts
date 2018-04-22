@@ -14,32 +14,14 @@ export interface SimpleFormState {
     schema: SimpleFormSchema;
 }
 
-export interface SimpleFormReturn {
-    form: SimpleFormData;
-}
-
-export interface PromptForValueArgs {
-    name: string;
-    prompt: string;
-}
-
-export class PromptForValue extends TextPrompt<PromptForValueArgs> {
-
-    maxTurns = Number.MAX_SAFE_INTEGER;
-
-    async prompter(result: ValidatorResult<string>) {
-        await this.context.sendActivity(this.state.args!.prompt);
-    }
-}
-
-export class SimpleForm extends Topic<SimpleFormSchema, SimpleFormState, SimpleFormReturn> {
+export class SimpleForm extends Topic<SimpleFormSchema, SimpleFormState, SimpleFormData> {
     
-    static subtopics = [PromptForValue];
+    static subtopics = [TextPrompt];
 
     async onBegin(
-        args?: SimpleFormSchema,
+        args: SimpleFormSchema,
     ) {
-        this.state.schema = args!;
+        this.state.schema = args;
         this.state.form = {};
 
         await this.next();
@@ -53,7 +35,7 @@ export class SimpleForm extends Topic<SimpleFormSchema, SimpleFormState, SimpleF
                 if (metadata.type !== 'string')
                     throw `not expecting type "${metadata.type}"`;
 
-                await this.beginChild(PromptForValue, {
+                await this.beginChild(TextPrompt, {
                     name,
                     prompt: metadata.prompt,
                 });
@@ -62,9 +44,7 @@ export class SimpleForm extends Topic<SimpleFormSchema, SimpleFormState, SimpleF
         }
 
         if (!this.hasChildren()) {
-            this.returnToParent({
-                form: this.state.form
-            });
+            this.returnToParent(this.state.form);
         }
     }
 
@@ -74,9 +54,8 @@ export class SimpleForm extends Topic<SimpleFormSchema, SimpleFormState, SimpleF
     }
 
     async onChildReturn(
-        child: PromptForValue,
+        child: TextPrompt,
     ) {
-
         const metadata = this.state.schema[child.return!.args!.name];
 
         if (metadata.type !== 'string')
