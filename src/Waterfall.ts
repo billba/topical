@@ -15,7 +15,7 @@ export class Waterfall <
     Context extends TurnContext = TurnContext
 > extends Topic <Begin, State, Return, Constructor, Context> {
 
-    result!: ValidatorResult<any> | undefined;
+    result?: ValidatorResult<any>;
 
     async runWaterfall (
         getSteps: (next: (value?: any) => void) => Step[]

@@ -1,4 +1,4 @@
-import { Prompt, hasText, hasNumber, Culture, PromptInit, Validator } from './topical';
+import { Prompt, hasText, hasNumber, Culture, Validator } from './topical';
 import { TurnContext } from 'botbuilder';
 
 export abstract class TextPrompt <
