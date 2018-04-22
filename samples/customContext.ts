@@ -17,7 +17,7 @@ class PromptForText extends TextPrompt<string, CustomContext> {
 
     async prompter() {
         await this.context.sendActivity(this.context.foo);
-        await this.context.sendActivity(this.state.args);
+        await this.context.sendActivity(this.state.args!);
     }
 }
 
@@ -36,10 +36,7 @@ class Root extends Topic<any, any, any, any, CustomContext> {
     async onChildReturn(child: Topic) {
         if (child instanceof Child) {
             await this.context.sendActivity(this.context.foo);
-            this.beginChild(PromptForText, {
-                name: 'name',
-                args: 'Wassup?',
-            });
+            this.beginChild(PromptForText, 'Wassup?');
         } else if (child instanceof PromptForText) {
             console.log("I got here");
             await this.context.sendActivity(`You said ${child.return!.result.value}`);

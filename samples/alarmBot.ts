@@ -44,12 +44,17 @@ interface DeleteAlarmReturn {
     alarmName: string;
 }
 
-class PromptForText extends TextPrompt {
+interface PromptForTextArgs {
+    name: string;
+    prompt: string;
+}
+
+class PromptForText extends TextPrompt<PromptForTextArgs> {
 
     maxTurns = 100;
 
     async prompter() {
-        await this.context.sendActivity(this.state.args.prompt);
+        await this.context.sendActivity(this.state.args!.prompt);
     }
 }
 
@@ -69,9 +74,7 @@ class DeleteAlarm extends Topic<DeleteAlarmBegin, DeleteAlarmState, DeleteAlarmR
 
         await this.beginChild(PromptForText, {
             name: 'whichAlarm',
-            args: {
-                prompt: `Which alarm do you want to delete?\n${listAlarms(this.state.alarms)}`,
-            },
+            prompt: `Which alarm do you want to delete?\n${listAlarms(this.state.alarms)}`,
         });
     }
 
@@ -80,15 +83,13 @@ class DeleteAlarm extends Topic<DeleteAlarmBegin, DeleteAlarmState, DeleteAlarmR
     }
 
     async onChildReturn(child: PromptForText) {
-        switch (child.return!.name) {
+        switch (child.return!.args!.name) {
 
             case 'whichAlarm':
                 this.state.alarmName = child.return!.result.value!;
                 await this.beginChild(PromptForText, {
                     name: 'confirm',
-                    args: {
-                        prompt: `Are you sure you want to delete alarm "${child.return!.result.value}"? (yes/no)"`,
-                    },
+                    prompt: `Are you sure you want to delete alarm "${child.return!.result.value}"? (yes/no)"`,
                 });
                 break;
 
@@ -103,7 +104,7 @@ class DeleteAlarm extends Topic<DeleteAlarmBegin, DeleteAlarmState, DeleteAlarmR
                 break;
 
             default:
-                throw `unknwon prompt name ${child.return!.name}`;
+                throw `unknwon prompt name ${child.return!.args!.name}`;
         }
     }
 

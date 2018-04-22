@@ -46,7 +46,7 @@ class Age extends Waterfall {
                 if (name === 'Bill Barnes')
                     next(51);
                 else
-                    await this.beginChild(PromptForAge, {}, { culture: 'en-us' });
+                    await this.beginChild(PromptForAge, undefined, { culture: 'en-us' });
             },
 
             async (age: number) => {

@@ -161,7 +161,7 @@ class PromptForName extends Prompt {
 
     async prompter(result) {
         await this.context.sendActivity(result
-            ? this.state.args
+            ? this.state.args.prompt
             : `Please provide a valid name`
         );
     }
@@ -172,7 +172,7 @@ class MyTopic extends Topic {
     async onBegin() {
         await this.beginChild(PromptForPetName, {
             name: 'dog',
-            args: `What is your dog's name?`
+            prompt: `What is your dog's name?`
         });
     }
 
@@ -182,11 +182,11 @@ class MyTopic extends Topic {
 
     async onChildReturn(child) {
         if (child instanceof PromptForPetName) {
-            if (child.return.name === 'dog') {
+            if (child.return.args.name === 'dog') {
                 this.state.dogName = child.return.result.value;
                 await this.beginChild(PromptForPetName, {
                     name: 'cat',
-                    args: `What is your cat's name?`
+                    prompt: `What is your cat's name?`
                 });
             } else {
                 this.state.catName = child.return.result.value;
@@ -197,4 +197,4 @@ class MyTopic extends Topic {
 }
 MyTopic.subtopics = [PromptForPetName];
 ```
-The `name` property is built in, but you can use `args` however you want. Here it is being used to specify the initial prompt, but it can be any value. It is just passed through to `prompter`.
+You can use put whatever you want in the second argument to `this.beginChild` -- here it is being used to disambiguate the specific prompt, and specify the initial prompt, but it can be any value. It is made available to `prompter` as `this.state.args` and is returned back to the parent as `child.return.args`.

@@ -2,19 +2,13 @@ import { Promiseable, Activity, TurnContext } from 'botbuilder';
 import { Topic } from "./topical";
 import { toPromise, returnsPromiseVoid, Validator, ValidatorResult } from 'botbuilder-topical-common';
 
-export interface PromptInit <PromptArgs> {
-    name?: string;
-    args?: PromptArgs;
-}
-
 export interface PromptState <PromptArgs> {
-    name?: string;
     turns: number;
     args?: PromptArgs;
 }
 
-export interface PromptReturn <V> {
-    name?: string;
+export interface PromptReturn <V, PromptArgs> {
+    args?: PromptArgs;
     result: ValidatorResult<V>;
 }
 
@@ -23,15 +17,14 @@ export abstract class Prompt <
     PromptArgs = any,
     Construct = any,
     Context extends TurnContext = TurnContext,
-> extends Topic<PromptInit<PromptArgs>, PromptState<PromptArgs>, PromptReturn<V>, Construct, Context> {
+> extends Topic<PromptArgs, PromptState<PromptArgs>, PromptReturn<V, PromptArgs>, Construct, Context> {
 
     async onBegin (
-        args?: PromptInit<PromptArgs>,
+        args?: PromptArgs,
     ) {
          this.state = {
-            name: args ? args.name : undefined,
+            args,
             turns: 0,
-            args: args ? args.args : undefined
         }
 
         await this.prompter();
@@ -43,13 +36,13 @@ export abstract class Prompt <
 
         if (!result.reason)
             return this.returnToParent({
-                name: this.state.name,
+                args: this.state.args,
                 result
             });
 
         if (++ this.state.turns === this.maxTurns) {
             return this.returnToParent({
-                name: this.state.name,
+                args: this.state.args,
                 result: {
                     value: result.value,
                     reason: 'too_many_attempts',
