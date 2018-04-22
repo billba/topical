@@ -31,7 +31,7 @@ const isBigNumber = isNumber
 You can also create a new Validator by transforming the result of an existing one:
 ```ts
 const getRange = isNumber
-    .transform((activity, num) => { min: 0, max: num});
+    .transform((activity, num) => ({ min: 0, max: num}));
 ```
 One of the useful things about *Topical* validators is that you can provide a *reason* why something doesn't validate:
 ```ts
@@ -41,6 +41,7 @@ const isBigNumber = isNumber
 Now you can use that reason to guide the user:
 ```ts
 const result = isBigNumber.validate(context.activity);
+
 switch (result.reason) {
     case 'too_small':
         await context.sendActivity(`That's too small`);
@@ -65,7 +66,7 @@ Note that validators can be used independently of the rest of *Topical*. Enjoy!
 
 You can imagine a Topic that runs user input through a specific validator, using the results of that Validator to guide the user to a valid response, and returning that response. That's what a *prompt* is. You specify:
 
-* a validator
+* a `validator`
 * a `prompter` method which provides the initial prompt to the user, and uses the result of the validator to guide them towards a valid response. `Prompt` provides a default prompter.
 * `maxTurns` -- a maximum number of turns (tries). This defaults to `Number.MAX_SAFE_INTEGER`.
 

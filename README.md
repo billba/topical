@@ -88,7 +88,7 @@ The [custom context](/samples/customContext.ts) sample demonstrates the use of a
 * `npm run build`
 * `node lib/samples/customContext.js`
 
-The [culture](/samples/culture.ts) sample demonstrates the use of a custom promp validator and `NumberPrompt`, which requires providing a constructor argument.
+The [culture](/samples/culture.ts) sample demonstrates the use of a custom prompt validator and `NumberPrompt`, which requires providing a constructor argument.
 
 * clone this repo
 * `npm install`
