@@ -79,8 +79,8 @@ When the prompt completes, it returns the following to the parent Topic's `onChi
 The default prompter expects the following arguments:
 
 * `name`: optional: the name of the prompt. This allows the same prompt to be used to capture multiple fields.
-* `prompt`: required: a string or activity to use as the initial prompt to the user
-* `reprompt`:  optional: a string or activity to use for subsequent guidance for the user. If absent, `prompt` will be used.
+* `prompt`: required: a string to use as the initial prompt to the user
+* `reprompt`:  optional: a string to use for subsequent guidance for the user. If absent, `prompt` will be used.
 
 You can supply your own prompter which may or may not use different arguments to yield different behaviors. For example, you may wish to provide fine-grained guidance to the user based on the reason code returned by the validator.
 
