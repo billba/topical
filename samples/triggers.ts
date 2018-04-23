@@ -22,12 +22,7 @@ class Flights extends Topic {
     }
 
     async onTurn() {
-        if (this.text === 'restart') {
-            this.begun = false;
-            return;
-        }
-
-        await this.context.sendActivity(`I don't really do much. Try "restart".`);
+        await this.context.sendActivity(`That's my one trick. Try 'travel' to restart the bot.`);
     }
 }
 
@@ -36,10 +31,6 @@ interface HotelsBegin {
 }
 
 class Hotels extends Topic <HotelsBegin> {
-
-    async onBegin(args?: HotelsBegin) {
-        await this.context.sendActivity(`Let's stay at a ${ args ? args.chain : 'hotel'}!`)
-    }
 
     async trigger() {
         if (this.text && this.text.includes('hotel'))
@@ -51,13 +42,12 @@ class Hotels extends Topic <HotelsBegin> {
             }
     }
 
-    async onTurn() {
-        if (this.text === 'restart') {
-            this.begun = false;
-            return;
-        }
+    async onBegin(args?: HotelsBegin) {
+        await this.context.sendActivity(`Let's stay at a ${ args ? args.chain : 'hotel'}!`)
+    }
 
-        await this.context.sendActivity(`I don't really do much. Try "restart".`);
+    async onTurn() {
+        await this.context.sendActivity(`That's my one trick. Try 'travel' to restart the bot.`);
     }
 }
 
@@ -80,6 +70,24 @@ class Travel extends Topic  {
     }
 }
 
+class Root extends Topic {
+
+    static subtopics = [Travel];
+
+    async onBegin() {
+        await this.context.sendActivity(`Say 'travel' to start (or restart) the travel dialog.`);
+    }
+
+    async onTurn() {
+        if (this.text === 'travel') {
+            await this.beginChild(Travel);
+            return;
+        }
+
+        await this.dispatchToChild();
+    }
+}
+
 // const wst = new WSTelemetry('ws://localhost:8080/server');
 // Topic.telemetry = action => wst.send(action);
 
@@ -88,5 +96,5 @@ Topic.init(new MemoryStorage());
 consoleOnTurn(
     new ConsoleAdapter()
         .use(prettyConsole),
-    context => doTopic(Travel, context)
+    context => doTopic(Root, context)
 );
