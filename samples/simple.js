@@ -4,14 +4,14 @@ const { Topic, prettyConsole, consoleOnTurn, doTopic } = require ('../lib/src/to
 class ChildTopic extends Topic {
 
     async onBegin(args) {
-        await this.context.sendActivity(`Welcome to the child topic!\nWhat multiple of ${args["foo"]} do you want to return?`);
+        await this.send(`Welcome to the child topic!\nWhat multiple of ${args["foo"]} do you want to return?`);
     }
 
     async onTurn() {
         const num = Number.parseInt(this.text);
 
         if (Number.isNaN(num))
-            await this.context.sendActivity(`Please supply a number.`);
+            await this.send(`Please supply a number.`);
         else
             return this.returnToParent({
                 num
@@ -22,16 +22,16 @@ class ChildTopic extends Topic {
 class RootTopic extends Topic {
 
     async onBegin() {
-        await this.context.sendActivity(`Welcome to my root topic!`);
+        await this.send(`Welcome to my root topic!`);
     }
     
     async onTurn() {
         if (this.text === 'end child') {
             if (this.hasChildren()) {
                 this.clearChildren();
-                await this.context.sendActivity(`I have ended the child topic.`);
+                await this.send(`I have ended the child topic.`);
             } else {
-                await this.context.sendActivity(`There is no child to end`);
+                await this.send(`There is no child to end`);
             }
             return;
         }
@@ -45,12 +45,12 @@ class RootTopic extends Topic {
             });
         }
 
-        await this.context.sendActivity(`Try "start child" or "end child".`);
+        await this.send(`Try "start child" or "end child".`);
     }
 
     async onChildReturn(child)
     {
-        await this.context.sendActivity(`13 * ${child.return.num} = ${13 * child.return.num}`);
+        await this.send(`13 * ${child.return.num} = ${13 * child.return.num}`);
         this.clearChildren();
     }
 }

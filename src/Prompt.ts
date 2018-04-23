@@ -12,7 +12,7 @@ async function defaultPrompter (
     this: Prompt<any, PromptArgs>,
     result?: ValidatorResult<any>,
 ) {
-    await this.context.sendActivity(result && this.state.args!.reprompt
+    await this.send(result && this.state.args!.reprompt
         ? this.state.args!.reprompt!
         : this.state.args!.prompt
     );

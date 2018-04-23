@@ -31,7 +31,7 @@ class Age extends Waterfall {
             },
 
             async (name: string) => {
-                await this.context.sendActivity(`Nice to meet you, ${this.text}!`);
+                await this.send(`Nice to meet you, ${this.text}!`);
                 if (name === 'Bill Barnes')
                     next(51);
                 else
@@ -43,7 +43,7 @@ class Age extends Waterfall {
             },
 
             async (age: number) => {
-                await this.context.sendActivity(age > 30
+                await this.send(age > 30
                     ? `You're ${age}? That's so old!`
                     : `Phew, you've still got a few good years left`
                 );

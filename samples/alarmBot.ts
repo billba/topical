@@ -22,9 +22,9 @@ class ShowAlarms extends Topic<ShowAlarmBegin> {
     ) {
 
         if (args.alarms.length === 0)
-            await this.context.sendActivity(`You haven't set any alarms.`);
+            await this.send(`You haven't set any alarms.`);
         else
-            await this.context.sendActivity(`You have the following alarms set:\n${listAlarms(args.alarms)}`);
+            await this.send(`You have the following alarms set:\n${listAlarms(args.alarms)}`);
 
         this.returnToParent();
     }
@@ -52,7 +52,7 @@ class DeleteAlarm extends Topic<DeleteAlarmBegin, DeleteAlarmState, DeleteAlarmR
         args: DeleteAlarmBegin,
     ) {
         if (args.alarms.length === 0) {
-            await this.context.sendActivity(`You don't have any alarms.`);
+            await this.send(`You don't have any alarms.`);
             return this.returnToParent();
         }
 
@@ -107,7 +107,7 @@ class AlarmBot extends Topic<any, AlarmBotState> {
     static subtopics = [DeleteAlarm, ShowAlarms, SimpleForm];
 
     async onBegin () {
-        await this.context.sendActivity(`Welcome to Alarm Bot!\n${helpText}`);
+        await this.send(`Welcome to Alarm Bot!\n${helpText}`);
         this.state.alarms = [];
     }
 
@@ -136,7 +136,7 @@ class AlarmBot extends Topic<any, AlarmBotState> {
                     alarms: this.state.alarms
                 });
             } else {
-                await this.context.sendActivity(helpText);
+                await this.send(helpText);
             }
         }
     }
@@ -146,15 +146,15 @@ class AlarmBot extends Topic<any, AlarmBotState> {
     ) {
         if (child instanceof SimpleForm) {
             this.state.alarms.push({ ... child.return! } as any as Alarm);
-            await this.context.sendActivity(`Alarm successfully added!`);
+            await this.send(`Alarm successfully added!`);
         } else if (child instanceof DeleteAlarm) {
             if (child.return) {
                 this.state.alarms = this.state.alarms
                     .filter(alarm => alarm.name !== child.return!.alarmName);
 
-                await this.context.sendActivity(`Alarm "${child.return!.alarmName}" has been deleted.`)
+                await this.send(`Alarm "${child.return!.alarmName}" has been deleted.`)
             } else {
-                await this.context.sendActivity(`Okay, the status quo has been preserved.`)
+                await this.send(`Okay, the status quo has been preserved.`)
             }
         } else if (!(child instanceof ShowAlarms)) {
             throw `unexpected child topic`;

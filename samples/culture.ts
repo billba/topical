@@ -4,7 +4,7 @@ import { Topic, Culture, NumberPrompt, prettyConsole, WSTelemetry, Prompt, hasTe
 async function prompter (
     this: Prompt<any, string>
 ) {
-    await this.context.sendActivity(this.state.args!);
+    await this.send(this.state.args!);
 }
 
 class PromptForCulture extends Prompt {
@@ -27,7 +27,7 @@ class FavoriteNumber extends Topic  {
         if (await this.dispatchToChild())
             return;
         
-        await this.context.sendActivity(`That's all I've got.`);
+        await this.send(`That's all I've got.`);
     }
 
     async onChildReturn(child: Topic) {
@@ -38,7 +38,7 @@ class FavoriteNumber extends Topic  {
                 culture: child.return!.result.value!, 
             });
         } else if (child instanceof NumberPrompt) {
-            await this.context.sendActivity(`${child.return!.result.value}? That's my favorite too!`);
+            await this.send(`${child.return!.result.value}? That's my favorite too!`);
             this.clearChildren();
         }
     }

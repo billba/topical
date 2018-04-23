@@ -44,13 +44,13 @@ const result = isBigNumber.validate(context.activity);
 
 switch (result.reason) {
     case 'too_small':
-        await context.sendActivity(`That's too small`);
+        await this.send(`That's too small`);
         break;
     case 'NaN':
         await context.sendActicity(`Not a number`);
         break;
     case undefined:
-        await context.sendActivity(`Perfect! You said ${result.value}`);
+        await this.send(`Perfect! You said ${result.value}`);
         break;
 }
 ```
@@ -98,7 +98,7 @@ class MyTopic extends Topic {
     }
 
     async onChildReturn(child) {
-        await this.context.sendActivity(`Nice to meet you, ${child.return.result.value}`);
+        await this.this.send(`Nice to meet you, ${child.return.result.value}`);
     }
 }
 MyTopic.subtopics = [TextPrompt];
@@ -161,16 +161,16 @@ class BigNumberPrompt extends Prompt {
 
     prompter = result => {
         if (!result) {
-            await this.context.sendActivity(`Please tell me a big number.`);
+            await this.this.send(`Please tell me a big number.`);
             return;
         }
 
         switch (result.reason) {
             case 'too_small':
-                await context.sendActivity(`That's too small`);
+                await this.send(`That's too small`);
                 break;
             case 'NaN':
-                await context.sendActivity(`Not a number`);
+                await this.send(`Not a number`);
                 break;
         }
     }
@@ -189,9 +189,9 @@ class MyTopic extends Topic {
     async onChildReturn(child) {
         if (child instanceof BigNumberPrompt) {
             if (!child.return.result.reason)
-                await context.sendActivity(`${child.return.result.value} is indeed a big number.`);
+                await this.send(`${child.return.result.value} is indeed a big number.`);
             else
-                await context.sendActivity(`Sorry it didn't work out.`);
+                await this.send(`Sorry it didn't work out.`);
         }
     }
 }

@@ -5,11 +5,11 @@ class KnockKnock extends Waterfall {
 
     waterfall() {
         return [
-            () => this.context.sendActivity(`Who's there?`),
+            () => this.send(`Who's there?`),
 
-            () => this.context.sendActivity(`${this.text} who?`),
+            () => this.send(`${this.text} who?`),
 
-            () => this.context.sendActivity(`Hilarious!`),
+            () => this.send(`Hilarious!`),
         ];
     }
 
@@ -21,7 +21,7 @@ class Root extends Topic {
     static subtopics = [KnockKnock];
 
     async onBegin () {
-        await this.context.sendActivity(`Tell me a knock knock joke`);
+        await this.send(`Tell me a knock knock joke`);
     }
 
     async onTurn () {
@@ -37,7 +37,7 @@ class Root extends Topic {
     async onChildReturn (child: KnockKnock) {
         this.clearChildren();
 
-        await this.context.sendActivity(`That was fun. Tell me another.`);
+        await this.send(`That was fun. Tell me another.`);
     }
 }
 

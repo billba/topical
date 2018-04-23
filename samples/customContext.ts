@@ -8,7 +8,7 @@ class CustomContext extends TurnContext {
 class Child extends Topic<any, any, any, any, CustomContext> {
 
     async onBegin() {
-        await this.context.sendActivity(this.context.foo);
+        await this.send(this.context.foo);
         this.returnToParent();
     }
 }
@@ -16,8 +16,8 @@ class Child extends Topic<any, any, any, any, CustomContext> {
 class PromptForText extends TextPrompt<PromptArgs, CustomContext> {
 
     prompter = async () => {
-        await this.context.sendActivity(this.context.foo);
-        await this.context.sendActivity(this.state.args!.prompt!);
+        await this.send(this.context.foo);
+        await this.send(this.state.args!.prompt!);
     }
 }
 
@@ -35,12 +35,12 @@ class Root extends Topic<any, any, any, any, CustomContext> {
 
     async onChildReturn(child: Topic) {
         if (child instanceof Child) {
-            await this.context.sendActivity(this.context.foo);
+            await this.send(this.context.foo);
             this.beginChild(PromptForText, {
                 prompt: 'Wassup?',
             });
         } else if (child instanceof PromptForText) {
-            await this.context.sendActivity(`You said ${child.return!.result.value}`);
+            await this.send(`You said ${child.return!.result.value}`);
             this.clearChildren();
         } else
             throw "mystery child topic";

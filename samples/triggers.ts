@@ -18,11 +18,11 @@ class Flights extends Topic {
     }
 
     async onBegin(args?: FlightsBegin) {
-        await this.context.sendActivity(`Let's fly to ${ args ? args.destination : 'a city'}!`)
+        await this.send(`Let's fly to ${ args ? args.destination : 'a city'}!`)
     }
 
     async onTurn() {
-        await this.context.sendActivity(`That's my one trick. Try 'travel' to restart the bot.`);
+        await this.send(`That's my one trick. Try 'travel' to restart the bot.`);
     }
 }
 
@@ -43,11 +43,11 @@ class Hotels extends Topic <HotelsBegin> {
     }
 
     async onBegin(args?: HotelsBegin) {
-        await this.context.sendActivity(`Let's stay at a ${ args ? args.chain : 'hotel'}!`)
+        await this.send(`Let's stay at a ${ args ? args.chain : 'hotel'}!`)
     }
 
     async onTurn() {
-        await this.context.sendActivity(`That's my one trick. Try 'travel' to restart the bot.`);
+        await this.send(`That's my one trick. Try 'travel' to restart the bot.`);
     }
 }
 
@@ -56,7 +56,7 @@ class Travel extends Topic  {
     static subtopics = [Flights, Hotels];
 
     async onBegin() {
-        await this.context.sendActivity(`I can book flights and hotels.`);
+        await this.send(`I can book flights and hotels.`);
         this.children = Travel.subtopics.map(T => this.createTopicInstance(T));
         console.log();
     }
@@ -66,7 +66,7 @@ class Travel extends Topic  {
             return;
         
         if (!await this.tryTriggers())
-            await this.context.sendActivity(`I can't do that.`);
+            await this.send(`I can't do that.`);
     }
 }
 
@@ -75,7 +75,7 @@ class Root extends Topic {
     static subtopics = [Travel];
 
     async onBegin() {
-        await this.context.sendActivity(`Say 'travel' to start (or restart) the travel dialog.`);
+        await this.send(`Say 'travel' to start (or restart) the travel dialog.`);
     }
 
     async onTurn() {

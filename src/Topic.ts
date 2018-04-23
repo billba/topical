@@ -1,4 +1,4 @@
-import { Promiseable, Activity, TurnContext, Storage, ConversationState } from 'botbuilder';
+import { Promiseable, Activity, TurnContext, Storage, ConversationState, ResourceResponse } from 'botbuilder';
 import { toPromise, returnsPromiseVoid, Telemetry, TelemetryAction } from './topical';
 
 export interface TopicInstance <State = any, Constructor = any> {
@@ -147,6 +147,7 @@ export abstract class Topic <
 
     public parent?: Topic<any, any, any, any, Context>;
     public text?: string;
+    public send: (activityOrText: string | Partial<Activity>, speak?: string, inputHint?: string) => Promise<ResourceResponse | undefined>;
 
     constructor (
         args: Constructor,
@@ -224,7 +225,11 @@ export abstract class Topic <
         topic.context = context;
         topic.parent = parent;
         topic.topicInstance = instance;
+
+        // helpers - these aren't specific to Topics, but they do make life easier
+
         topic.text = context.activity.type === 'message' ? context.activity.text.trim() : undefined;
+        topic.send = (activityOrText, speak, inputHint) => context.sendActivity(activityOrText, speak, inputHint);
 
         return topic;
     }

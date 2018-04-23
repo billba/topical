@@ -67,30 +67,19 @@ An important detail is that delegation doesn't have to be all or nothing -- *Tra
 
 Midway through booking a flight, as illustrated above, a user might want to look into hotels. *Travel* could recognize that question and spin up a *Hotel* topic. It could end the *Flight* topic, or keep them both active. How does *Travel* know where to send subsequent messages? That is the hard part. *Topical* provides the structure, you provide the logic.
 
-## Do you have samples?
+## Helpers
 
-Yes. To run them, you'll need to clone this repo.
+In addition to helping your application implement the *Topics* abstraction, *Topical* has a few helpers which make life easier for you bot builders:
 
-[simple sample](/samples/simple.js) is a JavaScript bot demonstrates a conversation with parent-child topics. Run `node samples/simple.js`
+* `consoleOnturn` wraps `ConsoleAdapter`'s `listen` method, injecting in a `conversationUpdate` activity at the start of the conversation. This helps you share the same bot logic between Console bots and Bot Framework bots.
 
-The rest of the samples are written in TypeScript. To run them you'll need to:
+In every topic:
+* `this.text` is a shorthand for `this.context.activity.text.trim()` -- it is `undefined` if the activity type is not `message`
+* `this.send` is a shorthand for `this.context.sendActivity`
 
-* `npm install`
-* `npm run build`
+Topic shouldn't reimplement every part of `this.context` -- but let's all look for places where it can make life easier. 
 
-Note: all these are console bots, and use the helper `consoleOnTurn` which wraps `listen()` and injects in a `conversationUpdate` activity at the beginning of the conversation. As such, you can easily reuse the logic in a Bot Framework bot.
-
-[alarm bot](/samples/alarmBot.ts) has a little more depth. Run `node lib/samples/alarmBot.js`
-
-[custom context](/samples/customContext.ts) demonstrates the use of a custom `TurnContext`. Run `node lib/samples/customContext.js`
-
-[culture](/samples/culture.ts) demonstrates the use of a custom prompt validator and `NumberPrompt`, which requires providing a constructor argument. Run `node lib/samples/culture.js`
-
-[triggers](/samples/triggers.ts) demonstrates the use of triggers. Run `node lib/samples/triggers.js`
-
-[knock knock](/samples/knockKnock.ts) demonstrates the use of a simple waterfall. Run `node lib/samples/knockKnock.js`
-
-[waterfall](/samples/knockKnock.ts) demonstrates the use of Prompts in a waterfall. Run `node lib/samples/waterfall.js`
+These helpers are used throughout the [samples](#samples).
 
 ## Can I publish my own Topics?
 
@@ -126,6 +115,31 @@ This is such a common pattern that there's a helper:
 ```ts
 yourMessageLoop(context => doTopic(YourRootTopic, beginArgs?, constructorArgs?));
 ```
+
+## Samples
+
+To these samples, you'll need to clone this repo.
+
+[simple sample](/samples/simple.js) is a JavaScript bot demonstrates a conversation with parent-child topics. Run `node samples/simple.js`
+
+The rest of the samples are written in TypeScript. To run them you'll need to:
+
+* `npm install`
+* `npm run build`
+
+Note: all these are console bots, and use the helper `consoleOnTurn` described [below](#helpers).
+
+[alarm bot](/samples/alarmBot.ts) has a little more depth. Run `node lib/samples/alarmBot.js`
+
+[custom context](/samples/customContext.ts) demonstrates the use of a custom `TurnContext`. Run `node lib/samples/customContext.js`
+
+[culture](/samples/culture.ts) demonstrates the use of a custom prompt validator and `NumberPrompt`, which requires providing a constructor argument. Run `node lib/samples/culture.js`
+
+[triggers](/samples/triggers.ts) demonstrates the use of triggers. Run `node lib/samples/triggers.js`
+
+[knock knock](/samples/knockKnock.ts) demonstrates the use of a simple waterfall. Run `node lib/samples/knockKnock.js`
+
+[waterfall](/samples/knockKnock.ts) demonstrates the use of Prompts in a waterfall. Run `node lib/samples/waterfall.js`
 
 ## Next steps
 

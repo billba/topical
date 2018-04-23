@@ -10,7 +10,7 @@ This is the simplest and most common pattern. A topic's `this.children` array is
 class Root extends Topic {
 
     async onBegin() {
-        await this.context.sendActivity("How can I help you today?");
+        await this.this.send("How can I help you today?");
     }
 
     async onTurn() {
@@ -23,7 +23,7 @@ class Root extends Topic {
     }
 
     async onChildReturn() {
-        await this.context.sendActivity(`Welcome back to the Root!`);
+        await this.this.send(`Welcome back to the Root!`);
         this.clearChildren();
     }
 }
@@ -36,7 +36,7 @@ Sometimes you want a parent topic to intercept certain messages and handle them 
 ```ts
     async onTurn() {
         if (this.text === 'time') {
-            await this.context.sendActivity(`The current time is ${new Date().toLocaleTimeString()}.`);
+            await this.this.send(`The current time is ${new Date().toLocaleTimeString()}.`);
             return;
         }
 
@@ -51,7 +51,7 @@ Sometimes you want a parent topic to intercept certain messages and handle them 
 
 ## Child cancelation
 
-Sometimes you want a parent to permanently stop dispatching messages to its child. This is a simple as clearing `this.children`.
+Sometimes you want a parent to permanently stop dispatching messages to its child. This is as simple as clearing `this.children`.
 
 ```ts
     async onTurn() {
@@ -61,13 +61,13 @@ Sometimes you want a parent to permanently stop dispatching messages to its chil
         if (await this.dispatchToChild())
             return;
 
-        if (this.context.activity.text === "book travel") {
+        if (this.text === "book travel") {
             await this.beginChild(TravelTopic);
         }
     }
 ```
 
-**Note:** it is very likely that `Topic` will get an `onEnd` method so that a child topic has an opportunity to clean up.
+**Note:** it is likely that `Topic` will get an `onEnd` method so that a child topic has an opportunity to clean up when it is ended by a parent.
 
 ## Triggering
 
@@ -79,7 +79,7 @@ class Root extends Topic {
     async onBegin() {
         this.setChild(this.createTopicInstance(TravelTopic));
 
-        await this.context.sendActivity("How can I help you today?");
+        await this.this.send("How can I help you today?");
     }
 
     async onTurn() {
@@ -93,7 +93,7 @@ class Root extends Topic {
     }
 
     async onChildReturn() {
-        await this.context.sendActivity(`Welcome back to the Root!`);
+        await this.this.send(`Welcome back to the Root!`);
         this.clearChildren();
     }
 }
