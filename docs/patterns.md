@@ -35,7 +35,7 @@ Root.subtopics = [TravelTopic];
 Sometimes you want a parent topic to intercept certain messages and handle them rather than dispatching them to the child:
 ```ts
     async onTurn() {
-        if (this.text.includes(`time`)) {
+        if (this.text === 'time') {
             await this.context.sendActivity(`The current time is ${new Date().toLocaleTimeString()}.`);
             return;
         }
@@ -43,7 +43,7 @@ Sometimes you want a parent topic to intercept certain messages and handle them 
         if (await this.dispatchToChild())
             return;
 
-        if (this.context.activity.text === "book travel") {
+        if (this.text === "book travel") {
             await this.beginChild(TravelTopic);
         }
     }
