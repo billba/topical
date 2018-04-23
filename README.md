@@ -69,52 +69,28 @@ Midway through booking a flight, as illustrated above, a user might want to look
 
 ## Do you have samples?
 
-The [simple sample](/samples/simple.js) is a JavaScript bot demonstrates a simple conversation with parent-child topics. To run it:
+Yes. To run them, you'll need to clone this repo.
 
-* clone this repo
-* `node samples/simple.js`
+[simple sample](/samples/simple.js) is a JavaScript bot demonstrates a conversation with parent-child topics. Run `node samples/simple.js`
 
-The [alarm bot](/samples/alarmBot.ts) is a TypeScript bot with a little more depth. To run it:
+The rest of the samples are written in TypeScript. To run them you'll need to:
 
-* clone this repo
 * `npm install`
 * `npm run build`
-* `node lib/samples/alarmBot.js`
 
-The [custom context](/samples/customContext.ts) sample demonstrates the use of a custom `TurnContext`.
+Note: all these are console bots, and use the helper `consoleOnTurn` which wraps `listen()` and injects in a `conversationUpdate` activity at the beginning of the conversation. As such, you can easily reuse the logic in a Bot Framework bot.
 
-* clone this repo
-* `npm install`
-* `npm run build`
-* `node lib/samples/customContext.js`
+[alarm bot](/samples/alarmBot.ts) has a little more depth. Run `node lib/samples/alarmBot.js`
 
-The [culture](/samples/culture.ts) sample demonstrates the use of a custom prompt validator and `NumberPrompt`, which requires providing a constructor argument.
+[custom context](/samples/customContext.ts) demonstrates the use of a custom `TurnContext`. Run `node lib/samples/customContext.js`
 
-* clone this repo
-* `npm install`
-* `npm run build`
-* `node lib/samples/culture.js`
+[culture](/samples/culture.ts) demonstrates the use of a custom prompt validator and `NumberPrompt`, which requires providing a constructor argument. Run `node lib/samples/culture.js`
 
-The [triggers](/samples/triggers.ts) sample demonstrates the use of triggers.
+[triggers](/samples/triggers.ts) demonstrates the use of triggers. Run `node lib/samples/triggers.js`
 
-* clone this repo
-* `npm install`
-* `npm run build`
-* `node lib/samples/triggers.js`
+[knock knock](/samples/knockKnock.ts) demonstrates the use of a simple waterfall. Run `node lib/samples/knockKnock.js`
 
-The [knock knock](/samples/knockKnock.ts) sample demonstrates the use of a simple waterfall.
-
-* clone this repo
-* `npm install`
-* `npm run build`
-* `node lib/samples/knockKnock.js`
-
-The [waterfall](/samples/knockKnock.ts) sample demonstrates the use of Prompts in a waterfall.
-
-* clone this repo
-* `npm install`
-* `npm run build`
-* `node lib/samples/waterfall.js`
+[waterfall](/samples/knockKnock.ts) demonstrates the use of Prompts in a waterfall. Run `node lib/samples/waterfall.js`
 
 ## Can I publish my own Topics?
 
