@@ -10,8 +10,8 @@ export type SimpleFormSchema = Record<string, SimpleFormMetadata>;
 export type SimpleFormData = Record<string, string>;
 
 export interface SimpleFormState {
-    form: SimpleFormData;
     schema: SimpleFormSchema;
+    form: SimpleFormData;
 }
 
 export class SimpleForm extends Topic<SimpleFormSchema, SimpleFormState, SimpleFormData> {
@@ -19,9 +19,9 @@ export class SimpleForm extends Topic<SimpleFormSchema, SimpleFormState, SimpleF
     static subtopics = [TextPrompt];
 
     async onBegin(
-        args: SimpleFormSchema,
+        schema: SimpleFormSchema,
     ) {
-        this.state.schema = args;
+        this.state.schema = schema;
         this.state.form = {};
 
         await this.next();
