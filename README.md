@@ -26,7 +26,7 @@ The built-in `botbuilder-dialogs` library is an update of the proven v3.x Node "
 * you can choose to write Dialog logic as either a waterfall or a standard message loop
 * you invoke the dialog stack from your main message loop, which means the confusing triggers/scorables concepts from v3 have been eliminated
 
-However the pattern is the same as v3.x: the current activity is routed directly to the current dialog (the one at the top of the stack). This means that each parent dialog doesn't have a chance to make decisions about how to handle the activity. That, and the fact that you are limited to a stack of dialogs (instead of a tree), means that you are very limited in the types of conversational flow that you can implement.
+However the pattern is the same as v3.x: the current activity is routed directly to the current dialog (the one at the top of the stack). This means that each dialog doesn't have a chance to make decisions about how to an activity, including whether to dispatch it to a child. That, and the fact that you are limited to a stack of dialogs (instead of a tree), means that you are very limited in the types of conversational flow that you can implement.
 
 The *Topics* pattern was designed to solve these problems.
 
