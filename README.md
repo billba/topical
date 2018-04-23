@@ -20,6 +20,16 @@ The Topics pattern models conversations as a dynamic heirarchy of independent co
 
 The *Topical* library provides low-level support for this pattern. 
 
+## Why should I use *Topical* instead of `botbuilder-dialogs`?
+
+The built-in `botbuilder-dialogs` library is an update of the proven v3.x Node "Dialogs" pattern. It is an improvement over v3 in two ways:
+* you can choose to write Dialog logic as either a waterfall or a standard message loop
+* you invoke the dialog stack from your main message loop, which means the confusing triggers/scorables concepts from v3 have been eliminated
+
+However the pattern is the same as v3.x: the current activity is routed directly to the current dialog (the one at the top of the stack). This means that each parent dialog doesn't have a chance to make decisions about how to handle the activity. That, and the fact that you are limited to a stack of dialogs (instead of a tree), means that you are very limited in the types of conversational flow that you can implement.
+
+The *Topics* pattern was designed to solve these problems.
+
 ## What does *Topical* code look like?
 
 Here's a snippet that shows a common pattern: a "root" topic creating a child, dispatching messages to it, and, when the child completes, handling its return.
