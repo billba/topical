@@ -146,8 +146,11 @@ export abstract class Topic <
     public context!: Context;
 
     public parent?: Topic<any, any, any, any, Context>;
+
+    // helpers - these aren't specific to topics, but they do make life easier
+
     public text?: string;
-    public send: (activityOrText: string | Partial<Activity>, speak?: string, inputHint?: string) => Promise<ResourceResponse | undefined>;
+    public send!: (activityOrText: string | Partial<Activity>, speak?: string, inputHint?: string) => Promise<ResourceResponse | undefined>;
 
     constructor (
         args: Constructor,
@@ -225,8 +228,6 @@ export abstract class Topic <
         topic.context = context;
         topic.parent = parent;
         topic.topicInstance = instance;
-
-        // helpers - these aren't specific to Topics, but they do make life easier
 
         topic.text = context.activity.type === 'message' ? context.activity.text.trim() : undefined;
         topic.send = (activityOrText, speak, inputHint) => context.sendActivity(activityOrText, speak, inputHint);
