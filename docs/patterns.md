@@ -71,7 +71,7 @@ Sometimes you want a parent to permanently stop dispatching messages to its chil
 
 ## Triggering
 
-Sometimes a child knows better than its parent whether it should be triggered. In this scenario, the child needs to be created in `onBegin` but not started.
+Sometimes a child knows better than its parent whether it should be triggered. In this scenario, the child needs to be *created* in `onBegin` but not *started*.
 
 ```ts
 class Root extends Topic {
@@ -86,12 +86,10 @@ class Root extends Topic {
         if (await this.dispatchToChild())
             return;
 
-        if (!this.hasChildren()) {
-            const result = await this.loadTopicInstance(this.children[0]).trigger();
+        const result = await this.loadTopicInstance(this.children[0]).trigger();
 
-            if (result && result.score)
-                await TravelTopic.beginInstance(this, result.child, result.beginArgs);
-        }
+        if (result && result.score)
+            await TravelTopic.beginInstance(this, result.child, result.beginArgs);
     }
 
     async onChildReturn() {
@@ -107,8 +105,7 @@ Root.subtopics = [TravelTopic];
         if (await this.dispatchToChild())
             return;
 
-        if (!this.hasChildren())
-            await this.tryTriggers();
+        await this.tryTriggers();
     }
 ```
 `tryTriggers` will try every child in `this.children` and start the one returning the highest score, so you can load up a number of potential children and let them duke it out. See this in action in the [triggers](../samples/triggers.ts) sample.
