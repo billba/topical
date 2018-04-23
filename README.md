@@ -153,12 +153,13 @@ yourMessageLoop(context => doTopic(YourRootTopic, beginArgs?, constructorArgs?))
 
 ## Next steps
 
+Read about different [patterns](/docs/patterns.md) that can be implemented with *Topical*.
+
 Learn about [prompts](/docs/prompts.md) and [waterfalls](/docs/waterfalls.md).
 
 Learn how *Topical* [works](/docs/understanding.md).
 
 ## Docs to be written
 
-Walk through the process of creating a *Topical* application in the [tutorial](/docs/tutorial.md).
-
 Learn the *Topical* API in the [reference](/docs/reference.md).
+

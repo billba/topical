@@ -64,7 +64,7 @@ Note that validators can be used independently of the rest of *Topical*. Enjoy!
 
 ## Prompts
 
-You can imagine a Topic that runs user input through a specific validator, using the results of that Validator to guide the user to a valid response, and returning that response. That's what a *prompt* is. You specify:
+You can imagine a Topic that runs user input through a specific validator, using the results of that validator to guide the user to a valid response, and returning that response. That's what a *prompt* is. You specify:
 
 * a `validator`
 * a `prompter` method which provides the initial prompt to the user, and uses the result of the validator to guide them towards a valid response. `Prompt` provides a default prompter.

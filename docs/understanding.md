@@ -46,9 +46,6 @@ As you can see, `new SubclassOfTopic(constructorArgs)` may happen multiple times
 
 Many subclasses of `Topic` don't need a constructor at all.
 
-
-
-
 When it's called the first time, `YourRootTopic.begin`:
 * throws if `Topic.init` hasn't already been called
 * calls `YourRootTopic.register()`, recursively registering `YourRootTopic`, its subtopics, all *their* subtopics, and so on.
@@ -59,3 +56,13 @@ On every call `YourRootTopic.begin`:
 
 On every call `YourRootTopic.onTurn`:
 * dispatches to the root topic instance (as noted above, this calls `.onTurn()`)
+
+# Topic instance lifecycle
+
+A topic instance is first **created**. A unique instance name is assigned. It exists in the persised state storage. At this point the string should be assigned to a parent topic's `this.children` array or else it is subject to garbage collection at the end of the turn.
+
+Once an instance name is assigned, it can be **loaded** into an constructed turn instance of the appropriate `Topic` subclass.
+
+A created instance can exist in this inactive state. Notably, its `trigger` method can now be called.
+
+Once its `onBegin` method is called, an instance is **active**, and its `onTurn` method can be called. But just because an instance is started, doesn't mean its parent *is* calling its `onTurn` method. Activities can be intercepted, or intelligently dispatched to one of many started children. There isn't a general name for a topic instance that is or isn't currently being dispatched to, because it is such a nuanced and topic-specific phenomenon.
