@@ -38,7 +38,7 @@ class Root extends Topic<any, any, any, any, CustomContext> {
             await this.send(this.context.foo);
             this.beginChild(PromptForText, {
                 prompt: 'Wassup?',
-            });
+            } as PromptArgs);
         } else if (child instanceof PromptForText) {
             await this.send(`You said ${child.return!.result.value}`);
             this.clearChildren();

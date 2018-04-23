@@ -1,5 +1,5 @@
 import { MemoryStorage, ConsoleAdapter } from 'botbuilder';
-import { Topic, Culture, NumberPrompt, prettyConsole, WSTelemetry, Prompt, hasText, consoleOnTurn, doTopic } from '../src/topical';
+import { Topic, Culture, NumberPrompt, prettyConsole, WSTelemetry, Prompt, hasText, consoleOnTurn, doTopic, PromptArgs } from '../src/topical';
 
 async function prompter (
     this: Prompt<any, string>
@@ -7,7 +7,7 @@ async function prompter (
     await this.send(this.state.args!);
 }
 
-class PromptForCulture extends Prompt {
+class PromptForCulture extends Prompt<string> {
 
     validator = hasText
         .and((activity, text) => Culture.getSupportedCultureCodes().includes(text) || 'unsupported_culture');
@@ -20,7 +20,7 @@ class FavoriteNumber extends Topic  {
     async onBegin() {
         await this.beginChild(PromptForCulture, {
             prompt: `Please pick a culture (${Culture.getSupportedCultureCodes().join(', ')}).`
-        });
+        } as PromptArgs);
     }
 
     async onTurn() {

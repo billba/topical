@@ -1,8 +1,9 @@
 import { Topic, TextPrompt, ValidatorResult } from '../src/topical';
+import { Activity } from 'botbuilder';
 
 export interface SimpleFormMetadata {
     type: string;
-    prompt: string;
+    prompt: string | Activity;
 }
 
 export type SimpleFormSchema = Record<string, SimpleFormMetadata>;

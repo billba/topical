@@ -4,8 +4,8 @@ import { toPromise, returnsPromiseVoid, Validator, ValidatorResult } from 'botbu
 
 export interface PromptArgs {
     name?: string;
-    prompt: string;
-    reprompt?: string;
+    prompt: string | Activity;
+    reprompt?: string | Activity;
 }
 
 async function defaultPrompter (
