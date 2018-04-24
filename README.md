@@ -12,7 +12,7 @@
 
 ## The *Topics* pattern
 
-The Topics pattern models conversations as a dynamic heirarchy of independent conversational topics. Messages pass down through the heirarchy, each topic handling the message and/or passing it on to a child topic as it sees fit. A child topic notifies its parent when it's done.
+The Topics pattern models conversations as a dynamic tree of independent conversational topics, each with its own state. Activities pass down through the tree, each topic handling the activity and/or passing it on to a child topic as it sees fit. A child topic notifies its parent when it's done.
 
 ![Topics](/Topics.gif)
 
@@ -75,7 +75,7 @@ For instance, the *Travel* topic could handle general questions about travel, bu
 
 Topics can be written independently of one another and composed together.
 
-An important detail is that delegation doesn't have to be all or nothing -- *Travel* could continue answering specific questions it recognizes, e.g. "Is it safe to travel to Ohio?", and pass the rest on to *Flight*. This is why each message travels down from the top of the topic heirarchy.
+An important detail is that delegation doesn't have to be all or nothing -- *Travel* could continue answering specific questions it recognizes, e.g. "Is it safe to travel to Ohio?", and pass the rest on to *Flight*. This is why each message travels down from the top of the topic tree.
 
 Midway through booking a flight, as illustrated above, a user might want to look into hotels. *Travel* could recognize that question and spin up a *Hotel* topic. It could end the *Flight* topic, or keep them both active. How does *Travel* know where to send subsequent messages? That is the hard part. *Topical* provides the structure, you provide the logic.
 
