@@ -240,7 +240,7 @@ export abstract class Topic <
 
     protected loadTopic (
         instance: string | TopicInstance,
-    ): Topic<any, any, any, any, Context> {
+    ) {
 
         return Topic.loadTopic(this, instance);
     }
@@ -263,7 +263,9 @@ export abstract class Topic <
     }
 
     async beginIfTriggered(): Promise<boolean> {
+
         const result = await this.trigger();
+
         return result
             ? this.begin(result.beginArgs)
             : false;
@@ -289,7 +291,6 @@ export abstract class Topic <
     public returnToParent(
         args?: Return,
     ) {
-
         if (this.returnStatus != TopicReturnStatus.noReturn)
             throw "already returned";
 
@@ -301,14 +302,12 @@ export abstract class Topic <
         context: TurnContext,
         topicInstanceName: string,
     ) {
-
         delete Topic.topicalConversationState.get(context)!.topicInstances[topicInstanceName];
     }
 
     protected static rootTopicInstanceName(
         context: TurnContext,
     ) {
-
         return Topic.topicalConversationState.get(context)!.rootTopicInstanceName;
     }
 
@@ -474,6 +473,7 @@ export abstract class Topic <
     // }
 
     public async clearChildren () {
+
         for (const child in this.children) {
             Topic.deleteInstance(this.context, child);
         }
