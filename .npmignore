@@ -1,6 +1,8 @@
 node_modules
 samples
 src
+tests
 .vscode
 Topics.gif
 tsconfig.json
+lib/tests
