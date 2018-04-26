@@ -240,7 +240,7 @@ export abstract class Topic <
 
     protected loadTopic (
         instance: string | TopicInstance,
-    ) {
+    ): Topic<any, any, any, any, Context> {
 
         return Topic.loadTopic(this, instance);
     }
