@@ -10,7 +10,7 @@ This is the simplest and most common pattern. A topic's `this.children` array is
 class Root extends Topic {
 
     async onBegin() {
-        await this.this.send("How can I help you today?");
+        await this.send("How can I help you today?");
     }
 
     async onTurn() {
@@ -23,7 +23,7 @@ class Root extends Topic {
     }
 
     async onChildReturn() {
-        await this.this.send(`Welcome back to the Root!`);
+        await this.send(`Welcome back to the Root!`);
         this.clearChildren();
     }
 }
@@ -36,7 +36,7 @@ Sometimes you want a parent topic to intercept certain messages and handle them 
 ```ts
     async onTurn() {
         if (this.text === 'time') {
-            await this.this.send(`The current time is ${new Date().toLocaleTimeString()}.`);
+            await this.send(`The current time is ${new Date().toLocaleTimeString()}.`);
             return;
         }
 
@@ -79,7 +79,7 @@ class Root extends Topic {
     async onBegin() {
         this.setChild(this.createTopicInstance(TravelTopic));
 
-        await this.this.send("How can I help you today?");
+        await this.send("How can I help you today?");
     }
 
     async onTurn() {
@@ -93,7 +93,7 @@ class Root extends Topic {
     }
 
     async onChildReturn() {
-        await this.this.send(`Welcome back to the Root!`);
+        await this.send(`Welcome back to the Root!`);
         this.clearChildren();
     }
 }

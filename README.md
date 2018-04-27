@@ -78,20 +78,6 @@ An important detail is that delegation doesn't have to be all or nothing -- *Tra
 
 Midway through booking a flight, as illustrated above, a user might want to look into hotels. *Travel* could recognize that question and spin up a *Hotel* topic. It could end the *Flight* topic, or keep them both active. How does *Travel* know where to send subsequent messages? That is the hard part. *Topical* provides the structure, you provide the logic.
 
-## Helpers
-
-In addition to helping your application implement the *Topics* abstraction, *Topical* has a few helpers which make life easier for you bot builders:
-
-* `consoleOnturn` wraps `ConsoleAdapter`'s `listen` method, injecting in a `conversationUpdate` activity at the start of the conversation. This helps you share the same bot logic between Console bots and Bot Framework bots.
-
-In every topic:
-* `this.text` is a shorthand for `this.context.activity.text.trim()` -- it is `undefined` if the activity type is not `message`
-* `this.send` is a shorthand for `this.context.sendActivity`
-
-Topic shouldn't reimplement every part of `this.context` -- but let's all look for places where it can make life easier. 
-
-These helpers are used throughout the [samples](#samples).
-
 ## Can I publish my own Topics?
 
 Please do! [SimpleForm](/src/SimpleForm.ts) is a (simple) example of a "form fill" `Topic` that could be of general use (as in the alarm bot sample). It also demonstrates how to express a dependency on another `Topic` (`TextPrompt`).
@@ -118,14 +104,29 @@ yourMessageLoop(async context => {
             }
         }
     } else {
-        await YourRootTopic.onTurn(context);
+        await YourRootTopic.dispatch(context);
     }
 });
 ```
+
+## Helpers
+
 This is such a common pattern that there's a helper:
 ```ts
-yourMessageLoop(context => doTopic(YourRootTopic, beginArgs?, constructorArgs?));
+yourMessageLoop(context => doTopic(YourRootTopic, context, beginArgs, constructorArgs));
 ```
+
+In addition to helping your application implement the *Topics* abstraction, *Topical* has a few helpers which make life easier for you bot builders:
+
+* `consoleOnturn` wraps `ConsoleAdapter`'s `listen` method, injecting in a `conversationUpdate` activity at the start of the conversation. This helps you share the same bot logic between Console bots and Bot Framework bots.
+
+In every topic:
+* `this.text` is a shorthand for `this.context.activity.text.trim()` -- it is `undefined` if the activity type is not `message`
+* `this.send` is a shorthand for `this.context.sendActivity`
+
+Topic shouldn't reimplement every part of `this.context` -- but let's all look for places where it can make life easier. 
+
+These helpers are used throughout the [samples](#samples).
 
 ## Samples
 

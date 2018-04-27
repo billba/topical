@@ -98,7 +98,7 @@ class MyTopic extends Topic {
     }
 
     async onChildReturn(child) {
-        await this.this.send(`Nice to meet you, ${child.return.result.value}`);
+        await this.send(`Nice to meet you, ${child.return.result.value}`);
     }
 }
 MyTopic.register();
@@ -162,7 +162,7 @@ class BigNumberPrompt extends Prompt {
 
     prompter = result => {
         if (!result) {
-            await this.this.send(`Please tell me a big number.`);
+            await this.send(`Please tell me a big number.`);
             return;
         }
 
