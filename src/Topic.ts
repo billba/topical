@@ -336,7 +336,7 @@ export abstract class Topic <
         await Topic.topicalConversationState.write(context);
     }
 
-    public static async onTurn <
+    public static async dispatch <
         T extends Topicable<any, any, any, any, Context>,
         Context extends TurnContext = TurnContext
     > (
@@ -344,7 +344,7 @@ export abstract class Topic <
         context: Context,
     ) {
         if (this === Topic as any)
-            throw "You can only `onTurn' a child of Topic.";
+            throw "You can only `dispatch' a child of Topic.";
 
         const topical = await Topic.topicalConversationState.read(context) as TopicalConversation;
 

@@ -30,7 +30,7 @@ export const prettyConsole: MiddlewareHandler = (context, next) => {
 
 export const returnsPromiseVoid = () => Promise.resolve();
 
-export const consoleOnTurn = (
+export const consoleOnTurn = async (
     adapter: ConsoleAdapter,
     handler: (context: TurnContext) => Promise<void>
  ) => {
@@ -40,22 +40,29 @@ export const consoleOnTurn = (
         from: { id: 'user', name: 'User1' },
         conversation:  { id: 'convo1', name:'', isGroup: false },
         serviceUrl: '',
-        membersAdded: [{
-            id: 'user',
-            name: 'user',
-        }],
         recipient: {
             id: 'bot',
             name: 'bot',
         },
     };
 
-    const context = new TurnContext(adapter, conversationUpdate);
+    await handler(new TurnContext(adapter, {
+        ... conversationUpdate,
+            membersAdded: [{
+                id: 'bot',
+                name: 'bot',
+            }],
+    }));
 
-    handler(context)
-        .then(() => {
-            adapter.listen(handler);
-        });
+    await handler(new TurnContext(adapter, {
+        ... conversationUpdate,
+            membersAdded: [{
+                id: 'user',
+                name: 'user',
+            }],
+    }));
+
+    adapter.listen(handler);
 }
 
 export const doTopic = async <
@@ -71,11 +78,11 @@ export const doTopic = async <
 ) => {
     if (context.activity.type === 'conversationUpdate') {
         for (const member of context.activity.membersAdded!) {
-            if (member.id != context.activity.recipient.id) {
+            if (member.id === context.activity.recipient.id) {
                 await (topic as any).begin(context, beginArgs, constructorArgs);
             }
         }
     } else {
-        await (topic as any).onTurn(context);
+        await (topic as any).dispatch(context);
     }
 }
