@@ -1,6 +1,5 @@
 import { Promiseable, Activity, TurnContext } from 'botbuilder';
-import { Topic } from "./topical";
-import { toPromise, returnsPromiseVoid, Validator, ValidatorResult } from 'botbuilder-topical-common';
+import { Topic, toPromise, returnsPromiseVoid, Validator, ValidatorResult } from "./topical";
 
 export interface PromptArgs {
     name?: string;
