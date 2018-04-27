@@ -8,6 +8,7 @@ export class TextPrompt <
 
     validator = hasText;
 }
+TextPrompt.register();
 
 export interface CultureConstructor {
     culture: string;
@@ -23,3 +24,4 @@ export class NumberPrompt <
         this.validator = hasNumber(construct.culture);
     }
 }
+NumberPrompt.register();

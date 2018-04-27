@@ -19,7 +19,7 @@ Here's one Topic that implements this conversation:
 class Age extends Topic {
 
     async onBegin() {
-        await this.context.sendActivity(`Please tell me your name`);
+        await this.send(`Please tell me your name`);
         this.state = 0;
     }
 
@@ -28,12 +28,12 @@ class Age extends Topic {
             return;
 
         if (this.state === 0) {
-            await this.context.sendActivity(`Nice to meet you, ${this.text}! How old are you?`);
+            await this.send(`Nice to meet you, ${this.text}! How old are you?`);
             this.state = 1;
         } else if (this.state === 1) {
             const age = number.ParseInt(this.text);
 
-            await this.context.sendActivity(age > 30
+            await this.send(age > 30
                 ? `You're ${age}? That's so old!`
                 : `Phew, you've still got a few good years left`
             );
@@ -41,6 +41,7 @@ class Age extends Topic {
         }
     }
 }
+Age.register();
 ```
 This is a pretty naïve implementation, because there is no guarantee the user will enter text, or a valid age. If we use a prompts to validate each user response, things get more complicated:
 ```ts
@@ -56,19 +57,19 @@ class Age extends Topic {
 
     async onChildReturn(child) {
         if (child instanceof PromptForName) {
-            await this.context.sendActivity(`Nice to meet you, ${child.return.result.value}! How old are you?`);
+            await this.send(`Nice to meet you, ${child.return.result.value}! How old are you?`);
             this.beginChild(PromptForAge);
         } else if (child instanceof PromptForAge) {
             const age = child.return.result.value;
 
-            await this.context.sendActivity(age > 30
+            await this.send(age > 30
                 ? `You're ${age}? That's so old!`
                 : `Phew, you've still got a few good years left`
             );
         }
     }
 }
-Age.subtopics = [PromptForAge, PromptForNumber];
+Age.register();
 
 class PromptForName extends Prompt {
 
@@ -76,12 +77,13 @@ class PromptForName extends Prompt {
         .and((activity, text) => text.length > 1 && text.length < 30 || 'invalid_name');
 
     async prompter(result) {
-        await this.context.sendActivity(result
+        await this.send(result
             ? `Please tell me your name`
             : `What's your name?`
         );
     }
 }
+PromptForName.register();
 
 class PromptForAge extends Prompt<number, any, CultureConstructor> {
 
@@ -93,12 +95,13 @@ class PromptForAge extends Prompt<number, any, CultureConstructor> {
     }
 
     async prompter(result?: ValidatorResult<number>) {
-        await this.context.sendActivity(result
+        await this.send(result
             ? `Please provide a valid age.`
             : `How old are you?`
         );
     }
 }
+PromptForAge.register();
 ```
 That's a lot of code for a simple conversation.
 
@@ -110,17 +113,17 @@ class Age extends Waterfall {
     waterfall(next) {
         return [
             async () => {
-                await this.context.sendActivity(`Please tell me your name`);
+                await this.send(`Please tell me your name`);
             },
 
             async () => {
-                await this.context.sendActivity(`Nice to meet you, ${this.text}! How old are you?`);
+                await this.send(`Nice to meet you, ${this.text}! How old are you?`);
             },
 
             async () => {
                 const age = number.ParseInt(this.text);
 
-                await this.context.sendActivity(age > 30
+                await this.send(age > 30
                     ? `You're ${age}? That's so old!`
                     : `Phew, you've still got a few good years left`
                 );
@@ -128,6 +131,7 @@ class Age extends Waterfall {
         ]
     }
 }
+Age.register();
 ```
 The *Waterfall* topic implements defaults for `onBegin`, `onTurn`, and `onChildReturn`, which run each function in the waterfall, in turn, as responses to the user's input. (You can optionally override these defaults, and gain more control over the waterfall flow, but that won't usually be necessary).
 
@@ -144,12 +148,12 @@ class Age extends Waterfall {
             },
 
             async (name) => {
-                await this.context.sendActivity(`Nice to meet you, ${name}!`);
+                await this.send(`Nice to meet you, ${name}!`);
                 await this.beginChild(PromptForAge, {}, { culture: 'en-us' });
             },
 
             async (age) => {
-                await this.context.sendActivity(age > 30
+                await this.send(age > 30
                     ? `You're ${age}? That's so old!`
                     : `Phew, you've still got a few good years left`
                 );
@@ -157,14 +161,14 @@ class Age extends Waterfall {
         ];
     }
 }
-Age.subtopics = [PromptForAge, PromptForName];
+Age.register();
 ```
 This is only a little shorter than the non-waterfall version (remember, both versions contain the prompt definitions). But the code now "looks" more linear, and is easier to visualize as a back-and-forth with the user.
 
 Now imagine that this bot has the ability to look up the age of certain users. In that case, it doesn't need to do the second prompt. The `next` argument to `waterfall` allows you to plug in the argument to the next function, as if a prompt had run.
 ```ts
             async (name) => {
-                    await this.context.sendActivity(`Nice to meet you, ${name}!`);
+                    await this.send(`Nice to meet you, ${name}!`);
                     if (name === 'Bill Barnes')
                         next(51);
                     else

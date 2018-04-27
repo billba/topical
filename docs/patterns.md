@@ -27,7 +27,7 @@ class Root extends Topic {
         this.clearChildren();
     }
 }
-Root.subtopics = [TravelTopic];
+Root.register();
 ```
 
 ## Intercepted Messages
@@ -97,7 +97,7 @@ class Root extends Topic {
         this.clearChildren();
     }
 }
-Root.subtopics = [TravelTopic];
+Root.register();
 ```
 `Topic` contains a helper called `tryTriggers` that does this for you:
 ```ts

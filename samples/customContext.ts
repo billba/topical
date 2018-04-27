@@ -12,6 +12,7 @@ class Child extends Topic<any, any, any, any, CustomContext> {
         this.returnToParent();
     }
 }
+Child.register();
 
 class PromptForText extends TextPrompt<PromptArgs, CustomContext> {
 
@@ -20,10 +21,9 @@ class PromptForText extends TextPrompt<PromptArgs, CustomContext> {
         await this.send(this.state.args!.prompt!);
     }
 }
+PromptForText.register();
 
 class Root extends Topic<any, any, any, any, CustomContext> {
-
-    static subtopics = [Child, PromptForText];
 
     async onBegin() {
         this.beginChild(Child);
@@ -47,7 +47,7 @@ class Root extends Topic<any, any, any, any, CustomContext> {
     }
 
 }
-
+Root.register();
 
 
 // const wst = new WSTelemetry('ws://localhost:8080/server');

@@ -29,6 +29,7 @@ class ShowAlarms extends Topic<ShowAlarmBegin> {
         this.returnToParent();
     }
 }
+ShowAlarms.register();
 
 interface DeleteAlarmBegin {
     alarms: Alarm[];
@@ -45,8 +46,6 @@ interface DeleteAlarmReturn {
 }
 
 class DeleteAlarm extends Topic<DeleteAlarmBegin, DeleteAlarmState, DeleteAlarmReturn> {
-
-    static subtopics = [TextPrompt];
 
     async onBegin (
         args: DeleteAlarmBegin,
@@ -93,8 +92,8 @@ class DeleteAlarm extends Topic<DeleteAlarmBegin, DeleteAlarmState, DeleteAlarmR
                 throw `unknown prompt name ${child.return!.args!.name}`;
         }
     }
-
 }
+DeleteAlarm.register();
 
 interface AlarmBotState {
     alarms: Alarm[];
@@ -103,8 +102,6 @@ interface AlarmBotState {
 const helpText = `I know how to set, show, and delete alarms.`;
 
 class AlarmBot extends Topic<any, AlarmBotState> {
-
-    static subtopics = [DeleteAlarm, ShowAlarms, SimpleForm];
 
     async onBegin () {
         await this.send(`Welcome to Alarm Bot!\n${helpText}`);
@@ -163,7 +160,7 @@ class AlarmBot extends Topic<any, AlarmBotState> {
         this.clearChildren();
     }
 }
-
+AlarmBot.register();
 
 // const wst = new WSTelemetry('ws://localhost:8080/server');
 // Topic.telemetry = action => wst.send(action);

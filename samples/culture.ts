@@ -12,10 +12,9 @@ class PromptForCulture extends Prompt<string> {
     validator = hasText
         .and((activity, text) => Culture.getSupportedCultureCodes().includes(text) || 'unsupported_culture');
 }
+PromptForCulture.register();
 
 class FavoriteNumber extends Topic  {
-
-    static subtopics = [PromptForCulture, NumberPrompt];
 
     async onBegin() {
         await this.beginChild(PromptForCulture, {
@@ -43,7 +42,7 @@ class FavoriteNumber extends Topic  {
         }
     }
 }
-
+FavoriteNumber.register();
 
 // const wst = new WSTelemetry('ws://localhost:8080/server');
 // Topic.telemetry = action => wst.send(action);

@@ -18,6 +18,7 @@ class ChildTopic extends Topic {
             });
     }
 }
+ChildTopic.register();
 
 class RootTopic extends Topic {
 
@@ -54,7 +55,7 @@ class RootTopic extends Topic {
         this.clearChildren();
     }
 }
-RootTopic.subtopics = [ChildTopic];
+RootTopic.register();
 
 
 Topic.init(new MemoryStorage());

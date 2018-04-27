@@ -40,21 +40,14 @@ A *Topical* application is a collection of such classes, which are registered by
 
 ## Registration and Subtopics
 
-The way registration works is that each subclass of `Topic` declares all the *other* subclasses of `Topic` that are potential children for that topic.
-
-In TypeScript, within your class, you do:
+After declaring your subclass of `Topic`, you must register it.
 
 ```ts
-static subtopics = [ChildTopic, AnotherChildTopic];
+class MyTopic extends Topic {
+    ...
+}
+MyTopic.register();
 ```
-
-In plain JavaScript you need to do the following *after* your class definition:
-
-```ts
-YourTopicHere.subtopics = [ChildTopic, AnotherChildTopic];
-```
-
-When `YourRoootTopic.begin` is called the firs time, `YourRootTopic` and its subtopics are automatically registered. This process is recursive. In other words if `ChildTopic` declares subtopic `GrandchildTopic`, that will be registered too, and so on.
 
 ## Working with topics
 
@@ -190,8 +183,6 @@ yourMessageLoop(async context => {
 ```
 
 `YourRootTopic.begin` should be called once for each conversation.
-
-The *first time* it's called, `YourRootTopic.begin` calls `YourRootTopic.register()`, recursively registering `YourRootTopic`, its subtopics, all *their* subtopics, and so on.
 
 On every call, `YourRootTopic.begin`:
 * creates a `TopicInstance` of `YourRootTopic`, begins it, and sets it as your root topic instance

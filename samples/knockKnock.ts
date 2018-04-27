@@ -15,10 +15,9 @@ class KnockKnock extends Waterfall {
 
     // uses default onBegin, onTurn, onChildReturn
 }
+KnockKnock.register();
 
 class Root extends Topic {
-
-    static subtopics = [KnockKnock];
 
     async onBegin () {
         await this.send(`Tell me a knock knock joke`);
@@ -40,7 +39,7 @@ class Root extends Topic {
         await this.send(`That was fun. Tell me another.`);
     }
 }
-
+Root.register();
 
 // const wst = new WSTelemetry('ws://localhost:8080/server');
 // Topic.telemetry = action => wst.send(action);

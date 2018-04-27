@@ -73,17 +73,7 @@ export abstract class Topic <
 
     private static topics: Record<string, Topicable> = {};
 
-    protected static subtopics = [] as Topicable[];
-
-    // it's really easy to forget the "static" on subtopics -- this helps avoid errors
-    public set subtopics(subtopics: never) {
-        throw "subtopics need to be set as a static";
-    }
-
-    protected static register() {
-
-        for (const T of this.subtopics)
-            (T as any).register();
+    public static register() {
 
         if (this === Topic)
             return;
@@ -91,7 +81,6 @@ export abstract class Topic <
         const T = Topic.topics[this.name];
 
         if (T) {
-
             if (T === this as any)
                 return; // no need to re-register
             throw `A different topic with name ${T.name} has already been registered.`
@@ -327,9 +316,6 @@ export abstract class Topic <
 
         if (!Topic.topicalConversationState)
             throw `You must call Topic.init before calling ${this.name}.do`;
-
-        if (!Topic.topics[this.name])
-            (this as any).register();
 
         const topicalConversation = await Topic.topicalConversationState.read(context) as Partial<TopicalConversation>;
 

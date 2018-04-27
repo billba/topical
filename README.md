@@ -56,7 +56,6 @@ class Root extends Topic {
         this.clearChildren();
     }
 }
-Root.subtopics = [TravelTopic];
 ```
 
 ## Tell me about Topics and children

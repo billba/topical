@@ -101,7 +101,7 @@ class MyTopic extends Topic {
         await this.this.send(`Nice to meet you, ${child.return.result.value}`);
     }
 }
-MyTopic.subtopics = [TextPrompt];
+MyTopic.register();
 ```
 
 ### Reusing Prompts
@@ -112,6 +112,7 @@ class PetNamePrompt extends Prompt {
 
     validator = hasPetName;
 }
+PetNamePrompt.register();
 
 class MyTopic extends Topic {
 
@@ -139,7 +140,7 @@ class MyTopic extends Topic {
         }
     }
 }
-MyTopic.subtopics = [PromptForPetName];
+MyTopic.register();
 ```
 
 Again, you can pass any arguments you want to your prompt. Having a `name` field is just a convention used by the default `prompter`.
@@ -175,6 +176,7 @@ class BigNumberPrompt extends Prompt {
         }
     }
 }
+BigNumberPrompt.register();
 
 class MyTopic extends Topic {
 
@@ -195,7 +197,7 @@ class MyTopic extends Topic {
         }
     }
 }
-MyTopic.subtopics = [BigNumberPrompt];
+MyTopic.register();
 ```
 Note that this prompt doesn't require any arguments at all. 
 

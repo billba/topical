@@ -68,3 +68,4 @@ export class SimpleForm extends Topic<SimpleFormSchema, SimpleFormState, SimpleF
         await this.next();
     }
 }
+SimpleForm.register();

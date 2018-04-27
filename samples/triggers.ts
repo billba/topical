@@ -25,6 +25,7 @@ class Flights extends Topic {
         await this.send(`That's my one trick. Try 'travel' to restart the bot.`);
     }
 }
+Flights.register();
 
 interface HotelsBegin {
     chain: string;
@@ -50,14 +51,13 @@ class Hotels extends Topic <HotelsBegin> {
         await this.send(`That's my one trick. Try 'travel' to restart the bot.`);
     }
 }
+Hotels.register();
 
 class Travel extends Topic  {
 
-    static subtopics = [Flights, Hotels];
-
     async onBegin() {
         await this.send(`I can book flights and hotels.`);
-        this.children = Travel.subtopics.map(T => this.createTopicInstance(T));
+        this.children = [Flights, Hotels].map(T => this.createTopicInstance(T));
         console.log();
     }
 
@@ -69,6 +69,7 @@ class Travel extends Topic  {
             await this.send(`I can't do that.`);
     }
 }
+Travel.register();
 
 class Root extends Topic {
 
@@ -87,6 +88,7 @@ class Root extends Topic {
         await this.dispatchToChild();
     }
 }
+Root.register();
 
 // const wst = new WSTelemetry('ws://localhost:8080/server');
 // Topic.telemetry = action => wst.send(action);

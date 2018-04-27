@@ -6,6 +6,7 @@ class PromptForName extends TextPrompt {
     validator = hasText
         .and((activity, text) => text.length > 1 && text.length < 30 || 'invalid_name');
 }
+PromptForName.register();
 
 class PromptForAge extends NumberPrompt {
 
@@ -16,10 +17,9 @@ class PromptForAge extends NumberPrompt {
             .and((activity, num) => num > 0 && num < 150 || 'invalid_age');
     }
 }
+PromptForAge.register();
 
 class Age extends Waterfall {
-
-    static subtopics = [PromptForName, PromptForAge];
 
     waterfall(next: (arg?: any) => void) {
         return [
@@ -53,10 +53,9 @@ class Age extends Waterfall {
 
     // uses default onBegin, onTurn, onChildReturn
 }
+Age.register();
 
 class Root extends Topic {
-
-    static subtopics = [Age];
 
     async onBegin() {
         await this.beginChild(Age);
@@ -64,6 +63,7 @@ class Root extends Topic {
 
     // uses default onTurn, onChildReturn
 }
+Root.register();
 
 // const wst = new WSTelemetry('ws://localhost:8080/server');
 // Topic.telemetry = action => wst.send(action);
