@@ -56,7 +56,7 @@ export abstract class Topic <
 
     private static telemetry: Telemetry;
 
-    public static init(
+    public static init (
         storage: Storage,
         options?: TopicInitOptions,
     ) {
