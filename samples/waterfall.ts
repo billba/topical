@@ -24,7 +24,7 @@ class Age extends Waterfall {
     waterfall(next: (arg?: any) => void) {
         return [
             async () => {
-                await this.beginChild(PromptForName, {
+                await this.startChild(PromptForName, {
                     prompt: `What's your name?`,    
                     reprompt: `Please tell me your name`,
                 });
@@ -35,7 +35,7 @@ class Age extends Waterfall {
                 if (name === 'Bill Barnes')
                     next(51);
                 else
-                    await this.beginChild(PromptForAge, {
+                    await this.startChild(PromptForAge, {
                         prompt: `How old are you?`,
                         reprompt: `Please tell me your age.`,   
                     }, { culture: 'en-us' }
@@ -51,14 +51,14 @@ class Age extends Waterfall {
         ];
     }
 
-    // uses default onBegin, onTurn, onChildReturn
+    // uses default onStart, onTurn, onChildReturn
 }
 Age.register();
 
 class Root extends Topic {
 
-    async onBegin() {
-        await this.beginChild(Age);
+    async onStart() {
+        await this.startChild(Age);
     }
 
     // uses default onTurn, onChildReturn

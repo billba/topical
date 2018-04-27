@@ -1,7 +1,7 @@
 import { MemoryStorage, ConsoleAdapter } from 'botbuilder';
 import { Topic, prettyConsole, consoleOnTurn, doTopic } from '../src/topical';
 
-interface FlightsBegin {
+interface FlightsStart {
     destination: string;
 }
 
@@ -10,14 +10,14 @@ class Flights extends Topic {
     async trigger() {
         if (this.text && this.text.includes('flight'))
             return {
-                beginArgs: {
+                startArgs: {
                     destination: 'Paris'
                 },
                 score: .5
             }
     }
 
-    async onBegin(args?: FlightsBegin) {
+    async onStart(args?: FlightsStart) {
         await this.send(`Let's fly to ${ args ? args.destination : 'a city'}!`)
     }
 
@@ -27,23 +27,23 @@ class Flights extends Topic {
 }
 Flights.register();
 
-interface HotelsBegin {
+interface HotelsStart {
     chain: string;
 }
 
-class Hotels extends Topic <HotelsBegin> {
+class Hotels extends Topic <HotelsStart> {
 
     async trigger() {
         if (this.text && this.text.includes('hotel'))
             return {
-                beginArgs: {
+                startArgs: {
                     chain: 'Hyatt'
                 },
                 score: .6
             }
     }
 
-    async onBegin(args?: HotelsBegin) {
+    async onStart(args?: HotelsStart) {
         await this.send(`Let's stay at a ${ args ? args.chain : 'hotel'}!`)
     }
 
@@ -55,7 +55,7 @@ Hotels.register();
 
 class Travel extends Topic  {
 
-    async onBegin() {
+    async onStart() {
         await this.send(`I can book flights and hotels.`);
         this.children = [Flights, Hotels].map(T => this.createTopicInstance(T));
         console.log();
@@ -75,13 +75,13 @@ class Root extends Topic {
 
     static subtopics = [Travel];
 
-    async onBegin() {
+    async onStart() {
         await this.send(`Say 'travel' to start (or restart) the travel dialog.`);
     }
 
     async onTurn() {
         if (this.text === 'travel') {
-            await this.beginChild(Travel);
+            await this.startChild(Travel);
             return;
         }
 

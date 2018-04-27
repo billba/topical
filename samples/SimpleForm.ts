@@ -19,7 +19,7 @@ export class SimpleForm extends Topic<SimpleFormSchema, SimpleFormState, SimpleF
     
     static subtopics = [TextPrompt];
 
-    async onBegin(
+    async onStart(
         schema: SimpleFormSchema,
     ) {
         this.state.schema = schema;
@@ -36,7 +36,7 @@ export class SimpleForm extends Topic<SimpleFormSchema, SimpleFormState, SimpleF
                 if (metadata.type !== 'string')
                     throw `not expecting type "${metadata.type}"`;
 
-                await this.beginChild(TextPrompt, {
+                await this.startChild(TextPrompt, {
                     name,
                     prompt: metadata.prompt,
                 });

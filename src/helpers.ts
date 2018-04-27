@@ -66,20 +66,20 @@ export const consoleOnTurn = async (
 }
 
 export const doTopic = async <
-    T extends Topicable<Begin, any, any, Constructor, Context>,
-    Begin,
+    T extends Topicable<Start, any, any, Constructor, Context>,
+    Start,
     Constructor,
     Context extends TurnContext = TurnContext
 > (
     topic: T,
     context: Context,
-    beginArgs?: Begin,
+    startArgs?: Start,
     constructorArgs?: Constructor,
 ) => {
     if (context.activity.type === 'conversationUpdate') {
         for (const member of context.activity.membersAdded!) {
             if (member.id === context.activity.recipient.id) {
-                await (topic as any).begin(context, beginArgs, constructorArgs);
+                await (topic as any).start(context, startArgs, constructorArgs);
             }
         }
     } else {

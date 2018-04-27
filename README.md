@@ -16,7 +16,7 @@ The Topics pattern models conversations as a dynamic tree of independent convers
 
 ![Topics](/Topics.gif)
 
-**Note**: the method names on this graphic need to be updated: `init` -> `onBegin` and `onReceive` -> `onTurn`
+**Note**: the method names on this graphic need to be updated: `init` -> `onStart` and `onReceive` -> `onTurn`
 
 The *Topical* library provides low-level support for this pattern. 
 
@@ -38,7 +38,7 @@ Here's a snippet that shows a common pattern: a "root" topic creating a child, d
 ```ts
 class Root extends Topic {
 
-    async onBegin() {
+    async onStart() {
         await this.context.sendActivity("How can I help you today?");
     }
 
@@ -47,7 +47,7 @@ class Root extends Topic {
             return;
 
         if (this.context.activity.text === "book travel") {
-            await this.beginChild(TravelTopic);
+            await this.startChild(TravelTopic);
         }
     }
 
@@ -100,7 +100,7 @@ yourMessageLoop(async context => {
      if (context.activity.type === 'conversationUpdate') {
         for (const member of context.activity.membersAdded) {
             if (member.id != context.activity.recipient.id) {
-                await YourRootTopic.begin(context, beginArgs, constructorArgs);
+                await YourRootTopic.start(context, startArgs, constructorArgs);
             }
         }
     } else {
@@ -113,7 +113,7 @@ yourMessageLoop(async context => {
 
 This is such a common pattern that there's a helper:
 ```ts
-yourMessageLoop(context => doTopic(YourRootTopic, context, beginArgs, constructorArgs));
+yourMessageLoop(context => doTopic(YourRootTopic, context, startArgs, constructorArgs));
 ```
 
 In addition to helping your application implement the *Topics* abstraction, *Topical* has a few helpers which make life easier for you bot builders:

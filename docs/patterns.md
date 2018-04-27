@@ -9,7 +9,7 @@ This is the simplest and most common pattern. A topic's `this.children` array is
 ```ts
 class Root extends Topic {
 
-    async onBegin() {
+    async onStart() {
         await this.send("How can I help you today?");
     }
 
@@ -18,7 +18,7 @@ class Root extends Topic {
             return;
 
         if (this.text === "book travel") {
-            await this.beginChild(TravelTopic);
+            await this.startChild(TravelTopic);
         }
     }
 
@@ -44,7 +44,7 @@ Sometimes you want a parent topic to intercept certain messages and handle them 
             return;
 
         if (this.text === "book travel") {
-            await this.beginChild(TravelTopic);
+            await this.startChild(TravelTopic);
         }
     }
 ```
@@ -62,7 +62,7 @@ Sometimes you want a parent to permanently stop dispatching messages to its chil
             return;
 
         if (this.text === "book travel") {
-            await this.beginChild(TravelTopic);
+            await this.startChild(TravelTopic);
         }
     }
 ```
@@ -71,12 +71,12 @@ Sometimes you want a parent to permanently stop dispatching messages to its chil
 
 ## Triggering
 
-Sometimes a child knows better than its parent whether it should be triggered. In this scenario, the child needs to be *created* in `onBegin` but not *started*.
+Sometimes a child knows better than its parent whether it should be triggered. In this scenario, the child needs to be *created* in `onStart` but not *started*.
 
 ```ts
 class Root extends Topic {
 
-    async onBegin() {
+    async onStart() {
         this.setChild(this.createTopicInstance(TravelTopic));
 
         await this.send("How can I help you today?");
@@ -89,7 +89,7 @@ class Root extends Topic {
         const result = await this.loadTopicInstance(this.children[0]).trigger();
 
         if (result && result.score)
-            await TravelTopic.beginInstance(this, result.child, result.beginArgs);
+            await TravelTopic.startInstance(this, result.child, result.startArgs);
     }
 
     async onChildReturn() {

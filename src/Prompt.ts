@@ -34,7 +34,7 @@ export abstract class Prompt <
     Context extends TurnContext = TurnContext,
 > extends Topic<Args, PromptState<Args>, PromptReturn<V, Args>, Construct, Context> {
 
-    async onBegin (
+    async onStart (
         args?: Args,
     ) {
          this.state = {

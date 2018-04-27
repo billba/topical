@@ -10,7 +10,7 @@ export interface TopicInstance {
 
     state: any;
 
-    begun: boolean;
+    started: boolean;
 }
 
 interface TopicalConversation {
@@ -25,7 +25,7 @@ enum TopicReturnStatus {
 }
 
 export interface Topicable <
-    Begin = any,
+    Start = any,
     State = any,
     Return = any,
     Constructor = any,
@@ -33,20 +33,20 @@ export interface Topicable <
 > {
     new (
         args: Constructor,
-    ): Topic<Begin, State, Return, Constructor, Context>;
+    ): Topic<Start, State, Return, Constructor, Context>;
 }
 
 export interface TopicInitOptions {
     telemetry: Telemetry;
 }
 
-export interface TriggerResult <Begin> {
-    beginArgs?: Begin;
+export interface TriggerResult <Start> {
+    startArgs?: Start;
     score: number;
 }
 
 export abstract class Topic <
-    Begin = any,
+    Start = any,
     State = any,
     Return = any,
     Constructor = any,
@@ -108,14 +108,14 @@ export abstract class Topic <
 
     public get begun () {
 
-        return this.topicInstance.begun;
+        return this.topicInstance.started;
     }
 
     public set begun (
         begun: boolean,
     ) {
 
-        this.topicInstance.begun = begun;
+        this.topicInstance.started = begun;
     }
 
     public get children () {
@@ -150,8 +150,8 @@ export abstract class Topic <
     }
 
     protected static createTopicInstance <
-        T extends Topicable<Begin, any, any, Constructor, Context>,
-        Begin,
+        T extends Topicable<Start, any, any, Constructor, Context>,
+        Start,
         Constructor,
         Context extends TurnContext,
     > (
@@ -173,7 +173,7 @@ export abstract class Topic <
             constructorArgs,
             children: [],
             state: {},
-            begun: false,
+            started: false,
         }
 
         Topic.topicalConversationState.get(context)!.topicInstances[topicInstanceName] = instance;
@@ -234,14 +234,14 @@ export abstract class Topic <
         return Topic.loadTopic(this, instance);
     }
 
-    async begin (
-        beginArgs?: Begin
+    async start (
+        startArgs?: Start
     ): Promise<boolean> {
-        // await this.sendTelemetry(context, newInstance, 'init.begin');
+        // await this.sendTelemetry(context, newInstance, 'init.start');
 
         this.begun = true;
 
-        await this.onBegin(beginArgs);
+        await this.onStart(startArgs);
 
         if (await this.returnedToParent())
             return false;
@@ -251,28 +251,28 @@ export abstract class Topic <
         return true;
     }
 
-    async beginIfTriggered(): Promise<boolean> {
+    async startIfTriggered(): Promise<boolean> {
 
         const result = await this.trigger();
 
         return result
-            ? this.begin(result.beginArgs)
+            ? this.start(result.startArgs)
             : false;
     }
 
-    async createTopicInstanceAndBegin <
-        T extends Topicable<Begin, any, any, Constructor, Context>,
-        Begin,
+    async createTopicInstanceAndStart <
+        T extends Topicable<Start, any, any, Constructor, Context>,
+        Start,
         Constructor,
     > (
         topicClass: T,
-        beginArgs?: Begin,
+        startArgs?: Start,
         constructorArgs?: Constructor,
     ): Promise<Topic<any, any, any, Constructor, Context> | undefined> {
 
         const topic = this.loadTopic(this.createTopicInstance(topicClass, constructorArgs));
 
-        return await topic.begin(beginArgs)
+        return await topic.start(startArgs)
             ? topic
             : undefined;
     }
@@ -300,19 +300,19 @@ export abstract class Topic <
         return Topic.topicalConversationState.get(context)!.rootTopicInstanceName;
     }
 
-    public static async begin <
-        T extends Topicable<Begin, any, any, Constructor, Context>,
-        Begin,
+    public static async start <
+        T extends Topicable<Start, any, any, Constructor, Context>,
+        Start,
         Constructor,
         Context extends TurnContext = TurnContext
     > (
         this: T,
         context: Context,
-        beginArgs?: Begin,
+        startArgs?: Start,
         constructorArgs?: Constructor,
     ) {
         if (this === Topic as any)
-            throw "You can only 'begin' a child of Topic.";
+            throw "You can only 'start' a child of Topic.";
 
         if (!Topic.topicalConversationState)
             throw `You must call Topic.init before calling ${this.name}.do`;
@@ -320,13 +320,13 @@ export abstract class Topic <
         const topicalConversation = await Topic.topicalConversationState.read(context) as Partial<TopicalConversation>;
 
         if (topicalConversation.rootTopicInstanceName)
-            throw `You must only call ${this.name}.begin once.`;
+            throw `You must only call ${this.name}.start once.`;
 
         topicalConversation.topicInstances = {};
         topicalConversation.rootTopicInstanceName = (this as any).createTopicInstance(context, constructorArgs);
 
         const topic = Topic.loadTopic(context, topicalConversation.rootTopicInstanceName!);
-        if (!await topic.begin(beginArgs))
+        if (!await topic.start(startArgs))
             throw "Root topics shouldn't even returnToParent."
 
         // const instance = Topic.getInstanceFromName(context, topical.roottopicInstanceName);
@@ -349,7 +349,7 @@ export abstract class Topic <
         const topical = await Topic.topicalConversationState.read(context) as TopicalConversation;
 
         if (!topical.rootTopicInstanceName)
-            throw `You must call ${this.name}.begin before calling ${this.name}.onTurn.`;
+            throw `You must call ${this.name}.start before calling ${this.name}.onTurn.`;
 
         await Topic.loadTopic(context, topical.rootTopicInstanceName).onTurn();
 
@@ -410,7 +410,7 @@ export abstract class Topic <
         if (!topic.begun)
             return false;
 
-        // await topic.sendTelemetry(context, instance, 'onReceive.begin');
+        // await topic.sendTelemetry(context, instance, 'onReceive.start');
         await topic.onTurn();
         await topic.returnedToParent();
         // await topic.sendTelemetry(context, instance, 'onReceive.end');
@@ -429,7 +429,7 @@ export abstract class Topic <
         Topic.deleteInstance(this.context, this.topicInstanceName);
         this.returnStatus = TopicReturnStatus.succeeded;
 
-        // await parentTopic.sendTelemetry(context, parentInstance, 'onChildReturn.begin');
+        // await parentTopic.sendTelemetry(context, parentInstance, 'onChildReturn.start');
 
         await this.parent.onChildReturn(this);
         await this.parent.returnedToParent();
@@ -482,16 +482,16 @@ export abstract class Topic <
             this.children[0] = childtopicInstanceName;
     }
 
-    async beginChild <
-        T extends Topicable<Begin, any, any, Constructor, Context>,
-        Begin,
+    async startChild <
+        T extends Topicable<Start, any, any, Constructor, Context>,
+        Start,
         Constructor,
     > (
         topicClass: T,
-        beginArgs?: Begin,
+        startArgs?: Start,
         constructorArgs?: Constructor,
     ) {
-        const topic = await this.createTopicInstanceAndBegin(topicClass, beginArgs, constructorArgs);
+        const topic = await this.createTopicInstanceAndStart(topicClass, startArgs, constructorArgs);
 
         this.setChild(topic && topic.topicInstanceName);
     }
@@ -518,7 +518,7 @@ export abstract class Topic <
         if (results.length) {
             await this
                 .loadTopic(results[0].child)
-                .begin(results[0].result.beginArgs);
+                .start(results[0].result.startArgs);
 
             return true;
         }
@@ -528,11 +528,11 @@ export abstract class Topic <
 
     // These four default methods are optionally overrideable by subclasses
 
-    public async trigger (): Promise<TriggerResult<Begin> | void> {
+    public async trigger (): Promise<TriggerResult<Start> | void> {
     }
 
-    public async onBegin (
-        args?: Begin,
+    public async onStart (
+        args?: Start,
     ) {
     }
 

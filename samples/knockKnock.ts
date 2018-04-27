@@ -13,19 +13,19 @@ class KnockKnock extends Waterfall {
         ];
     }
 
-    // uses default onBegin, onTurn, onChildReturn
+    // uses default onStart, onTurn, onChildReturn
 }
 KnockKnock.register();
 
 class Root extends Topic {
 
-    async onBegin () {
+    async onStart () {
         await this.send(`Tell me a knock knock joke`);
     }
 
     async onTurn () {
         if (this.text === 'knock knock') {
-            await this.beginChild(KnockKnock);
+            await this.startChild(KnockKnock);
             return;
         }
 

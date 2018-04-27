@@ -79,34 +79,34 @@ Once a topic has been created, you can ask *Topical* to construct an instance of
 const topic = this.loadTopic(child);
 ```
 
-### Beginning a topic
+### Starting a topic
 
-Once a topic has been created, and loaded, you can begin it:
+Once a topic has been created, and loaded, you can start it:
 
 ```ts
-const ongoing = await topic.begin(beginArgs);
+const ongoing = await topic.start(startArgs);
 ```
 
-*Topical* calls `topic.onBegin(beginArgs)`. If `onBegin` called `returnToParent()` then its `TopicInstance` is deleted, and `begin` returns false. Otherwise `begin` returns true.
+*Topical* calls `topic.onStart(startArgs)`. If `onStart` called `returnToParent()` then its `TopicInstance` is deleted, and `start` returns false. Otherwise `start` returns true.
 
 The exception is the root topic, which has no parent. So you have to do:
 
 ```ts
-const topic = await Topic.beginTopicInstance(context, topicInstanceName, beginArgs);
+const topic = await Topic.startTopicInstance(context, topicInstanceName, startArgs);
 ```
 
-As a convenience, you can create and begin a child topic in one fell swoop:
+As a convenience, you can create and start a child topic in one fell swoop:
 
 ```ts
-const topic = await this.createAndBeginTopicInstance(YourTopicHere, beginArgs, constructorArgs);
+const topic = await this.createAndStartTopicInstance(YourTopicHere, startArgs, constructorArgs);
 ```
 
-This returns the resultant topic, or `undefined` if `onBegin` called `returnToParent()`.
+This returns the resultant topic, or `undefined` if `onStart` called `returnToParent()`.
 
-Finally, if you have a single-child topic, you can create, begin, and set a child topic (potentially replacing another one) all at once.
+Finally, if you have a single-child topic, you can create, start, and set a child topic (potentially replacing another one) all at once.
 
 ```ts
-await this.beginChild(YourTopicHere, beginArgs, constructorArgs);
+await this.startChild(YourTopicHere, startArgs, constructorArgs);
 ```
 
 ## Triggering a topic
@@ -119,19 +119,19 @@ const topic = this.loadTopic(child);
 const result = topic.trigger();
 ```
 
-This result of `trigger` is either `undefined` or an object containing 0 > `score` <= 1, representing the topic's confidence that the current activity should begin it, and the `beginArgs` that should be supplied to its `begin` method in that case.
+This result of `trigger` is either `undefined` or an object containing 0 > `score` <= 1, representing the topic's confidence that the current activity should start it, and the `startArgs` that should be supplied to its `start` method in that case.
 
 You can use this result however you see fit, including comparing the score to that of other topics. If you have just one topic, you can just do:
 
 ```ts
 if (result)
-    await topic.begin(result.beginArgs);
+    await topic.start(result.startArgs);
 ```
 
 A shorthand for this case is:
 
 ```ts
-await topic.beginIfTriggered();
+await topic.startIfTriggered();
 ```
 
 This returns true if the topic was begun, false if the topic was not begun, or begun and completed.
@@ -158,11 +158,11 @@ This returns 'false' if there is currently no child.
 
 ## Topic constructors
 
-*Topical* may construct a topic for a `TopicInstance` many times over its lifetime, across multiple turns. Topics are constructed for `trigger`ing, `begin`ning, and `dispatch`ing. 
+*Topical* may construct a topic for a `TopicInstance` many times over its lifetime, across multiple turns. Topics are constructed for `trigger`ing, `start`ing, and `dispatch`ing. 
 
 As a result, a topic's constructor should only do things that make sense in all these situations, and `constructorArgs` should only contain arguments necessary to do those things.
 
-Much of what would normally goes in a constructor (like initializing the internal state at startup based on a set of arguments) instead happens in the `onBegin` method. In fact, many subclasses of `Topic` don't need a constructor at all.
+Much of what would normally goes in a constructor (like initializing the internal state at startup based on a set of arguments) instead happens in the `onStart` method. In fact, many subclasses of `Topic` don't need a constructor at all.
 
 ## Hooking up *Topical* to your main message loop:
 
@@ -173,7 +173,7 @@ yourMessageLoop(async context => {
      if (context.activity.type === 'conversationUpdate') {
         for (const member of context.activity.membersAdded) {
             if (member.id != context.activity.recipient.id) {
-                await YourRootTopic.begin(context, beginArgs, constructorArgs);
+                await YourRootTopic.start(context, startArgs, constructorArgs);
             }
         }
     } else {
@@ -182,10 +182,10 @@ yourMessageLoop(async context => {
 });
 ```
 
-`YourRootTopic.begin` should be called once for each conversation.
+`YourRootTopic.start` should be called once for each conversation.
 
-On every call, `YourRootTopic.begin`:
-* creates a `TopicInstance` of `YourRootTopic`, begins it, and sets it as your root topic instance
+On every call, `YourRootTopic.start`:
+* creates a `TopicInstance` of `YourRootTopic`, starts it, and sets it as your root topic instance
 
 On every call `YourRootTopic.onTurn`:
 * dispatches to the root topic instance

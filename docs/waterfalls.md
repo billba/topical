@@ -18,7 +18,7 @@ Here's one Topic that implements this conversation:
 ```ts
 class Age extends Topic {
 
-    async onBegin() {
+    async onStart() {
         await this.send(`Please tell me your name`);
         this.state = 0;
     }
@@ -47,8 +47,8 @@ This is a pretty naïve implementation, because there is no guarantee the user w
 ```ts
 class Age extends Topic {
 
-    async onBegin() {
-        this.beginChild(PromptForName);
+    async onStart() {
+        this.startChild(PromptForName);
     }
 
     async onTurn() {
@@ -58,7 +58,7 @@ class Age extends Topic {
     async onChildReturn(child) {
         if (child instanceof PromptForName) {
             await this.send(`Nice to meet you, ${child.return.result.value}! How old are you?`);
-            this.beginChild(PromptForAge);
+            this.startChild(PromptForAge);
         } else if (child instanceof PromptForAge) {
             const age = child.return.result.value;
 
@@ -133,7 +133,7 @@ class Age extends Waterfall {
 }
 Age.register();
 ```
-The *Waterfall* topic implements defaults for `onBegin`, `onTurn`, and `onChildReturn`, which run each function in the waterfall, in turn, as responses to the user's input. (You can optionally override these defaults, and gain more control over the waterfall flow, but that won't usually be necessary).
+The *Waterfall* topic implements defaults for `onStart`, `onTurn`, and `onChildReturn`, which run each function in the waterfall, in turn, as responses to the user's input. (You can optionally override these defaults, and gain more control over the waterfall flow, but that won't usually be necessary).
 
 That sure looks simple. But of course it is the naïve version, without the prompts that can validate the user's responses.
 
@@ -144,12 +144,12 @@ class Age extends Waterfall {
     waterfall(next) {
         return [
             async () => {
-                await this.beginChild(PromptForName);
+                await this.startChild(PromptForName);
             },
 
             async (name) => {
                 await this.send(`Nice to meet you, ${name}!`);
-                await this.beginChild(PromptForAge, {}, { culture: 'en-us' });
+                await this.startChild(PromptForAge, {}, { culture: 'en-us' });
             },
 
             async (age) => {
@@ -172,7 +172,7 @@ Now imagine that this bot has the ability to look up the age of certain users. I
                     if (name === 'Bill Barnes')
                         next(51);
                     else
-                        await this.beginChild(PromptForAge, {}, { culture: 'en-us'});
+                        await this.startChild(PromptForAge, {}, { culture: 'en-us'});
                 },
 ```
 That's waterfalls. They are another way to code up a particular class of conversation as a topic.

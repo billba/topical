@@ -16,8 +16,8 @@ PromptForCulture.register();
 
 class FavoriteNumber extends Topic  {
 
-    async onBegin() {
-        await this.beginChild(PromptForCulture, {
+    async onStart() {
+        await this.startChild(PromptForCulture, {
             prompt: `Please pick a culture (${Culture.getSupportedCultureCodes().join(', ')}).`
         } as PromptArgs);
     }
@@ -31,7 +31,7 @@ class FavoriteNumber extends Topic  {
 
     async onChildReturn(child: Topic) {
         if (child instanceof PromptForCulture) {
-            await this.beginChild(NumberPrompt, {
+            await this.startChild(NumberPrompt, {
                 prompt: `What's your favorite number?`
             }, {
                 culture: child.return!.result.value!, 

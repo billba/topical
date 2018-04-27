@@ -11,14 +11,14 @@ const listAlarms = (alarms: Alarm[]) => alarms
     .map(alarm => `* "${alarm.name}" set for ${alarm.when}`)
     .join('\n');
 
-interface ShowAlarmBegin {
+interface ShowAlarmStart {
     alarms: Alarm[]
 }
 
-class ShowAlarms extends Topic<ShowAlarmBegin> {
+class ShowAlarms extends Topic<ShowAlarmStart> {
 
-    async onBegin (
-        args: ShowAlarmBegin,
+    async onStart (
+        args: ShowAlarmStart,
     ) {
 
         if (args.alarms.length === 0)
@@ -31,7 +31,7 @@ class ShowAlarms extends Topic<ShowAlarmBegin> {
 }
 ShowAlarms.register();
 
-interface DeleteAlarmBegin {
+interface DeleteAlarmStart {
     alarms: Alarm[];
 }
 
@@ -45,10 +45,10 @@ interface DeleteAlarmReturn {
     alarmName: string;
 }
 
-class DeleteAlarm extends Topic<DeleteAlarmBegin, DeleteAlarmState, DeleteAlarmReturn> {
+class DeleteAlarm extends Topic<DeleteAlarmStart, DeleteAlarmState, DeleteAlarmReturn> {
 
-    async onBegin (
-        args: DeleteAlarmBegin,
+    async onStart (
+        args: DeleteAlarmStart,
     ) {
         if (args.alarms.length === 0) {
             await this.send(`You don't have any alarms.`);
@@ -57,7 +57,7 @@ class DeleteAlarm extends Topic<DeleteAlarmBegin, DeleteAlarmState, DeleteAlarmR
 
         this.state.alarms = args.alarms;
 
-        await this.beginChild(TextPrompt, {
+        await this.startChild(TextPrompt, {
             name: 'whichAlarm',
             prompt: `Which alarm do you want to delete?\n${listAlarms(this.state.alarms)}`,
         });
@@ -72,7 +72,7 @@ class DeleteAlarm extends Topic<DeleteAlarmBegin, DeleteAlarmState, DeleteAlarmR
 
             case 'whichAlarm':
                 this.state.alarmName = child.return!.result.value!;
-                await this.beginChild(TextPrompt, {
+                await this.startChild(TextPrompt, {
                     name: 'confirm',
                     prompt: `Are you sure you want to delete alarm "${child.return!.result.value}"? (yes/no)"`,
                 });
@@ -103,18 +103,23 @@ const helpText = `I know how to set, show, and delete alarms.`;
 
 class AlarmBot extends Topic<any, AlarmBotState> {
 
-    async onBegin () {
+    async onStart () {
         await this.send(`Welcome to Alarm Bot!\n${helpText}`);
         this.state.alarms = [];
     }
 
     async onTurn () {
-        if (await this.dispatchToChild())
+        if (this.text === 'time') {
+            this.send(`The current time is ${new Date().toLocaleTimeString()}.`);
+            return;
+        }
+
+        if (await this.dispatchTo(this.children[1]))
             return;
 
         if (this.text) {
             if (/set|add|create/i.test(this.text)) {
-                await this.beginChild(SimpleForm, {
+                await this.startChild(SimpleForm, {
                     name: {
                         type: 'string',
                         prompt: 'What do you want to call it?',
@@ -125,11 +130,11 @@ class AlarmBot extends Topic<any, AlarmBotState> {
                     },
                 } as SimpleFormSchema);
             } else if (/show|list/i.test(this.text)) {
-                await this.beginChild(ShowAlarms, {
+                await this.startChild(ShowAlarms, {
                     alarms: this.state.alarms
                 });
             } else if (/delete|remove/i.test(this.text)) {
-                await this.beginChild(DeleteAlarm, {
+                await this.startChild(DeleteAlarm, {
                     alarms: this.state.alarms
                 });
             } else {

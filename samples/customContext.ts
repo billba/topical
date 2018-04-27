@@ -7,7 +7,7 @@ class CustomContext extends TurnContext {
 
 class Child extends Topic<any, any, any, any, CustomContext> {
 
-    async onBegin() {
+    async onStart() {
         await this.send(this.context.foo);
         this.returnToParent();
     }
@@ -25,8 +25,8 @@ PromptForText.register();
 
 class Root extends Topic<any, any, any, any, CustomContext> {
 
-    async onBegin() {
-        this.beginChild(Child);
+    async onStart() {
+        this.startChild(Child);
     }
 
     async onTurn() {
@@ -36,7 +36,7 @@ class Root extends Topic<any, any, any, any, CustomContext> {
     async onChildReturn(child: Topic) {
         if (child instanceof Child) {
             await this.send(this.context.foo);
-            this.beginChild(PromptForText, {
+            this.startChild(PromptForText, {
                 prompt: 'Wassup?',
             } as PromptArgs);
         } else if (child instanceof PromptForText) {

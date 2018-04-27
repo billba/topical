@@ -3,7 +3,7 @@ const { Topic, prettyConsole, consoleOnTurn, doTopic } = require ('../lib/src/to
 
 class ChildTopic extends Topic {
 
-    async onBegin(args) {
+    async onStart(args) {
         await this.send(`Welcome to the child topic!\nWhat multiple of ${args["foo"]} do you want to return?`);
     }
 
@@ -22,7 +22,7 @@ ChildTopic.register();
 
 class RootTopic extends Topic {
 
-    async onBegin() {
+    async onStart() {
         await this.send(`Welcome to my root topic!`);
     }
     
@@ -41,7 +41,7 @@ class RootTopic extends Topic {
             return;
 
         if (this.text === 'start child') {
-            return this.beginChild(ChildTopic, {
+            return this.startChild(ChildTopic, {
                 foo: 13
             });
         }

@@ -8,12 +8,12 @@ export interface WaterfallState {
 export type Step = (value?: any) => Promise<any>;
 
 export class Waterfall <
-    Begin = any,
+    Start = any,
     State extends WaterfallState = WaterfallState,
     Return = any,
     Constructor = any,
     Context extends TurnContext = TurnContext
-> extends Topic <Begin, State, Return, Constructor, Context> {
+> extends Topic <Start, State, Return, Constructor, Context> {
 
     result?: ValidatorResult<any>;
 
@@ -57,7 +57,7 @@ export class Waterfall <
         return this.state.stepIndex >= steps.length;    
     }
 
-    async onBegin() {
+    async onStart() {
         await this.onTurn();
     }
 

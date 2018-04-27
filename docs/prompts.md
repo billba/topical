@@ -91,8 +91,8 @@ You can supply your own prompter which may or may not use different arguments to
 ```ts
 class MyTopic extends Topic {
 
-    async onBegin() {
-        this.beginChild(TextPrompt, {
+    async onStart() {
+        this.startChild(TextPrompt, {
             prompt: `What's your name?`
         });
     }
@@ -116,8 +116,8 @@ PetNamePrompt.register();
 
 class MyTopic extends Topic {
 
-    async onBegin() {
-        await this.beginChild(PetNamePrompt, {
+    async onStart() {
+        await this.startChild(PetNamePrompt, {
             name: 'dog', 
             prompt: `What is your dog's name?`
         });
@@ -130,7 +130,7 @@ class MyTopic extends Topic {
     async onChildReturn(child) {
         if (child.return.args.name === 'dog') {
             this.state.dogName = child.return.result.value;
-            await this.beginChild(PetNamePrompt, {
+            await this.startChild(PetNamePrompt, {
                 name: 'cat',
                 prompt: `What is your cat's name?`
             });
@@ -180,8 +180,8 @@ BigNumberPrompt.register();
 
 class MyTopic extends Topic {
 
-    async onBegin() {
-        await this.beginChild(BigNumberPrompt);
+    async onStart() {
+        await this.startChild(BigNumberPrompt);
     }
 
     async onTurn() {
