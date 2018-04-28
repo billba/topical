@@ -49,7 +49,7 @@ export class SimpleForm extends Topic<SimpleFormSchema, SimpleFormState, SimpleF
         }
     }
 
-    async onTurn() {
+    async onDispatch() {
         if (!await this.dispatchToChild())
             throw "a prompt should always be active";
     }

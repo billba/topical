@@ -29,7 +29,7 @@ class Root extends Topic<any, any, any, any, CustomContext> {
         this.startChild(Child);
     }
 
-    async onTurn() {
+    async onDispatch() {
         await this.dispatchToChild();
     }
 

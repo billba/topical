@@ -16,7 +16,7 @@ The Topics pattern models conversations as a dynamic tree of independent convers
 
 ![Topics](/Topics.gif)
 
-**Note**: the method names on this graphic need to be updated: `init` -> `onStart` and `onReceive` -> `onTurn`
+**Note**: the method names on this graphic need to be updated: `init` -> `onStart` and `onReceive` -> `onDispatch`
 
 The *Topical* library provides low-level support for this pattern. 
 
@@ -42,7 +42,7 @@ class Root extends Topic {
         await this.context.sendActivity("How can I help you today?");
     }
 
-    async onTurn() {
+    async onDispatch() {
         if (await this.dispatchToChild())
             return;
 

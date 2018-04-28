@@ -13,7 +13,7 @@ class Root extends Topic {
         await this.send("How can I help you today?");
     }
 
-    async onTurn() {
+    async onDispatch() {
         if (await this.dispatchToChild())
             return;
 
@@ -34,7 +34,7 @@ Root.register();
 
 Sometimes you want a parent topic to intercept certain messages and handle them rather than dispatching them to the child:
 ```ts
-    async onTurn() {
+    async onDispatch() {
         if (this.text === 'time') {
             await this.send(`The current time is ${new Date().toLocaleTimeString()}.`);
             return;
@@ -54,7 +54,7 @@ Sometimes you want a parent topic to intercept certain messages and handle them 
 Sometimes you want a parent to permanently stop dispatching messages to its child. This is as simple as clearing `this.children`.
 
 ```ts
-    async onTurn() {
+    async onDispatch() {
         if (this.text === `cancel`)
             this.clearChildren();
 
@@ -82,7 +82,7 @@ class Root extends Topic {
         await this.send("How can I help you today?");
     }
 
-    async onTurn() {
+    async onDispatch() {
         if (await this.dispatchToChild())
             return;
 
@@ -101,7 +101,7 @@ Root.register();
 ```
 `Topic` contains a helper called `tryTriggers` that does this for you:
 ```ts
-    async onTurn() {
+    async onDispatch() {
         if (await this.dispatchToChild())
             return;
 

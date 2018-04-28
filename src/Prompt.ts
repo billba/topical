@@ -45,7 +45,7 @@ export abstract class Prompt <
         await this.prompter();
     }
 
-    async onTurn () {
+    async onDispatch () {
 
         const result = await this.validator.validate(this.context.activity);
 

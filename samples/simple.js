@@ -7,7 +7,7 @@ class ChildTopic extends Topic {
         await this.send(`Welcome to the child topic!\nWhat multiple of ${args["foo"]} do you want to return?`);
     }
 
-    async onTurn() {
+    async onDispatch() {
         const num = Number.parseInt(this.text);
 
         if (Number.isNaN(num))
@@ -26,7 +26,7 @@ class RootTopic extends Topic {
         await this.send(`Welcome to my root topic!`);
     }
     
-    async onTurn() {
+    async onDispatch() {
         if (this.text === 'end child') {
             if (this.hasChildren()) {
                 this.clearChildren();

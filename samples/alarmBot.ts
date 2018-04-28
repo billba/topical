@@ -63,7 +63,7 @@ class DeleteAlarm extends Topic<DeleteAlarmStart, DeleteAlarmState, DeleteAlarmR
         });
     }
 
-    async onTurn () {
+    async onDispatch () {
         await this.dispatchToChild();
     }
 
@@ -108,7 +108,7 @@ class AlarmBot extends Topic<any, AlarmBotState> {
         this.state.alarms = [];
     }
 
-    async onTurn () {
+    async onDispatch () {
         if (this.text === 'time') {
             this.send(`The current time is ${new Date().toLocaleTimeString()}.`);
             return;

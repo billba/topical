@@ -21,7 +21,7 @@ class Flights extends Topic {
         await this.send(`Let's fly to ${ args ? args.destination : 'a city'}!`)
     }
 
-    async onTurn() {
+    async onDispatch() {
         await this.send(`That's my one trick. Try 'travel' to restart the bot.`);
     }
 }
@@ -47,7 +47,7 @@ class Hotels extends Topic <HotelsStart> {
         await this.send(`Let's stay at a ${ args ? args.chain : 'hotel'}!`)
     }
 
-    async onTurn() {
+    async onDispatch() {
         await this.send(`That's my one trick. Try 'travel' to restart the bot.`);
     }
 }
@@ -61,7 +61,7 @@ class Travel extends Topic  {
         console.log();
     }
 
-    async onTurn() {
+    async onDispatch() {
         if (await this.dispatchToChild())
             return;
         
@@ -79,7 +79,7 @@ class Root extends Topic {
         await this.send(`Say 'travel' to start (or restart) the travel dialog.`);
     }
 
-    async onTurn() {
+    async onDispatch() {
         if (this.text === 'travel') {
             await this.startChild(Travel);
             return;

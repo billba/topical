@@ -58,10 +58,10 @@ export class Waterfall <
     }
 
     async onStart() {
-        await this.onTurn();
+        await this.onDispatch();
     }
 
-    async onTurn() {
+    async onDispatch() {
         if (await this.runWaterfall(next => this.waterfall(next)))
             this.returnToParent();
     }

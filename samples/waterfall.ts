@@ -51,7 +51,7 @@ class Age extends Waterfall {
         ];
     }
 
-    // uses default onStart, onTurn, onChildReturn
+    // uses default onStart, onDispatch, onChildReturn
 }
 Age.register();
 
@@ -61,7 +61,7 @@ class Root extends Topic {
         await this.startChild(Age);
     }
 
-    // uses default onTurn, onChildReturn
+    // uses default onDispatch, onChildReturn
 }
 Root.register();
 

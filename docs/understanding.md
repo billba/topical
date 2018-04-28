@@ -146,7 +146,7 @@ From any topic, dispatch the current activity to a different topic:
 await this.dispatchTo(topicInstanceName);
 ```
 
-*Topical* constructs an instance of the appropriate class and calls `topic.onTurn()`, and returns `true`. If you pass in `undefined`, it returns `false`.
+*Topical* constructs an instance of the appropriate class and calls `topic.onDispatch()`, and returns `true`. If you pass in `undefined`, it returns `false`.
 
 If you have a single-child topic you can do,
 
@@ -177,7 +177,7 @@ yourMessageLoop(async context => {
             }
         }
     } else {
-        await YourRootTopic.onTurn(context);
+        await YourRootTopic.onDispatch(context);
     }
 });
 ```
@@ -187,6 +187,6 @@ yourMessageLoop(async context => {
 On every call, `YourRootTopic.start`:
 * creates a `TopicInstance` of `YourRootTopic`, starts it, and sets it as your root topic instance
 
-On every call `YourRootTopic.onTurn`:
+On every call `YourRootTopic.onDispatch`:
 * dispatches to the root topic instance
 

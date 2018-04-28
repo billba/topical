@@ -23,7 +23,7 @@ class Age extends Topic {
         this.state = 0;
     }
 
-    async onTurn() {
+    async onDispatch() {
         if (!this.text)
             return;
 
@@ -51,7 +51,7 @@ class Age extends Topic {
         this.startChild(PromptForName);
     }
 
-    async onTurn() {
+    async onDispatch() {
         await this.dispatchToChild();
     }
 
@@ -133,7 +133,7 @@ class Age extends Waterfall {
 }
 Age.register();
 ```
-The *Waterfall* topic implements defaults for `onStart`, `onTurn`, and `onChildReturn`, which run each function in the waterfall, in turn, as responses to the user's input. (You can optionally override these defaults, and gain more control over the waterfall flow, but that won't usually be necessary).
+The *Waterfall* topic implements defaults for `onStart`, `onDispatch`, and `onChildReturn`, which run each function in the waterfall, in turn, as responses to the user's input. (You can optionally override these defaults, and gain more control over the waterfall flow, but that won't usually be necessary).
 
 That sure looks simple. But of course it is the naïve version, without the prompts that can validate the user's responses.
 

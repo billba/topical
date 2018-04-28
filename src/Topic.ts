@@ -349,9 +349,9 @@ export abstract class Topic <
         const topical = await Topic.topicalConversationState.read(context) as TopicalConversation;
 
         if (!topical.rootTopicInstanceName)
-            throw `You must call ${this.name}.start before calling ${this.name}.onTurn.`;
+            throw `You must call ${this.name}.start before calling ${this.name}.onDispatch.`;
 
-        await Topic.loadTopic(context, topical.rootTopicInstanceName).onTurn();
+        await Topic.loadTopic(context, topical.rootTopicInstanceName).onDispatch();
 
         // garbage collect orphaned instances
 
@@ -411,7 +411,7 @@ export abstract class Topic <
             return false;
 
         // await topic.sendTelemetry(context, instance, 'onReceive.start');
-        await topic.onTurn();
+        await topic.onDispatch();
         await topic.returnedToParent();
         // await topic.sendTelemetry(context, instance, 'onReceive.end');
         
@@ -536,7 +536,7 @@ export abstract class Topic <
     ) {
     }
 
-    public async onTurn () {
+    public async onDispatch () {
         if (await this.dispatchToChild())
             return;
     }

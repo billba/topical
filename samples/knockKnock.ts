@@ -13,7 +13,7 @@ class KnockKnock extends Waterfall {
         ];
     }
 
-    // uses default onStart, onTurn, onChildReturn
+    // uses default onStart, onDispatch, onChildReturn
 }
 KnockKnock.register();
 
@@ -23,7 +23,7 @@ class Root extends Topic {
         await this.send(`Tell me a knock knock joke`);
     }
 
-    async onTurn () {
+    async onDispatch () {
         if (this.text === 'knock knock') {
             await this.startChild(KnockKnock);
             return;

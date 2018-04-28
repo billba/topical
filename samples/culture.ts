@@ -22,7 +22,7 @@ class FavoriteNumber extends Topic  {
         } as PromptArgs);
     }
 
-    async onTurn() {
+    async onDispatch() {
         if (await this.dispatchToChild())
             return;
         

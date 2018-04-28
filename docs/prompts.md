@@ -123,7 +123,7 @@ class MyTopic extends Topic {
         });
     }
 
-    async onTurn() {
+    async onDispatch() {
         await this.dispatchToChild();
     }
 
@@ -184,7 +184,7 @@ class MyTopic extends Topic {
         await this.startChild(BigNumberPrompt);
     }
 
-    async onTurn() {
+    async onDispatch() {
         await this.dispatchToChild();
     }
 
