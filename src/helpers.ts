@@ -91,10 +91,11 @@ export const startIfScore = async <
     T extends Topic,
 > (
     topic: T,
+    threshold = 0,
 ) => {
     const result = await topic.getStartScore();
 
-    return result
+    return result && result.score > threshold
         ? topic.start(result.startArgs)
         : false;
 }

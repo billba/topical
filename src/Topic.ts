@@ -403,6 +403,7 @@ export abstract class Topic <
     public async dispatchTo (
         topicInstanceName: string | undefined,
         activity?: Activity,
+        args?: any,
     ) {
         if (!topicInstanceName)
             return false;
@@ -418,7 +419,7 @@ export abstract class Topic <
             return false;
 
         // await topic.sendTelemetry(context, instance, 'onReceive.start');
-        await topic.onDispatch();
+        await topic.onDispatch(args);
         await topic.returnedToParent();
         // await topic.sendTelemetry(context, instance, 'onReceive.end');
         
@@ -524,8 +525,9 @@ export abstract class Topic <
 
     public dispatchToChild (
         activity?: Activity,
+        args?: any,
     ) {
-        return this.dispatchTo(this.hasChild ? this.child : undefined, activity);
+        return this.dispatchTo(this.hasChild ? this.child : undefined, activity, args);
     }
 
     public async getScore (): Promise<Score<Start> | void> {
@@ -552,7 +554,9 @@ export abstract class Topic <
     public async getDispatchScore (): Promise<DispatchScore | void> {
     }
 
-    public async onDispatch () {
+    public async onDispatch (
+        args?: any,
+    ) {
         if (await this.dispatchToChild())
             return;
     }

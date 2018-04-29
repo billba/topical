@@ -71,7 +71,7 @@ If you're already in a topic, you can achieve the same results by calling:
 const topicInstanceName = this.createTopicInstance(YourTopicHere, constructorArgs);
 ```
 
-## Loading a topic
+### Loading a topic
 
 Once a topic has been created, you can ask *Topical* to construct an instance of its class:
 
@@ -108,37 +108,6 @@ Finally, if you have a single-child topic, you can create, start, and set a chil
 ```ts
 await this.startChild(YourTopicHere, startArgs, constructorArgs);
 ```
-
-## Triggering a topic
-
-Once a topic has been created, but not yet started, you can query it to see if it thinks it should be started based on the current activity. This is called a "trigger":
-
-```ts
-const topic = this.loadTopic(child);
-
-const result = await topic.getStartScore();
-```
-
-This result of `getStartScore` is either `undefined` or an object containing 0 > `score` <= 1, representing the topic's confidence that the current activity should start it, and the `startArgs` that should be supplied to its `start` method in that case.
-
-You can use this result however you see fit, including comparing the score to that of other topics. If you have just one topic, you can do:
-
-```ts
-const result = await topic.getStartScore();
-
-if (result)
-    await topic.start(result.startArgs);
-```
-
-A helper that does this is:
-
-```ts
-await startIfScore(topic);
-```
-
-This returns true if the topic was started, false if the topic was not started, or started and completed.
-
-Not all topics have triggers. If not, calling `getStartScore()` will return void.
 
 ### Dispatching to a topic
 
