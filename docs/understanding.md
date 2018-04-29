@@ -111,32 +111,34 @@ await this.startChild(YourTopicHere, startArgs, constructorArgs);
 
 ## Triggering a topic
 
-Once a topic has been created, but not yet started, you can query it to see if it thinks it should be started based on the current activity.
+Once a topic has been created, but not yet started, you can query it to see if it thinks it should be started based on the current activity. This is called a "trigger":
 
 ```ts
 const topic = this.loadTopic(child);
 
-const result = topic.trigger();
+const result = await topic.getStartScore();
 ```
 
-This result of `trigger` is either `undefined` or an object containing 0 > `score` <= 1, representing the topic's confidence that the current activity should start it, and the `startArgs` that should be supplied to its `start` method in that case.
+This result of `getStartScore` is either `undefined` or an object containing 0 > `score` <= 1, representing the topic's confidence that the current activity should start it, and the `startArgs` that should be supplied to its `start` method in that case.
 
-You can use this result however you see fit, including comparing the score to that of other topics. If you have just one topic, you can just do:
+You can use this result however you see fit, including comparing the score to that of other topics. If you have just one topic, you can do:
 
 ```ts
+const result = await topic.getStartScore();
+
 if (result)
     await topic.start(result.startArgs);
 ```
 
-A shorthand for this case is:
+A helper that does this is:
 
 ```ts
-await topic.startIfTriggered();
+await startIfScore(topic);
 ```
 
 This returns true if the topic was started, false if the topic was not started, or started and completed.
 
-Not all topics have triggers. If not, calling `trigger()` will return a score of 0.
+Not all topics have triggers. If not, calling `getStartScore()` will return void.
 
 ### Dispatching to a topic
 
@@ -156,13 +158,29 @@ await this.dispatchToChild();
 
 This returns 'false' if there is currently no child.
 
+### Dispatching an activity
+
+Sometimes you want to dispatch an activity other than the current one. For instance, if the user said something ambiguous you might want to sock it away in your state, ask for clarification, and then recall it and dispatch it. Just do:
+
+```ts
+await this.dispatchTo(topicInstanceName, activity_you_saved);
+```
+
+or
+
+```ts
+await this.dispatchToChild(activity_you_saved);
+```
+
 ## Topic constructors
 
-*Topical* may construct a topic for a `TopicInstance` many times over its lifetime, across multiple turns. Topics are constructed for `trigger`ing, `start`ing, and `dispatch`ing. 
+*Topical* may construct a topic for a `TopicInstance` many times over its lifetime, across multiple turns. Topics are constructed for scoring, `start`ing, and `dispatch`ing, or calling any other method that may exist on them.
 
 As a result, a topic's constructor should only do things that make sense in all these situations, and `constructorArgs` should only contain arguments necessary to do those things.
 
-Much of what would normally goes in a constructor (like initializing the internal state at startup based on a set of arguments) instead happens in the `onStart` method. In fact, many subclasses of `Topic` don't need a constructor at all.
+Much of what would normally goes in a constructor (like initializing the internal state at startup based on a set of arguments) instead happens in the `onStart` method.
+
+Many subclasses of `Topic` won't need a constructor at all.
 
 ## Hooking up *Topical* to your main message loop:
 

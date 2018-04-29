@@ -71,7 +71,7 @@ Sometimes you want a parent to permanently stop dispatching messages to its chil
 
 ## Triggering
 
-Sometimes a child knows better than its parent whether it should be triggered. In this scenario, the child needs to be *created* in `onStart` but not *started*.
+Sometimes a child knows better than its parent whether it should be triggered. In this scenario, the child needs to be *created* but not *started*.
 
 ```ts
 class Root extends Topic {
@@ -86,29 +86,32 @@ class Root extends Topic {
         if (await this.dispatchToChild())
             return;
 
-        const result = await this.loadTopicInstance(this.children[0]).trigger();
+        const topic = await this.loadTopic(this.child);
 
-        if (result && result.score)
-            await TravelTopic.startInstance(this, result.child, result.startArgs);
+        const result = await topic.getStartScore();
+
+        if (result)
+            await topic.start(result.startArgs);
     }
 
     async onChildReturn() {
         await this.send(`Welcome back to the Root!`);
-        this.clearChildren();
+        this.clearChild();
     }
 }
 Root.register();
 ```
-`Topic` contains a helper called `tryTriggers` that does this for you:
+`Topic` contains a helper called `startIfScore` that does this for you:
 ```ts
     async onDispatch() {
         if (await this.dispatchToChild())
             return;
 
-        await this.tryTriggers();
+        await startIfScore(await this.loadTopic(this.child));
     }
 ```
-`tryTriggers` will try every child in `this.children` and start the one returning the highest score, so you can load up a number of potential children and let them duke it out. See this in action in the [triggers](../samples/triggers.ts) sample.
+
+If you have multiple children, the helper `startBestScoringChild` will try every child in `this.children` and start the one returning the highest score, so you can load up a number of potential children and let them duke it out. See this in action in the [triggers](../samples/triggers.ts) sample.
 
 ## Prompts
 

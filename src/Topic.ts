@@ -48,9 +48,19 @@ export interface TopicInitOptions {
     getContext: GetContext<any>,
 }
 
-export interface TriggerResult <Start> {
+export interface StartScore <Start> {
     startArgs?: Start;
     score: number;
+}
+
+export interface DispatchScore {
+    dispatchArgs?: any;
+    score: number;
+}
+
+export interface Score <Start> {
+    start?: StartScore<Start>;
+    dispatch?: DispatchScore;
 }
 
 export abstract class Topic <
@@ -195,7 +205,7 @@ export abstract class Topic <
         return (topicClass as any).createTopicInstance(this.context, constructorArgs);
     }
 
-    protected static async loadTopic <Context extends TurnContext> (
+    static async loadTopic <Context extends TurnContext> (
         parentOrContext: Topic<any, any, any, any, Context> | Context,
         topicInstance: string | TopicInstance,
         activity?: Activity,
@@ -231,7 +241,7 @@ export abstract class Topic <
         return topic;
     }
 
-    protected loadTopic (
+    loadTopic (
         instance: string | TopicInstance,
         activity?: Activity,
     ): Promise<Topic<any, any, any, any, Context>> {
@@ -254,15 +264,6 @@ export abstract class Topic <
         // await this.sendTelemetry(context, newInstance, 'init.end');    
 
         return true;
-    }
-
-    async startIfTriggered(): Promise<boolean> {
-
-        const result = await this.trigger();
-
-        return result
-            ? this.start(result.startArgs)
-            : false;
     }
 
     async createTopicInstanceAndStart <
@@ -527,38 +528,28 @@ export abstract class Topic <
         return this.dispatchTo(this.hasChild ? this.child : undefined, activity);
     }
 
-    public async tryTriggers () {
-        const results = (await Promise.all(this
-            .children
-            .map(child => this.loadTopic(child)
-                .then(topic => topic.trigger())
-                .then(result => ({
-                    child,
-                    result: result || { score: 0}
-                }))
-            )
-        ))
-        .filter(i => i.result.score > 0)
-        .sort((a, b) => b.result.score - a.result.score);
+    public async getScore (): Promise<Score<Start> | void> {
+        const start = this.started ? undefined : (await this.getStartScore() || undefined);
+        const dispatch = this.started ? (await this.getDispatchScore() || undefined) : undefined;
 
-        if (results.length) {
-            await (await this.loadTopic(results[0].child))
-                .start(results[0].result.startArgs);
-
-            return true;
-        }
-
-        return false;
+        if (start || dispatch)
+            return {
+                start,
+                dispatch
+            }
     }
 
-    // These four default methods are optionally overrideable by subclasses
+    // These five default methods are optionally overrideable by subclasses
 
-    public async trigger (): Promise<TriggerResult<Start> | void> {
+    public async getStartScore (): Promise<StartScore<Start> | void> {
     }
 
     public async onStart (
         args?: Start,
     ) {
+    }
+
+    public async getDispatchScore (): Promise<DispatchScore | void> {
     }
 
     public async onDispatch () {

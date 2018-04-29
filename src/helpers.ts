@@ -1,5 +1,5 @@
 import { Promiseable, MiddlewareHandler, ConsoleAdapter, TurnContext, Activity } from "botbuilder";
-import { Topicable } from "./topical";
+import { Topicable, Topic } from "./topical";
 
 export const toPromise = <T> (t: Promiseable<T>) => (t as any).then ? (t as Promise<T>) : Promise.resolve<T>(t);
 
@@ -85,4 +85,47 @@ export const doTopic = async <
     } else {
         await (topic as any).dispatch(context);
     }
+}
+
+export const startIfScore = async <
+    T extends Topic,
+> (
+    topic: T,
+) => {
+    const result = await topic.getStartScore();
+
+    return result
+        ? topic.start(result.startArgs)
+        : false;
+}
+
+export const startBestScoringChild = async <
+    T extends Topic,
+> (
+    topic: T,
+) => {
+    const results = (await Promise.all(topic
+        .children
+        .map(child => topic.loadTopic(child)
+            .then(childTopic => childTopic
+                .getStartScore()
+                .then(result => ({
+                    childTopic,
+                    result: result || { score: 0}
+                }))
+            )
+        )
+    ))
+    .filter(i => i.result.score > 0)
+    .sort((a, b) => b.result.score - a.result.score);
+
+    if (results.length) {
+        await results[0]
+            .childTopic
+            .start(results[0].result.startArgs);
+
+        return true;
+    }
+
+    return false;
 }

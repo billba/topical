@@ -1,5 +1,5 @@
 import { MemoryStorage, ConsoleAdapter } from 'botbuilder';
-import { Topic, prettyConsole, consoleOnTurn, doTopic } from '../src/topical';
+import { Topic, prettyConsole, consoleOnTurn, doTopic, startBestScoringChild } from '../src/topical';
 
 interface FlightsStart {
     destination: string;
@@ -7,7 +7,7 @@ interface FlightsStart {
 
 class Flights extends Topic {
 
-    async trigger() {
+    async getStartScore() {
         if (this.text && this.text.includes('flight'))
             return {
                 startArgs: {
@@ -33,7 +33,7 @@ interface HotelsStart {
 
 class Hotels extends Topic <HotelsStart> {
 
-    async trigger() {
+    async getStartScore() {
         if (this.text && this.text.includes('hotel'))
             return {
                 startArgs: {
@@ -65,7 +65,7 @@ class Travel extends Topic  {
         if (await this.dispatchToChild())
             return;
         
-        if (!await this.tryTriggers())
+        if (!await startBestScoringChild(this))
             await this.send(`I can't do that.`);
     }
 }
