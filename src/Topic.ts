@@ -58,11 +58,6 @@ export interface DispatchScore {
     score: number;
 }
 
-export interface Score <Start> {
-    start?: StartScore<Start>;
-    dispatch?: DispatchScore;
-}
-
 export abstract class Topic <
     Start = any,
     State = any,
@@ -530,17 +525,6 @@ export abstract class Topic <
         return this.dispatchTo(this.hasChild ? this.child : undefined, activity, args);
     }
 
-    public async getScore (): Promise<Score<Start> | void> {
-        const start = this.started ? undefined : (await this.getStartScore() || undefined);
-        const dispatch = this.started ? (await this.getDispatchScore() || undefined) : undefined;
-
-        if (start || dispatch)
-            return {
-                start,
-                dispatch
-            }
-    }
-
     // These five default methods are optionally overrideable by subclasses
 
     public async getStartScore (): Promise<StartScore<Start> | void> {
@@ -551,7 +535,9 @@ export abstract class Topic <
     ) {
     }
 
-    public async getDispatchScore (): Promise<DispatchScore | void> {
+    public async getDispatchScore (
+        activity?: Activity,
+    ): Promise<DispatchScore | void> {
     }
 
     public async onDispatch (

@@ -1,5 +1,5 @@
 import { Promiseable, MiddlewareHandler, ConsoleAdapter, TurnContext, Activity } from "botbuilder";
-import { Topicable, Topic } from "./topical";
+import { Topicable, Topic, Score, StartScore, DispatchScore } from "./topical";
 
 export const toPromise = <T> (t: Promiseable<T>) => (t as any).then ? (t as Promise<T>) : Promise.resolve<T>(t);
 
@@ -129,4 +129,25 @@ export const startBestScoringChild = async <
     }
 
     return false;
+}
+
+export interface Score <Start> {
+    start?: StartScore<Start>;
+    dispatch?: DispatchScore;
+}
+
+export const getScore = async <
+    T extends Topic<Start>,
+    Start = any,
+> (
+    topic: T,
+): Promise<Score<Start> | void> => {
+    const start = topic.started ? undefined : (await topic.getStartScore() || undefined);
+    const dispatch = topic.started ? (await topic.getDispatchScore() || undefined) : undefined;
+
+    if (start || dispatch)
+        return {
+            start,
+            dispatch,
+        }
 }
