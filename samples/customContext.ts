@@ -41,7 +41,7 @@ class Root extends Topic<any, any, any, any, CustomContext> {
             } as PromptArgs);
         } else if (child instanceof PromptForText) {
             await this.send(`You said ${child.return!.result.value}`);
-            this.clearChildren();
+            this.clearChild();
         } else
             throw "mystery child topic";
     }

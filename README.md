@@ -53,7 +53,7 @@ class Root extends Topic {
 
     async onChildReturn() {
         await this.context.sendActivity(`Welcome back to the Root!`);
-        this.clearChildren();
+        this.clearChild();
     }
 }
 ```
@@ -152,6 +152,8 @@ Note: all these are console bots, and use the helper `consoleOnTurn` described [
 [knock knock](/samples/knockKnock.ts) demonstrates the use of a simple waterfall. Run `node lib/samples/knockKnock.js`
 
 [waterfall](/samples/knockKnock.ts) demonstrates the use of Prompts in a waterfall. Run `node lib/samples/waterfall.js`
+
+[dispatch](/samples/dispatch.ts) demonstrates saving the user's input to be dispatched subsequently. Run `node lib/samples/dispatch.js`
 
 ## Next steps
 

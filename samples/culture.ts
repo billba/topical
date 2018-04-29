@@ -38,7 +38,7 @@ class FavoriteNumber extends Topic  {
             });
         } else if (child instanceof NumberPrompt) {
             await this.send(`${child.return!.result.value}? That's my favorite too!`);
-            this.clearChildren();
+            this.clearChild();
         }
     }
 }

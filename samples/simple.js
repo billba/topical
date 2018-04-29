@@ -28,8 +28,8 @@ class RootTopic extends Topic {
     
     async onDispatch() {
         if (this.text === 'end child') {
-            if (this.hasChildren()) {
-                this.clearChildren();
+            if (this.hasChild()) {
+                this.clearChild();
                 await this.send(`I have ended the child topic.`);
             } else {
                 await this.send(`There is no child to end`);
@@ -52,7 +52,7 @@ class RootTopic extends Topic {
     async onChildReturn(child)
     {
         await this.send(`13 * ${child.return.num} = ${13 * child.return.num}`);
-        this.clearChildren();
+        this.clearChild();
     }
 }
 RootTopic.register();

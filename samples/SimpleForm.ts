@@ -44,7 +44,7 @@ export class SimpleForm extends Topic<SimpleFormSchema, SimpleFormState, SimpleF
             }
         }
 
-        if (!this.hasChildren()) {
+        if (!this.hasChild) {
             this.returnToParent(this.state.form);
         }
     }
@@ -63,7 +63,7 @@ export class SimpleForm extends Topic<SimpleFormSchema, SimpleFormState, SimpleF
             throw `not expecting type "${metadata.type}"`;
 
         this.state.form[child.return!.args!.name] = child.return!.result.value!;
-        this.clearChildren();
+        this.clearChild();
 
         await this.next();
     }

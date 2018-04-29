@@ -24,7 +24,7 @@ interface TopicInstance {
 
     state: any;
 
-    begun: boolean;
+    started: boolean;
 }
 ```
 
@@ -63,7 +63,7 @@ You create a topic by calling
 const topicInstanceName = YourTopicHere.createTopicInstance(context, constructorArgs);
 ```
 
-A `TopicInstance` is created with `constructorArgs` and a unique `topicInstanceName`. Its `topicClassName` is set to `YourTopicHere`. `children` is set to an an empty array, `state` is set to an empty object, and `begun` is set to false. This `TopicInstance` is then added to the `topicInstances` dictionary using `context`. 
+A `TopicInstance` is created with `constructorArgs` and a unique `topicInstanceName`. Its `topicClassName` is set to `YourTopicHere`. `children` is set to an an empty array, `state` is set to an empty object, and `started` is set to false. This `TopicInstance` is then added to the `topicInstances` dictionary using `context`. 
 
 If you're already in a topic, you can achieve the same results by calling:
 
@@ -111,7 +111,7 @@ await this.startChild(YourTopicHere, startArgs, constructorArgs);
 
 ## Triggering a topic
 
-Once a topic has been created, but not yet begun, you can query it to see if it thinks it should be begun based on the current activity.
+Once a topic has been created, but not yet started, you can query it to see if it thinks it should be started based on the current activity.
 
 ```ts
 const topic = this.loadTopic(child);
@@ -134,7 +134,7 @@ A shorthand for this case is:
 await topic.startIfTriggered();
 ```
 
-This returns true if the topic was begun, false if the topic was not begun, or begun and completed.
+This returns true if the topic was started, false if the topic was not started, or started and completed.
 
 Not all topics have triggers. If not, calling `trigger()` will return a score of 0.
 

@@ -33,7 +33,7 @@ export class Waterfall <
             }
         );
 
-        if (this.hasChildren()) {
+        if (this.hasChild) {
             next = false;
             this.result = undefined;
 
@@ -50,7 +50,7 @@ export class Waterfall <
 
             await steps[this.state.stepIndex ++](value);
 
-            if (this.hasChildren())
+            if (this.hasChild)
                 next = false;
         }
 
@@ -72,7 +72,7 @@ export class Waterfall <
         
         this.result = child.return!.result;
 
-        this.clearChildren();
+        this.clearChild();
     }
 
     waterfall(next: (value?: any) => void): Step[] {

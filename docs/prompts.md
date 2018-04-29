@@ -136,7 +136,7 @@ class MyTopic extends Topic {
             });
         } else {
             this.state.catName = child.return.result.value;
-            this.clearChildren();
+            this.clearChild();
         }
     }
 }

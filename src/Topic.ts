@@ -36,8 +36,16 @@ export interface Topicable <
     ): Topic<Start, State, Return, Constructor, Context>;
 }
 
+export type GetContext <
+    Context extends TurnContext = TurnContext,
+> = (
+    context: Context,
+    activity: Activity,
+) => Promise<Context>;
+
 export interface TopicInitOptions {
     telemetry: Telemetry;
+    getContext: GetContext<any>,
 }
 
 export interface TriggerResult <Start> {
@@ -55,20 +63,22 @@ export abstract class Topic <
     private static topicalConversationState: ConversationState<TopicalConversation>;
 
     private static telemetry: Telemetry;
+    private static getContext: GetContext<any> = (context, activity) => {
+        const newContext = new TurnContext(context);
+        (newContext as any)._activity = activity;
+        return Promise.resolve(newContext);
+    };
 
     public static init (
         storage: Storage,
-        options?: TopicInitOptions,
+        options?: Partial<TopicInitOptions>,
     ) {
         if (Topic.topicalConversationState)
             throw "you should only call Topic.init once.";
 
         Topic.topicalConversationState = new ConversationState<TopicalConversation>(storage, "github.com/billba/topical");
 
-        if (options) {
-            if (options.telemetry)
-                Topic.telemetry = options.telemetry;
-        }
+        Object.assign(Topic, options);
     }
 
     private static topics: Record<string, Topicable> = {};
@@ -90,43 +100,36 @@ export abstract class Topic <
     }
 
     public get state () {
-
         return this.topicInstance.state;
     }
 
     public set state (
         state: State,
     ) {
-
         this.topicInstance.state = state;
     }
 
     public get topicInstanceName () {
-
         return this.topicInstance.topicInstanceName;
     }
 
-    public get begun () {
-
+    public get started () {
         return this.topicInstance.started;
     }
 
-    public set begun (
-        begun: boolean,
+    public set started (
+        started: boolean,
     ) {
-
-        this.topicInstance.started = begun;
+        this.topicInstance.started = started;
     }
 
     public get children () {
-
         return this.topicInstance.children;
     }
 
     public set children (
         children: string[],
     ) {
-
         this.topicInstance.children = children;
     }
 
@@ -192,10 +195,11 @@ export abstract class Topic <
         return (topicClass as any).createTopicInstance(this.context, constructorArgs);
     }
 
-    protected static loadTopic <Context extends TurnContext> (
+    protected static async loadTopic <Context extends TurnContext> (
         parentOrContext: Topic<any, any, any, any, Context> | Context,
         topicInstance: string | TopicInstance,
-    ): Topic<any, any, any, any, Context> {
+        activity?: Activity,
+    ): Promise<Topic<any, any, any, any, Context>> {
 
         let parent: Topic<any, any, any, any, Context> | undefined;
         let context: Context;
@@ -217,11 +221,11 @@ export abstract class Topic <
 
         const topic = new T(topicInstance.constructorArgs) as Topic<any, any, any, any, Context>;
 
-        topic.context = context;
+        topic.context = activity ? await Topic.getContext(context, activity) : context;
         topic.parent = parent;
         topic.topicInstance = topicInstance;
 
-        topic.text = context.activity.type === 'message' ? context.activity.text.trim() : undefined;
+        topic.text = topic.context.activity.type === 'message' ? topic.context.activity.text.trim() : undefined;
         topic.send = (activityOrText, speak, inputHint) => context.sendActivity(activityOrText, speak, inputHint);
 
         return topic;
@@ -229,9 +233,10 @@ export abstract class Topic <
 
     protected loadTopic (
         instance: string | TopicInstance,
-    ): Topic<any, any, any, any, Context> {
+        activity?: Activity,
+    ): Promise<Topic<any, any, any, any, Context>> {
 
-        return Topic.loadTopic(this, instance);
+        return Topic.loadTopic(this, instance, activity);
     }
 
     async start (
@@ -239,7 +244,7 @@ export abstract class Topic <
     ): Promise<boolean> {
         // await this.sendTelemetry(context, newInstance, 'init.start');
 
-        this.begun = true;
+        this.started = true;
 
         await this.onStart(startArgs);
 
@@ -270,7 +275,7 @@ export abstract class Topic <
         constructorArgs?: Constructor,
     ): Promise<Topic<any, any, any, Constructor, Context> | undefined> {
 
-        const topic = this.loadTopic(this.createTopicInstance(topicClass, constructorArgs));
+        const topic = await this.loadTopic(this.createTopicInstance(topicClass, constructorArgs));
 
         return await topic.start(startArgs)
             ? topic
@@ -325,7 +330,7 @@ export abstract class Topic <
         topicalConversation.topicInstances = {};
         topicalConversation.rootTopicInstanceName = (this as any).createTopicInstance(context, constructorArgs);
 
-        const topic = Topic.loadTopic(context, topicalConversation.rootTopicInstanceName!);
+        const topic = await Topic.loadTopic(context, topicalConversation.rootTopicInstanceName!);
         if (!await topic.start(startArgs))
             throw "Root topics shouldn't even returnToParent."
 
@@ -351,7 +356,7 @@ export abstract class Topic <
         if (!topical.rootTopicInstanceName)
             throw `You must call ${this.name}.start before calling ${this.name}.onDispatch.`;
 
-        await Topic.loadTopic(context, topical.rootTopicInstanceName).onDispatch();
+        await (await Topic.loadTopic(context, topical.rootTopicInstanceName)).onDispatch();
 
         // garbage collect orphaned instances
 
@@ -396,6 +401,7 @@ export abstract class Topic <
 
     public async dispatchTo (
         topicInstanceName: string | undefined,
+        activity?: Activity,
     ) {
         if (!topicInstanceName)
             return false;
@@ -405,9 +411,9 @@ export abstract class Topic <
         if (!instance)
             return false;
 
-        const topic = this.loadTopic(instance);
+        const topic = await this.loadTopic(instance, activity);
 
-        if (!topic.begun)
+        if (!topic.started)
             return false;
 
         // await topic.sendTelemetry(context, instance, 'onReceive.start');
@@ -458,28 +464,47 @@ export abstract class Topic <
     //     });
     // }
 
-    public async clearChildren () {
-
-        for (const child in this.children) {
-            Topic.deleteInstance(this.context, child);
-        }
-
-        this.children = [];
+    public get hasChildren () {
+        return this.children.length !== 0;
     }
 
-    public async removeChild (
+    public clearChildren () {
+        if (this.hasChildren) {
+            for (const child in this.children) {
+                Topic.deleteInstance(this.context, child);
+            }
+
+            this.children = [];
+        }
+    }
+
+    public get child () {
+        return this.hasChild ? this.children[0] : undefined;
+    }
+
+    public get hasChild () {
+        return this.children.length === 1;
+    }
+
+    public set child (
+        child: string | undefined,
+    ) {
+        this.clearChildren();
+
+        if (child)
+            this.children[0] = child;
+    }
+
+    public clearChild () {
+        this.clearChildren();
+    }
+
+    public removeChild (
         child: string,
     ) {
         Topic.deleteInstance(this.context, child);
-        this.children = this.children.filter(_child => _child !== child);
-    }
 
-    public setChild (
-        childtopicInstanceName: string | undefined,
-    ) {
-        this.clearChildren();
-        if (childtopicInstanceName)
-            this.children[0] = childtopicInstanceName;
+        this.children = this.children.filter(_child => _child !== child);
     }
 
     async startChild <
@@ -493,31 +518,31 @@ export abstract class Topic <
     ) {
         const topic = await this.createTopicInstanceAndStart(topicClass, startArgs, constructorArgs);
 
-        this.setChild(topic && topic.topicInstanceName);
+        this.child = topic && topic.topicInstanceName;
     }
 
-    public hasChildren () {
-        return this.children.length !== 0;
-    }
-
-    public dispatchToChild () {
-        return this.dispatchTo(this.children.length ? this.children[0] : undefined);
+    public dispatchToChild (
+        activity?: Activity,
+    ) {
+        return this.dispatchTo(this.hasChild ? this.child : undefined, activity);
     }
 
     public async tryTriggers () {
         const results = (await Promise.all(this
             .children
-            .map(child => this.loadTopic(child).trigger().then(result => ({
-                child,
-                result: result || { score: 0}
-            })))
+            .map(child => this.loadTopic(child)
+                .then(topic => topic.trigger())
+                .then(result => ({
+                    child,
+                    result: result || { score: 0}
+                }))
+            )
         ))
         .filter(i => i.result.score > 0)
         .sort((a, b) => b.result.score - a.result.score);
 
         if (results.length) {
-            await this
-                .loadTopic(results[0].child)
+            await (await this.loadTopic(results[0].child))
                 .start(results[0].result.startArgs);
 
             return true;
