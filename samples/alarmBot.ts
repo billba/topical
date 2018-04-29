@@ -109,12 +109,7 @@ class AlarmBot extends Topic<any, AlarmBotState> {
     }
 
     async onDispatch () {
-        if (this.text === 'time') {
-            this.send(`The current time is ${new Date().toLocaleTimeString()}.`);
-            return;
-        }
-
-        if (await this.dispatchTo(this.children[1]))
+        if (await this.dispatchToChild())
             return;
 
         if (this.text) {
