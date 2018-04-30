@@ -1,5 +1,5 @@
 import { Promiseable, Activity, TurnContext, Storage, ConversationState, ResourceResponse } from 'botbuilder';
-import { toPromise, returnsPromiseVoid, Telemetry, TelemetryAction } from './topical';
+import { toPromise, Telemetry, TelemetryAction } from './topical';
 
 export enum TopicLifecycle {
     created,
