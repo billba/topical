@@ -82,7 +82,7 @@ const topicInstanceName = this.createTopicInstance(YourTopicHere, constructorArg
 Once a topic has been created, you can ask *Topical* to construct an instance of its class:
 
 ```ts
-const topic = this.loadTopic(topicInstanceName);
+const topic = await this.loadTopic(topicInstanceName);
 ```
 
 ### Recreating a topic
