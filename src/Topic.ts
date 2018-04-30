@@ -12,7 +12,7 @@ export interface TopicInstance {
     children: string[];
 
     topicClassName: string;
-    constructorArgs: any,
+    constructorArgs: any;
 
     state: any;
 
@@ -20,7 +20,7 @@ export interface TopicInstance {
 }
 
 interface TopicalConversation {
-    topicInstances: Record<string, TopicInstance>,
+    topicInstances: Record<string, TopicInstance>;
     rootTopicInstanceName: string;
 }
 
@@ -45,7 +45,7 @@ export type GetContext <
 
 export interface TopicInitOptions {
     telemetry: Telemetry;
-    getContext: GetContext<any>,
+    getContext: GetContext<any>;
 }
 
 export interface StartScore <Start> {
