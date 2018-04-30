@@ -523,7 +523,7 @@ export abstract class Topic <
         activity?: Activity,
         args?: any,
     ) {
-        return this.dispatchTo(this.hasChild ? this.child : undefined, activity, args);
+        return this.dispatchTo(this.child, activity, args);
     }
 
     // These five default methods are optionally overrideable by subclasses
