@@ -294,7 +294,7 @@ export abstract class Topic <
         return topic;
     }
 
-    protected static deleteInstance (
+    protected static deleteTopicInstance (
         context: TurnContext,
         topicInstanceName: string,
     ) {
@@ -381,8 +381,8 @@ export abstract class Topic <
         // deorphanize(roottopicInstanceName);
 
         // for (const orphan of Object.keys(orphans)) {
-        //     console.warn(`Garbage collecting instance ${orphan} -- you should have called Topic.deleteInstance()`)
-        //     Topic.deleteInstance(context, orphan);
+        //     console.warn(`Garbage collecting instance ${orphan} -- you should have called Topic.deleteTopicInstance()`)
+        //     Topic.deleteTopicInstance(context, orphan);
         // }
 
         // await topic.sendTelemetry(context, instance, 'endOfTurn');
@@ -450,7 +450,7 @@ export abstract class Topic <
     public clearChildren () {
         if (this.hasChildren) {
             for (const child in this.children) {
-                Topic.deleteInstance(this.context, child);
+                Topic.deleteTopicInstance(this.context, child);
             }
 
             this.children = [];
@@ -460,7 +460,7 @@ export abstract class Topic <
     public removeChild (
         child: string,
     ) {
-        Topic.deleteInstance(this.context, child);
+        Topic.deleteTopicInstance(this.context, child);
 
         this.children = this.children.filter(_child => _child !== child);
     }
