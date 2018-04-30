@@ -50,22 +50,20 @@ export abstract class Prompt <
         const result = await this.validator.validate(this.context.activity);
 
         if (!result.reason)
-            return this.returnToParent({
+            this.end({
                 args: this.state.args,
                 result
             });
-
-        if (++ this.state.turns === this.maxTurns) {
-            return this.returnToParent({
+        else if (++ this.state.turns === this.maxTurns)
+            this.end({
                 args: this.state.args,
                 result: {
                     value: result.value,
                     reason: 'too_many_attempts',
                 }
             });
-        }
-
-        return this.prompter(result);
+        else
+            this.prompter(result);
     }
 
     maxTurns = Number.MAX_SAFE_INTEGER;

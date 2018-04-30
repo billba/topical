@@ -1,6 +1,12 @@
 import { Promiseable, Activity, TurnContext, Storage, ConversationState, ResourceResponse } from 'botbuilder';
 import { toPromise, returnsPromiseVoid, Telemetry, TelemetryAction } from './topical';
 
+export enum TopicLifecycle {
+    created,
+    started,
+    ended,
+}
+
 export interface TopicInstance {
     topicInstanceName: string;
     children: string[];
@@ -10,18 +16,12 @@ export interface TopicInstance {
 
     state: any;
 
-    started: boolean;
+    lifecycle: TopicLifecycle;
 }
 
 interface TopicalConversation {
     topicInstances: Record<string, TopicInstance>,
     rootTopicInstanceName: string;
-}
-
-enum TopicReturnStatus {
-    noReturn,
-    signalled,
-    succeeded,
 }
 
 export interface Topicable <
@@ -119,13 +119,11 @@ export abstract class Topic <
     }
 
     public get started () {
-        return this.topicInstance.started;
+        return this.topicInstance.lifecycle === TopicLifecycle.started;
     }
 
-    public set started (
-        started: boolean,
-    ) {
-        this.topicInstance.started = started;
+    public get ended () {
+        return this.topicInstance.lifecycle === TopicLifecycle.ended;
     }
 
     public get children () {
@@ -138,7 +136,6 @@ export abstract class Topic <
         this.topicInstance.children = children;
     }
 
-    private returnStatus = TopicReturnStatus.noReturn;
     public return?: Return;
 
     private topicInstance!: TopicInstance;
@@ -181,7 +178,7 @@ export abstract class Topic <
             constructorArgs,
             children: [],
             state: {},
-            started: false,
+            lifecycle: TopicLifecycle.created,
         }
 
         Topic.topicalConversationState.get(context)!.topicInstances[topicInstanceName] = instance;
@@ -198,6 +195,13 @@ export abstract class Topic <
     ): string {
 
         return (topicClass as any).createTopicInstance(this.context, constructorArgs);
+    }
+
+    recreate() {
+        this.clearChildren();
+
+        this.topicInstance.state = {};
+        this.topicInstance.lifecycle = TopicLifecycle.created;
     }
 
     static async loadTopic <Context extends TurnContext> (
@@ -246,19 +250,27 @@ export abstract class Topic <
 
     async start (
         startArgs?: Start
-    ): Promise<boolean> {
+    ) {
         // await this.sendTelemetry(context, newInstance, 'init.start');
 
-        this.started = true;
+        if (this.topicInstance.lifecycle !== TopicLifecycle.created)
+            this.recreate();
+
+        this.topicInstance.lifecycle = TopicLifecycle.started;
 
         await this.onStart(startArgs);
-
-        if (await this.returnedToParent())
-            return false;
+        await this.notifyParentIfEnded();
 
         // await this.sendTelemetry(context, newInstance, 'init.end');    
+    }
 
-        return true;
+    end (
+        returnArgs?: Return
+    ) {
+        this.clearChildren();
+
+        this.return = returnArgs;
+        this.topicInstance.lifecycle = TopicLifecycle.ended;
     }
 
     async createTopicInstanceAndStart <
@@ -269,23 +281,15 @@ export abstract class Topic <
         topicClass: T,
         startArgs?: Start,
         constructorArgs?: Constructor,
-    ): Promise<Topic<any, any, any, Constructor, Context> | undefined> {
+    ): Promise<Topic<any, any, any, Constructor, Context>> {
 
-        const topic = await this.loadTopic(this.createTopicInstance(topicClass, constructorArgs));
+        const topicInstanceName = this.createTopicInstance(topicClass, constructorArgs);
 
-        return await topic.start(startArgs)
-            ? topic
-            : undefined;
-    }
+        const topic = await this.loadTopic(topicInstanceName);
 
-    public returnToParent(
-        args?: Return,
-    ) {
-        if (this.returnStatus != TopicReturnStatus.noReturn)
-            throw "already returned";
+        await topic.start(startArgs)
 
-        this.returnStatus = TopicReturnStatus.signalled;
-        this.return = args;
+        return topic;
     }
 
     protected static deleteInstance (
@@ -327,7 +331,8 @@ export abstract class Topic <
         topicalConversation.rootTopicInstanceName = (this as any).createTopicInstance(context, constructorArgs);
 
         const topic = await Topic.loadTopic(context, topicalConversation.rootTopicInstanceName!);
-        if (!await topic.start(startArgs))
+        await topic.start(startArgs);
+        if (topic.ended)
             throw "Root topics shouldn't even returnToParent."
 
         // const instance = Topic.getInstanceFromName(context, topical.roottopicInstanceName);
@@ -403,43 +408,34 @@ export abstract class Topic <
         if (!topicInstanceName)
             return false;
 
-        const instance = Topic.getTopicInstanceFromName(this.context, topicInstanceName);
+        const topicInstance = Topic.getTopicInstanceFromName(this.context, topicInstanceName);
 
-        if (!instance)
-            return false;
-
-        const topic = await this.loadTopic(instance, activity);
+        const topic = await this.loadTopic(topicInstance, activity);
 
         if (!topic.started)
             return false;
 
         // await topic.sendTelemetry(context, instance, 'onReceive.start');
         await topic.onDispatch(args);
-        await topic.returnedToParent();
+        await topic.notifyParentIfEnded();
         // await topic.sendTelemetry(context, instance, 'onReceive.end');
         
         return true;
     }
 
-    private async returnedToParent (): Promise<boolean> {
-
-        if (this.returnStatus !== TopicReturnStatus.signalled)
-            return false;
+    async notifyParentIfEnded () {
+        
+        if (!this.ended)
+            return;
 
         if (!this.parent)
             throw `orphan ${this.topicInstanceName} attempted to returnToParent()`;
 
-        Topic.deleteInstance(this.context, this.topicInstanceName);
-        this.returnStatus = TopicReturnStatus.succeeded;
-
         // await parentTopic.sendTelemetry(context, parentInstance, 'onChildReturn.start');
 
         await this.parent.onChildReturn(this);
-        await this.parent.returnedToParent();
 
         // await parentTopic.sendTelemetry(context, parentInstance, 'onChildReturn.end');
-
-        return true;
     }
 
     // private async sendTelemetry (
@@ -475,6 +471,16 @@ export abstract class Topic <
         }
     }
 
+    public removeChild (
+        child: string,
+    ) {
+        Topic.deleteInstance(this.context, child);
+
+        this.children = this.children.filter(_child => _child !== child);
+    }
+
+    // helpers for the single-child pattern
+
     public get child () {
         return this.hasChild ? this.children[0] : undefined;
     }
@@ -496,14 +502,6 @@ export abstract class Topic <
         this.clearChildren();
     }
 
-    public removeChild (
-        child: string,
-    ) {
-        Topic.deleteInstance(this.context, child);
-
-        this.children = this.children.filter(_child => _child !== child);
-    }
-
     async startChild <
         T extends Topicable<Start, any, any, Constructor, Context>,
         Start,
@@ -515,7 +513,10 @@ export abstract class Topic <
     ) {
         const topic = await this.createTopicInstanceAndStart(topicClass, startArgs, constructorArgs);
 
-        this.child = topic && topic.topicInstanceName;
+        if (topic.ended)
+            this.clearChild();
+        else
+            this.child = topic.topicInstanceName;
     }
 
     public dispatchToChild (

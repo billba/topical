@@ -45,7 +45,7 @@ export class SimpleForm extends Topic<SimpleFormSchema, SimpleFormState, SimpleF
         }
 
         if (!this.hasChild) {
-            this.returnToParent(this.state.form);
+            this.end(this.state.form);
         }
     }
 

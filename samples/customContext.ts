@@ -9,7 +9,7 @@ class Child extends Topic<any, any, any, any, CustomContext> {
 
     async onStart() {
         await this.send(this.context.foo);
-        this.returnToParent();
+        this.end();
     }
 }
 Child.register();

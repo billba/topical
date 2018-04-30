@@ -63,7 +63,7 @@ export class Waterfall <
 
     async onDispatch() {
         if (await this.runWaterfall(next => this.waterfall(next)))
-            this.returnToParent();
+            this.end();
     }
 
     async onChildReturn (child: Prompt<any, any, any, Context>) {

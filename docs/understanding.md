@@ -15,6 +15,12 @@ interface TopicalConversation {
     rootTopicInstanceName: string;
 }
 
+enum TopicLifecycle {
+    created,
+    started,
+    ended,
+}
+
 interface TopicInstance {
     topicInstanceName: string;
     children: string[];
@@ -24,7 +30,7 @@ interface TopicInstance {
 
     state: any;
 
-    started: boolean;
+    lifecycle: TopicLifestyle;
 }
 ```
 
@@ -63,9 +69,9 @@ You create a topic by calling
 const topicInstanceName = YourTopicHere.createTopicInstance(context, constructorArgs);
 ```
 
-A `TopicInstance` is created with `constructorArgs` and a unique `topicInstanceName`. Its `topicClassName` is set to `YourTopicHere`. `children` is set to an an empty array, `state` is set to an empty object, and `started` is set to false. This `TopicInstance` is then added to the `topicInstances` dictionary using `context`. 
+A `TopicInstance` is created with `constructorArgs` and a unique `topicInstanceName`. Its `topicClassName` is set to `"YourTopicHere"`. `children` is set to an an empty array, `state` is set to an empty object, and `lifecycle` is set to `TopicLifecycle.created`. This `TopicInstance` is then added to the `topicInstances` dictionary using `context`. 
 
-If you're already in a topic, you can achieve the same results by calling:
+If you're already in a topic, you can achieve the same results with slightly fewer characters by calling:
 
 ```ts
 const topicInstanceName = this.createTopicInstance(YourTopicHere, constructorArgs);
@@ -76,38 +82,66 @@ const topicInstanceName = this.createTopicInstance(YourTopicHere, constructorArg
 Once a topic has been created, you can ask *Topical* to construct an instance of its class:
 
 ```ts
-const topic = this.loadTopic(child);
+const topic = this.loadTopic(topicInstanceName);
 ```
+
+### Recreating a topic
+
+You can return a topic to its "just created" state:
+
+```ts
+topic.recreate();
+```
+
+This clears its children, empties `state`, and sets the `lifecycle` to `created`.
+
+Now the topic is ready to be `start`ed.
 
 ### Starting a topic
 
 Once a topic has been created, and loaded, you can start it:
 
 ```ts
-const ongoing = await topic.start(startArgs);
+await topic.start(startArgs);
 ```
 
-*Topical* calls `topic.onStart(startArgs)`. If `onStart` called `returnToParent()` then its `TopicInstance` is deleted, and `start` returns false. Otherwise `start` returns true.
-
-The exception is the root topic, which has no parent. So you have to do:
-
-```ts
-const topic = await Topic.startTopicInstance(context, topicInstanceName, startArgs);
-```
+*Topical* calls `topic.onStart(startArgs)` (and does some other stuff).
 
 As a convenience, you can create and start a child topic in one fell swoop:
 
 ```ts
-const topic = await this.createAndStartTopicInstance(YourTopicHere, startArgs, constructorArgs);
+const topic = await this.createTopicInstanceAndStart(YourTopicHere, startArgs, constructorArgs);
 ```
 
-This returns the resultant topic, or `undefined` if `onStart` called `returnToParent()`.
+This returns the resultant topic.
 
-Finally, if you have a single-child topic, you can create, start, and set a child topic (potentially replacing another one) all at once.
+Keep in mind that a topic can end itself in its `onStart` method.
+
+If you have a single-child topic, you can create, start, and set a child topic (potentially replacing another one) all at once.
 
 ```ts
 await this.startChild(YourTopicHere, startArgs, constructorArgs);
 ```
+
+In this case, if the child topic ended itself, `this.child` is set to `undefined`.
+
+### Restarting a topic
+
+Any topic can be restarted by calling `topic.start`/`this.startChild`. This calls `recreate` if the topic's lifecycle is not `created`.
+
+### Ending a topic
+
+A topic can end itself:
+
+```ts
+this.end(returnArgs);
+```
+
+This sets the topic's `lifecycle` to `ended`, clears its children, and sets its `return` property to `returnArgs`.
+
+An ended topic can always be recreated or restarted.
+
+**Advanced topic:** Ending a topic does not automatically notify its parent that it has ended. This happens in `start` and `dispatchTo`/`dispatchToChild`, each of which calls `this.notifyParentIfEnded()`, which in turn calls the parent topic's `onChildReturn` method. If you initiate a call into a topic through a different method, e.g. `topic.yourCustomMethod()`, and that method might end that topic, it will need to call `this.notifyParentIfEnded()`.
 
 ### Dispatching to a topic
 
