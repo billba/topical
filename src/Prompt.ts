@@ -50,12 +50,12 @@ export abstract class Prompt <
         const result = await this.validator.validate(this.context.activity);
 
         if (!result.reason)
-            this.end({
+            await this.end({
                 args: this.state.args,
                 result
             });
         else if (++ this.state.turns === this.maxTurns)
-            this.end({
+            await this.end({
                 args: this.state.args,
                 result: {
                     value: result.value,

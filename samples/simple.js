@@ -13,7 +13,7 @@ class ChildTopic extends Topic {
         if (Number.isNaN(num))
             await this.send(`Please supply a number.`);
         else
-            return this.returnToParent({
+            return this.end({
                 num
             });
     }

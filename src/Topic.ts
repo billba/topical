@@ -259,18 +259,20 @@ export abstract class Topic <
         this.topicInstance.lifecycle = TopicLifecycle.started;
 
         await this.onStart(startArgs);
-        await this.notifyParentIfEnded();
 
         // await this.sendTelemetry(context, newInstance, 'init.end');    
     }
 
-    end (
+    async end (
         returnArgs?: Return
     ) {
         this.clearChildren();
 
         this.return = returnArgs;
         this.topicInstance.lifecycle = TopicLifecycle.ended;
+
+        if (this.parent)
+            await this.parent.onChildReturn(this);
     }
 
     async createTopicInstanceAndStart <
@@ -333,7 +335,7 @@ export abstract class Topic <
         const topic = await Topic.loadTopic(context, topicalConversation.rootTopicInstanceName!);
         await topic.start(startArgs);
         if (topic.ended)
-            throw "Root topics shouldn't even returnToParent."
+            throw "Root topics shouldn't end (this may change in the future)."
 
         // const instance = Topic.getInstanceFromName(context, topical.roottopicInstanceName);
         // const topic = Topic.load(context, instance);
@@ -417,25 +419,9 @@ export abstract class Topic <
 
         // await topic.sendTelemetry(context, instance, 'onReceive.start');
         await topic.onDispatch(args);
-        await topic.notifyParentIfEnded();
         // await topic.sendTelemetry(context, instance, 'onReceive.end');
         
         return true;
-    }
-
-    async notifyParentIfEnded () {
-        
-        if (!this.ended)
-            return;
-
-        if (!this.parent)
-            throw `orphan ${this.topicInstanceName} attempted to returnToParent()`;
-
-        // await parentTopic.sendTelemetry(context, parentInstance, 'onChildReturn.start');
-
-        await this.parent.onChildReturn(this);
-
-        // await parentTopic.sendTelemetry(context, parentInstance, 'onChildReturn.end');
     }
 
     // private async sendTelemetry (

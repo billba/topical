@@ -26,7 +26,7 @@ class ShowAlarms extends Topic<ShowAlarmStart> {
         else
             await this.send(`You have the following alarms set:\n${listAlarms(args.alarms)}`);
 
-        this.end();
+        await this.end();
     }
 }
 ShowAlarms.register();
@@ -52,7 +52,8 @@ class DeleteAlarm extends Topic<DeleteAlarmStart, DeleteAlarmState, DeleteAlarmR
     ) {
         if (args.alarms.length === 0) {
             await this.send(`You don't have any alarms.`);
-            return this.end();
+            await this.end();
+            return;
         }
 
         this.state.alarms = args.alarms;
@@ -80,7 +81,7 @@ class DeleteAlarm extends Topic<DeleteAlarmStart, DeleteAlarmState, DeleteAlarmR
 
             case 'confirm':
                 this.clearChild();
-                this.end(child.return!.result.value === 'yes'
+                await this.end(child.return!.result.value === 'yes'
                     ? {
                         alarmName: this.state.alarmName
                     }
