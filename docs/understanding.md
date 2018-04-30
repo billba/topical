@@ -57,7 +57,7 @@ MyTopic.register();
 
 ## Working with topics
 
-**You never construct instances your `Topic` subclasses yourself.** Instead, *Topical* does it for you, using the `topicInstanceName` to look up the `TopicInstance`, then using its `topicClass` to look up the actual class, then constructs it for you using `constructorArgs` as the argument to its constructor.
+**You never construct instances of your `Topic` subclasses yourself.** Instead, *Topical* does it for you, using the `topicInstanceName` to look up the `TopicInstance`, then using its `topicClass` to look up the actual class, then constructs it for you using `constructorArgs` as the argument to its constructor.
 
 ## Topic creation & lifecycle
 
