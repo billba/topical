@@ -241,11 +241,11 @@ export abstract class Topic <
     }
 
     loadTopic (
-        instance: string | TopicInstance,
+        topicInstance: string | TopicInstance,
         activity?: Activity,
     ): Promise<Topic<any, any, any, any, Context>> {
 
-        return Topic.loadTopic(this, instance, activity);
+        return Topic.loadTopic(this, topicInstance, activity);
     }
 
     async start (
@@ -324,7 +324,7 @@ export abstract class Topic <
         if (!Topic.topicalConversationState)
             throw `You must call Topic.init before calling ${this.name}.do`;
 
-        const topicalConversation = await Topic.topicalConversationState.read(context) as Partial<TopicalConversation>;
+        const topicalConversation = await Topic.topicalConversationState.read(context);
 
         if (topicalConversation.rootTopicInstanceName)
             throw `You must only call ${this.name}.start once.`;
@@ -333,7 +333,9 @@ export abstract class Topic <
         topicalConversation.rootTopicInstanceName = (this as any).createTopicInstance(context, constructorArgs);
 
         const topic = await Topic.loadTopic(context, topicalConversation.rootTopicInstanceName!);
+
         await topic.start(startArgs);
+
         if (topic.ended)
             throw "Root topics shouldn't end (this may change in the future)."
 
@@ -354,12 +356,12 @@ export abstract class Topic <
         if (this === Topic as any)
             throw "You can only `dispatch' a child of Topic.";
 
-        const topical = await Topic.topicalConversationState.read(context) as TopicalConversation;
+        const topicalConversation = await Topic.topicalConversationState.read(context);
 
-        if (!topical.rootTopicInstanceName)
-            throw `You must call ${this.name}.start before calling ${this.name}.onDispatch.`;
+        if (!topicalConversation.rootTopicInstanceName)
+            throw `You must call ${this.name}.start before calling ${this.name}.dispatch.`;
 
-        await (await Topic.loadTopic(context, topical.rootTopicInstanceName)).onDispatch();
+        await (await Topic.loadTopic(context, topicalConversation.rootTopicInstanceName)).onDispatch();
 
         // garbage collect orphaned instances
 
@@ -458,11 +460,11 @@ export abstract class Topic <
     }
 
     public removeChild (
-        child: string,
+        topicInstanceName: string,
     ) {
-        Topic.deleteTopicInstance(this.context, child);
+        Topic.deleteTopicInstance(this.context, topicInstanceName);
 
-        this.children = this.children.filter(_child => _child !== child);
+        this.children = this.children.filter(_child => _child !== topicInstanceName);
     }
 
     // helpers for the single-child pattern
@@ -488,7 +490,7 @@ export abstract class Topic <
         this.clearChildren();
     }
 
-    async startChild <
+    public async startChild <
         T extends Topicable<Start, any, any, Constructor, Context>,
         Start,
         Constructor,
