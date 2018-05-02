@@ -155,6 +155,8 @@ Note: all these are console bots, and use the helper `consoleOnTurn` described [
 
 [dispatch](/samples/dispatch.ts) demonstrates saving the user's input to be dispatched subsequently. Run `node lib/samples/dispatch.js`
 
+[choices](/samples/choices.ts) demonstrates prompting with choices. Run `node lib/samples/choices.js`
+
 ## Next steps
 
 Read about different [patterns](/docs/patterns.md) that can be implemented with *Topical*.
