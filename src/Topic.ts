@@ -118,6 +118,10 @@ export abstract class Topic <
         return this.topicInstance.topicInstanceName;
     }
 
+    public get constructorArgs () {
+        return this.topicInstance.constructorArgs;
+    }
+
     public get started () {
         return this.topicInstance.lifecycle === TopicLifecycle.started;
     }

@@ -1,4 +1,4 @@
-import { Promiseable, MiddlewareHandler, ConsoleAdapter, TurnContext, Activity } from "botbuilder";
+import { Promiseable, MiddlewareHandler, ConsoleAdapter, TurnContext, Activity, ConversationAccount } from "botbuilder";
 import { Topicable, Topic, Score, StartScore, DispatchScore } from "./topical";
 
 export const toPromise = <T> (t: Promiseable<T>) => (t as any).then ? (t as Promise<T>) : Promise.resolve<T>(t);
@@ -37,12 +37,13 @@ export const consoleOnTurn = async (
     const conversationUpdate: Partial<Activity> = {
         type: 'conversationUpdate',
         channelId: 'console',
-        from: { id: 'user', name: 'User1' },
-        conversation:  { id: 'convo1', name:'', isGroup: false },
+        from: { id: 'user', name: 'User1', role: 'role' },
+        conversation:  { id: 'convo1', name:'', isGroup: false, conversationType: 'conversation', role: 'bot' } as ConversationAccount,
         serviceUrl: '',
         recipient: {
             id: 'bot',
             name: 'bot',
+            role: 'bot',
         },
     };
 
@@ -51,6 +52,7 @@ export const consoleOnTurn = async (
             membersAdded: [{
                 id: 'bot',
                 name: 'bot',
+                role: 'bot',
             }],
     }));
 
@@ -59,6 +61,7 @@ export const consoleOnTurn = async (
             membersAdded: [{
                 id: 'user',
                 name: 'user',
+                role: 'user,'
             }],
     }));
 

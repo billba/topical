@@ -1,5 +1,6 @@
-import { Prompt, hasText, hasNumber, Culture, Validator } from './topical';
-import { TurnContext } from 'botbuilder';
+import { Prompt, hasText, hasNumber, Culture, Validator, hasChoice, ValidatorResult } from './topical';
+import { TurnContext, Activity } from 'botbuilder';
+import { FoundChoice, ChoiceFactoryOptions, FindChoicesOptions, Choice, ChoiceFactory } from 'botbuilder-choices';
 
 export class TextPrompt <
     PromptArgs = any,
@@ -25,3 +26,98 @@ export class NumberPrompt <
     }
 }
 NumberPrompt.register();
+
+/**
+ * Controls the way that choices for a `ChoicePrompt` or yes/no options for a `ConfirmPrompt` are
+ * presented to a user.
+ */
+export enum ListStyle {
+    /** Don't include any choices for prompt. */
+    none,
+
+    /** Automatically select the appropriate style for the current channel. */
+    auto,
+
+    /** Add choices to prompt as an inline list. */
+    inline,
+
+    /** Add choices to prompt as a numbered list. */
+    list,
+
+    /** Add choices to prompt as suggested actions. */
+    suggestedAction,
+}
+
+async function choiceMessageFactory (
+    context: TurnContext,
+    choices: (string | Choice)[],
+    prompt: Activity | string,
+    speak?: string,
+    options?: ChoiceFactoryOptions,
+    style?: ListStyle,
+) {
+    let msg: Partial<Activity>;
+
+    if (typeof prompt !== 'object') {
+        switch (style) {
+
+            case ListStyle.auto:
+            default:
+                return ChoiceFactory.forChannel(context, choices, prompt, speak, options);
+            
+            case ListStyle.inline:
+                return ChoiceFactory.inline(choices, prompt, speak, options);
+
+            case ListStyle.list:
+                return ChoiceFactory.list(choices, prompt, speak, options);
+
+            case ListStyle.suggestedAction:
+                return ChoiceFactory.suggestedAction(choices, prompt, speak);
+
+            case ListStyle.none:
+                msg = {
+                    type: 'message',
+                    text: prompt
+                };
+                break;
+            }
+    } else {
+        msg = { ... prompt }
+    }
+
+    if (speak)
+        msg.speak = speak;
+    
+    return msg;
+}
+
+export interface ChoicePromptArgs {
+    prompt: string | Activity;
+    speak?: string;
+    style?: ListStyle; 
+    options?: ChoiceFactoryOptions; 
+    name?: string;
+}
+
+async function choicePrompter (
+    this: Prompt<FoundChoice, ChoicePromptArgs>,
+    result?: ValidatorResult<FoundChoice>,
+) {
+    await this.send(await choiceMessageFactory(this.context, this.constructorArgs.choices, this.state.args!.prompt, this.state.args!.speak, this.state.args!.options, this.state.args!.style));
+}
+
+export interface ChoiceConstructor {
+    choices: (string | Choice)[];
+    options?: FindChoicesOptions;
+}
+
+export class ChoicePrompt <
+    Context extends TurnContext = TurnContext,
+> extends Prompt<FoundChoice, ChoicePromptArgs, ChoiceConstructor, Context> {
+    constructor(construct: ChoiceConstructor) {
+        super(construct);
+        this.validator = hasChoice(construct.choices, construct.options);
+        this.prompter = choicePrompter;
+    }
+}
+ChoicePrompt.register();

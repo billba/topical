@@ -8,7 +8,7 @@ export interface ValidatorResult <V> {
 
 export type Validate <V> = (activity: Partial<Activity>) => Promiseable<ValidatorResult<V> | V>;
 export type StrictlyValidate <V> = (activity: Partial<Activity>) => Promise<ValidatorResult<V>>;
-export type Constrain <V> = (activity: Partial<Activity>, value: V) => Promiseable<boolean | string | ValidatorResult<V>>;
+export type Constrain <V> = (activity: Partial<Activity>, value: V) => Promiseable<boolean | string>;
 export type Transform <V, W> = (activity: Partial<Activity>, value: V) => Promiseable<ValidatorResult<W> | W>;
 
 export class Validator <V> {
@@ -45,13 +45,21 @@ export class Validator <V> {
             const constraintResult = await constrain(activity, validateResult.value!);
 
             if (constraintResult === true)
-                return { value : validateResult.value }
+                return {
+                    value : validateResult.value
+                }
             else if (constraintResult === false || constraintResult == null)
-                return { reason: 'failed_constraint' }
+                return { 
+                    value: validateResult.value,
+                    reason: 'failed_constraint'
+                }
             else if (typeof constraintResult === 'string')
-                return { reason: constraintResult }
+                return {
+                    value: validateResult.value,
+                    reason: constraintResult
+                }
             else
-                return constraintResult;
+                throw "unexpected constraint result ${constraintResult}";
         });
     }
 
