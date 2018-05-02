@@ -93,6 +93,7 @@ async function choiceMessageFactory (
 
 export interface ChoicePromptArgs {
     prompt: string | Activity;
+    reprompt?: string | Activity;
     speak?: string;
     style?: ListStyle; 
     options?: ChoiceFactoryOptions; 
@@ -103,7 +104,16 @@ async function choicePrompter (
     this: Prompt<FoundChoice, ChoicePromptArgs>,
     result?: ValidatorResult<FoundChoice>,
 ) {
-    await this.send(await choiceMessageFactory(this.context, this.constructorArgs.choices, this.state.args!.prompt, this.state.args!.speak, this.state.args!.options, this.state.args!.style));
+    await this.send(await choiceMessageFactory(
+        this.context,
+        this.constructorArgs.choices,
+        result && this.state.args!.reprompt
+            ? this.state.args!.reprompt!
+            : this.state.args!.prompt,
+        this.state.args!.speak,
+        this.state.args!.options,
+        this.state.args!.style
+    ));
 }
 
 export interface ChoiceConstructor {
