@@ -5,7 +5,7 @@ interface FlightsStart {
     destination: string;
 }
 
-class Flights extends Topic {
+class Flights extends Topic<FlightsStart> {
 
     async getStartScore() {
         if (this.text && this.text.includes('flight'))
