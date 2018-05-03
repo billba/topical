@@ -73,8 +73,6 @@ Travel.register();
 
 class Root extends Topic {
 
-    static subtopics = [Travel];
-
     async onStart() {
         await this.send(`Say 'travel' to start (or restart) the travel dialog.`);
     }

@@ -17,8 +17,6 @@ export interface SimpleFormState {
 
 export class SimpleForm extends Topic<SimpleFormSchema, SimpleFormState, SimpleFormData> {
     
-    static subtopics = [TextPrompt];
-
     async onStart(
         schema: SimpleFormSchema,
     ) {

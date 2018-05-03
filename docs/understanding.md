@@ -44,7 +44,7 @@ Topics come in different flavors, each with its own behaviors and state shapes. 
 
 A *Topical* application is a collection of such classes, which are registered by name into a dictionary at application startup. That name corresponds to the `topicClassName` field of each `TopicInstance`.
 
-## Registration and Subtopics
+## Registration
 
 After declaring your subclass of `Topic`, you must register it.
 
