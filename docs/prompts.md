@@ -201,3 +201,26 @@ MyTopic.register();
 ```
 Note that this prompt doesn't require any arguments at all. 
 
+### Prompt Inheritance
+
+In general new prompts should inherit directly from `Prompt`. This is because `maxTurns`, `validator`, and `prompter` are properties, not methods. As a result, if you do:
+
+```ts
+class LongTextPrompt extends TextPrompt {
+    validator = hasText
+        .and((activity, text) => text.length >= 10);
+}
+```
+
+then `validator` will be set twice times. Once in `TextPrompt`'s constructor (which sets it to `hasText`), and once in `LongTextPrompt`. If you then went on to inherit `AllCapsLongTextPrompt` from `LongTextPrompt`, it would be set three times.
+
+For simple validators like `hasText` this is not a big performance problem, but some validators cost more to create than others.
+
+The more performant approach is to inherit from `Prompt`:
+
+```ts
+class LongTextPrompt extends Prompt<string> {
+    validator = hasText
+        .and((activity, text) => text.length >= 10);
+}
+```

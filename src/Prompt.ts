@@ -9,17 +9,6 @@ export interface PromptArgs {
     speakReprompt?: string;
 }
 
-async function defaultPrompter (
-    this: Prompt<any, PromptArgs>,
-    result?: ValidatorResult<any>,
-) {
-    await this.send(
-        result && this.state.args!.reprompt || this.state.args!.prompt,
-        result && this.state.args!.speakReprompt || this.state.args!.speakPrompt,
-        InputHints.ExpectingInput,
-    );
-}
-
 export interface PromptState <Args> {
     turns: number;
     args?: Args;
@@ -36,6 +25,21 @@ export abstract class Prompt <
     Context extends TurnContext = TurnContext,
 > extends Topic<Args, PromptState<Args>, PromptReturn<V, Args>, Context> {
 
+
+    private async defaultPrompter (
+        result?: ValidatorResult<any>,
+    ) {
+        await this.send(
+            result && this.state.args!.reprompt || this.state.args!.prompt,
+            result && this.state.args!.speakReprompt || this.state.args!.speakPrompt,
+            InputHints.ExpectingInput,
+        );
+    }
+
+    private _prompter(result?: ValidatorResult<V>) {
+        return (this.prompter || this.defaultPrompter)(result);
+    }
+
     async onStart (
         args?: Args,
     ) {
@@ -44,10 +48,13 @@ export abstract class Prompt <
             turns: 0,
         }
 
-        await this.prompter();
+        await this._prompter();
     }
 
     async onDispatch () {
+
+        if (!this.validator)
+            throw `Prompt ${this.constructor.name} has no validator.`;
 
         const result = await this.validator.validate(this.context.activity);
 
@@ -65,14 +72,12 @@ export abstract class Prompt <
                 }
             });
         else
-            this.prompter(result);
+            await this._prompter(result);
     }
 
     maxTurns = Number.MAX_SAFE_INTEGER;
  
-    prompter: (result?: ValidatorResult<V>) => Promise<void> = defaultPrompter;
+    prompter?: (result?: ValidatorResult<V>) => Promise<void>;
 
-    validator = new Validator<V>(() => {
-        throw "no validator provided";
-    });
+    validator?: Validator<V>;
 }

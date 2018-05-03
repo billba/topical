@@ -35,9 +35,7 @@ class FavoriteNumber extends Topic  {
         if (child instanceof PromptForCulture) {
             await this.startChild(NumberPrompt, {
                 prompt: `What's your favorite number?`
-            }, {
-                culture: child.return!.result.value!, 
-            });
+            }, child.return!.result.value!);
         } else if (child instanceof NumberPrompt) {
             await this.send(`${child.return!.result.value}? That's my favorite too!`);
             await this.next();

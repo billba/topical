@@ -3,7 +3,7 @@ import { TurnContext, Activity, InputHints } from 'botbuilder';
 import { FoundChoice, ChoiceFactoryOptions, FindChoicesOptions, Choice, ChoiceFactory } from 'botbuilder-choices';
 
 export class TextPrompt <
-    PromptArgs = any,
+    PromptArgs = PromptArgs,
     Context extends TurnContext = TurnContext,
 > extends Prompt<string, PromptArgs, Context> {
 
@@ -11,18 +11,14 @@ export class TextPrompt <
 }
 TextPrompt.register();
 
-export interface CultureConstructor {
-    culture: string;
-}
-
 export class NumberPrompt <
-    PromptArgs = any,
+    PromptArgs = PromptArgs,
     Context extends TurnContext = TurnContext,
 > extends Prompt<number, PromptArgs, Context> {
 
-    constructor(construct: CultureConstructor) {
+    constructor(culture: string) {
         super();
-        this.validator = hasNumber(construct.culture);
+        this.validator = hasNumber(culture);
     }
 }
 NumberPrompt.register();
