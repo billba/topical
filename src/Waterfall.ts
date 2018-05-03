@@ -7,7 +7,7 @@ export interface WaterfallState {
 
 export type Step = (value?: any) => Promise<any>;
 
-export class Waterfall <
+export abstract class Waterfall <
     Start = any,
     State extends WaterfallState = WaterfallState,
     Return = any,
