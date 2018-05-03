@@ -101,12 +101,12 @@ export interface ChoicePromptArgs {
 }
 
 async function choicePrompter (
-    this: Prompt<FoundChoice, ChoicePromptArgs>,
+    this: ChoicePrompt,
     result?: ValidatorResult<FoundChoice>,
 ) {
     await this.send(await choiceMessageFactory(
         this.context,
-        this.constructorArgs.choices,
+        this.choices,
         result && this.state.args!.reprompt
             ? this.state.args!.reprompt!
             : this.state.args!.prompt,
@@ -124,8 +124,11 @@ export interface ChoiceConstructor {
 export class ChoicePrompt <
     Context extends TurnContext = TurnContext,
 > extends Prompt<FoundChoice, ChoicePromptArgs, Context> {
+    choices: (string | Choice)[];
+
     constructor(construct: ChoiceConstructor) {
         super();
+        this.choices = construct.choices;
         this.validator = hasChoice(construct.choices, construct.options);
         this.prompter = choicePrompter;
     }
