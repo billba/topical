@@ -67,11 +67,7 @@ export abstract class Topic <
     private static topicalConversationState: ConversationState<TopicalConversation>;
 
     private static telemetry: Telemetry;
-    private static getContext: GetContext<any> = (context, activity) => {
-        const newContext = new TurnContext(context);
-        (newContext as any)._activity = activity;
-        return Promise.resolve(newContext);
-    };
+    private static getContext: GetContext<any> = (context, activity) => Promise.resolve(new TurnContext(context.adapter, activity));
 
     public static init (
         storage: Storage,
@@ -219,6 +215,9 @@ export abstract class Topic <
             context = parentOrContext;
         }
 
+        if (activity)
+            context = await Topic.getContext(context, activity);
+
         if (typeof topicInstance === 'string')
             topicInstance = Topic.getTopicInstanceFromName(context, topicInstance);
 
@@ -228,11 +227,11 @@ export abstract class Topic <
 
         const topic = new T(topicInstance.constructorArgs) as Topic<any, any, any, Context>;
 
-        topic.context = activity ? await Topic.getContext(context, activity) : context;
+        topic.context = context;
         topic.parent = parent;
         topic.topicInstance = topicInstance;
 
-        topic.text = topic.context.activity.type === 'message' ? topic.context.activity.text.trim() : undefined;
+        topic.text = context.activity.type === 'message' ? context.activity.text.trim() : undefined;
         topic.send = (activityOrText, speak, inputHint) => context.sendActivity(activityOrText, speak, inputHint);
 
         return topic;
