@@ -31,7 +31,14 @@ class Age extends Waterfall {
             },
 
             async (name: string) => {
+                if (name === 'end') {
+                    await this.send(`goodbye!`);
+                    await this.end();
+                    return;
+                }
+
                 await this.send(`Nice to meet you, ${this.text}!`);
+
                 if (name === 'Bill Barnes')
                     next(51);
                 else

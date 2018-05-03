@@ -49,6 +49,9 @@ export class Waterfall <
 
             await steps[this.state.stepIndex ++](value);
 
+            if (this.ended)
+                return true;
+
             if (this.hasChild)
                 next = false;
         }
@@ -61,7 +64,7 @@ export class Waterfall <
     }
 
     async onDispatch() {
-        if (await this.runWaterfall(next => this.waterfall(next)))
+        if ((await this.runWaterfall(next => this.waterfall(next))) && !this.ended)
             await this.end();
     }
 
