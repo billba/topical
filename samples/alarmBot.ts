@@ -41,11 +41,7 @@ interface DeleteAlarmState {
     child: string;
 }
 
-interface DeleteAlarmReturn {
-    alarmName: string;
-}
-
-class DeleteAlarm extends Topic<DeleteAlarmStart, DeleteAlarmState, DeleteAlarmReturn> {
+class DeleteAlarm extends Topic<DeleteAlarmStart, DeleteAlarmState, string> {
 
     async onStart (
         args: DeleteAlarmStart,
@@ -82,9 +78,7 @@ class DeleteAlarm extends Topic<DeleteAlarmStart, DeleteAlarmState, DeleteAlarmR
             case 'confirm':
                 this.clearChild();
                 await this.end(child.return!.result.value === 'yes'
-                    ? {
-                        alarmName: this.state.alarmName
-                    }
+                    ? this.state.alarmName
                     : undefined
                 )
                 break;
@@ -148,9 +142,9 @@ class AlarmBot extends Topic<any, AlarmBotState> {
         } else if (child instanceof DeleteAlarm) {
             if (child.return) {
                 this.state.alarms = this.state.alarms
-                    .filter(alarm => alarm.name !== child.return!.alarmName);
+                    .filter(alarm => alarm.name !== child.return!);
 
-                await this.send(`Alarm "${child.return!.alarmName}" has been deleted.`)
+                await this.send(`Alarm "${child.return!}" has been deleted.`)
             } else {
                 await this.send(`Okay, the status quo has been preserved.`)
             }
