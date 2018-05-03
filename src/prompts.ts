@@ -1,5 +1,5 @@
 import { Prompt, hasText, hasNumber, Culture, Validator, hasChoice, ValidatorResult, PromptArgs } from './topical';
-import { TurnContext, Activity } from 'botbuilder';
+import { TurnContext, Activity, InputHints } from 'botbuilder';
 import { FoundChoice, ChoiceFactoryOptions, FindChoicesOptions, Choice, ChoiceFactory } from 'botbuilder-choices';
 
 export class TextPrompt <
@@ -63,16 +63,20 @@ async function choiceMessageFactory (
 
             case ListStyle.auto:
             default:
-                return ChoiceFactory.forChannel(context, choices, prompt, speak, options);
+                msg = ChoiceFactory.forChannel(context, choices, prompt, speak, options);
+                break;
             
             case ListStyle.inline:
-                return ChoiceFactory.inline(choices, prompt, speak, options);
+                msg = ChoiceFactory.inline(choices, prompt, speak, options);
+                break;
 
             case ListStyle.list:
-                return ChoiceFactory.list(choices, prompt, speak, options);
+                msg = ChoiceFactory.list(choices, prompt, speak, options);
+                break;
 
             case ListStyle.suggestedAction:
-                return ChoiceFactory.suggestedAction(choices, prompt, speak);
+                msg = ChoiceFactory.suggestedAction(choices, prompt, speak);
+                break;
 
             case ListStyle.none:
                 msg = {
@@ -88,11 +92,12 @@ async function choiceMessageFactory (
     if (speak)
         msg.speak = speak;
     
+    msg.inputHint = InputHints.ExpectingInput;
+
     return msg;
 }
 
 export interface ChoicePromptArgs extends PromptArgs {
-    speak?: string;
     style?: ListStyle; 
     options?: ChoiceFactoryOptions; 
 }
@@ -105,7 +110,7 @@ async function choicePrompter (
         this.context,
         this.choices,
         result && this.state.args!.reprompt || this.state.args!.prompt,
-        this.state.args!.speak,
+        result && this.state.args!.speakReprompt || this.state.args!.speakPrompt,
         this.state.args!.options,
         this.state.args!.style
     ));

@@ -1,17 +1,23 @@
-import { Promiseable, Activity, TurnContext } from 'botbuilder';
+import { Promiseable, Activity, TurnContext, InputHints } from 'botbuilder';
 import { Topic, toPromise, returnsPromiseVoid, Validator, ValidatorResult } from "./topical";
 
 export interface PromptArgs {
     name?: string;
     prompt: string | Activity;
+    speakPrompt?: string;
     reprompt?: string | Activity;
+    speakReprompt?: string;
 }
 
 async function defaultPrompter (
     this: Prompt<any, PromptArgs>,
     result?: ValidatorResult<any>,
 ) {
-    await this.send(result && this.state.args!.reprompt || this.state.args!.prompt);
+    await this.send(
+        result && this.state.args!.reprompt || this.state.args!.prompt,
+        result && this.state.args!.speakReprompt || this.state.args!.speakPrompt,
+        InputHints.ExpectingInput,
+    );
 }
 
 export interface PromptState <Args> {
