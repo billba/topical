@@ -26,7 +26,7 @@ export abstract class Prompt <
 > extends Topic<Args, PromptState<Args>, PromptReturn<V, Args>, Context> {
 
     private async defaultPrompter (
-        this: Prompt<any, PromptArgs>,
+        this: Prompt<any, PromptArgs, Context>,
         result?: ValidatorResult<any>,
     ) {
         await this.send(
