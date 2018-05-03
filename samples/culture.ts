@@ -17,6 +17,10 @@ PromptForCulture.register();
 class FavoriteNumber extends Topic  {
 
     async onStart() {
+        await this.next();
+    }
+
+    async next() {
         await this.startChild(PromptForCulture, {
             prompt: `Please pick a culture (${Culture.getSupportedCultureCodes().join(', ')}).`
         } as PromptArgs);
@@ -25,8 +29,6 @@ class FavoriteNumber extends Topic  {
     async onDispatch() {
         if (await this.dispatchToChild())
             return;
-        
-        await this.send(`That's all I've got.`);
     }
 
     async onChildReturn(child: Topic) {
@@ -38,7 +40,7 @@ class FavoriteNumber extends Topic  {
             });
         } else if (child instanceof NumberPrompt) {
             await this.send(`${child.return!.result.value}? That's my favorite too!`);
-            this.clearChild();
+            await this.next();
         }
     }
 }
