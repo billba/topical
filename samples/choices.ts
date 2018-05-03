@@ -9,7 +9,8 @@ class Root extends Topic {
 
     async next() {
         await this.startChild(ChoicePrompt, {
-            prompt: 'pick one',
+            prompt: 'pick',
+            reprompt: 'please pick',
         } as ChoicePromptArgs, {
             choices: ['one', 'two', 'three'],
         });        

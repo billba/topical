@@ -11,10 +11,7 @@ async function defaultPrompter (
     this: Prompt<any, PromptArgs>,
     result?: ValidatorResult<any>,
 ) {
-    await this.send(result && this.state.args!.reprompt
-        ? this.state.args!.reprompt!
-        : this.state.args!.prompt
-    );
+    await this.send(result && this.state.args!.reprompt || this.state.args!.prompt);
 }
 
 export interface PromptState <Args> {

@@ -1,4 +1,4 @@
-import { Prompt, hasText, hasNumber, Culture, Validator, hasChoice, ValidatorResult } from './topical';
+import { Prompt, hasText, hasNumber, Culture, Validator, hasChoice, ValidatorResult, PromptArgs } from './topical';
 import { TurnContext, Activity } from 'botbuilder';
 import { FoundChoice, ChoiceFactoryOptions, FindChoicesOptions, Choice, ChoiceFactory } from 'botbuilder-choices';
 
@@ -91,13 +91,10 @@ async function choiceMessageFactory (
     return msg;
 }
 
-export interface ChoicePromptArgs {
-    prompt: string | Activity;
-    reprompt?: string | Activity;
+export interface ChoicePromptArgs extends PromptArgs {
     speak?: string;
     style?: ListStyle; 
     options?: ChoiceFactoryOptions; 
-    name?: string;
 }
 
 async function choicePrompter (
@@ -107,9 +104,7 @@ async function choicePrompter (
     await this.send(await choiceMessageFactory(
         this.context,
         this.choices,
-        result && this.state.args!.reprompt
-            ? this.state.args!.reprompt!
-            : this.state.args!.prompt,
+        result && this.state.args!.reprompt || this.state.args!.prompt,
         this.state.args!.speak,
         this.state.args!.options,
         this.state.args!.style
