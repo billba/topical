@@ -5,7 +5,7 @@ import { FoundChoice, ChoiceFactoryOptions, FindChoicesOptions, Choice, ChoiceFa
 export class TextPrompt <
     PromptArgs = any,
     Context extends TurnContext = TurnContext,
-> extends Prompt<string, PromptArgs, {}, Context> {
+> extends Prompt<string, PromptArgs, Context> {
 
     validator = hasText;
 }
@@ -18,10 +18,10 @@ export interface CultureConstructor {
 export class NumberPrompt <
     PromptArgs = any,
     Context extends TurnContext = TurnContext,
-> extends Prompt<number, PromptArgs, CultureConstructor, Context> {
+> extends Prompt<number, PromptArgs, Context> {
 
     constructor(construct: CultureConstructor) {
-        super(construct);
+        super();
         this.validator = hasNumber(construct.culture);
     }
 }
@@ -123,9 +123,9 @@ export interface ChoiceConstructor {
 
 export class ChoicePrompt <
     Context extends TurnContext = TurnContext,
-> extends Prompt<FoundChoice, ChoicePromptArgs, ChoiceConstructor, Context> {
+> extends Prompt<FoundChoice, ChoicePromptArgs, Context> {
     constructor(construct: ChoiceConstructor) {
-        super(construct);
+        super();
         this.validator = hasChoice(construct.choices, construct.options);
         this.prompter = choicePrompter;
     }

@@ -5,7 +5,7 @@ class CustomContext extends TurnContext {
     foo = "hey"
 }
 
-class Child extends Topic<any, any, any, any, CustomContext> {
+class Child extends Topic<any, any, any, CustomContext> {
 
     async onStart() {
         await this.send(this.context.foo);
@@ -23,7 +23,7 @@ class PromptForText extends TextPrompt<PromptArgs, CustomContext> {
 }
 PromptForText.register();
 
-class Root extends Topic<any, any, any, any, CustomContext> {
+class Root extends Topic<any, any, any, CustomContext> {
 
     async onStart() {
         this.startChild(Child);

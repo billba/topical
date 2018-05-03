@@ -30,9 +30,8 @@ export interface PromptReturn <V, Args> {
 export abstract class Prompt <
     V = any,
     Args = PromptArgs,
-    Construct = any,
     Context extends TurnContext = TurnContext,
-> extends Topic<Args, PromptState<Args>, PromptReturn<V, Args>, Construct, Context> {
+> extends Topic<Args, PromptState<Args>, PromptReturn<V, Args>, Context> {
 
     async onStart (
         args?: Args,

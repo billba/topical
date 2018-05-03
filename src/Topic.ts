@@ -33,7 +33,7 @@ export interface Topicable <
 > {
     new (
         args: Constructor,
-    ): Topic<Start, State, Return, Constructor, Context>;
+    ): Topic<Start, State, Return, Context>;
 }
 
 export type GetContext <
@@ -62,7 +62,6 @@ export abstract class Topic <
     Start = any,
     State = any,
     Return = any,
-    Constructor = any,
     Context extends TurnContext = TurnContext, 
 > {
     private static topicalConversationState: ConversationState<TopicalConversation>;
@@ -146,7 +145,7 @@ export abstract class Topic <
 
     public context!: Context;
 
-    public parent?: Topic<any, any, any, any, Context>;
+    public parent?: Topic<any, any, any, Context>;
 
     // helpers - these aren't specific to topics, but they do make life easier
 
@@ -154,7 +153,6 @@ export abstract class Topic <
     public send!: (activityOrText: string | Partial<Activity>, speak?: string, inputHint?: string) => Promise<ResourceResponse | undefined>;
 
     constructor (
-        args: Constructor,
     ) {
     }
 
@@ -209,12 +207,12 @@ export abstract class Topic <
     }
 
     static async loadTopic <Context extends TurnContext> (
-        parentOrContext: Topic<any, any, any, any, Context> | Context,
+        parentOrContext: Topic<any, any, any, Context> | Context,
         topicInstance: string | TopicInstance,
         activity?: Activity,
-    ): Promise<Topic<any, any, any, any, Context>> {
+    ): Promise<Topic<any, any, any, Context>> {
 
-        let parent: Topic<any, any, any, any, Context> | undefined;
+        let parent: Topic<any, any, any, Context> | undefined;
         let context: Context;
 
         if (parentOrContext instanceof Topic) {
@@ -232,7 +230,7 @@ export abstract class Topic <
         if (!T)
             throw `An attempt was made to load unregistered topic ${topicInstance.topicClassName}.`
 
-        const topic = new T(topicInstance.constructorArgs) as Topic<any, any, any, any, Context>;
+        const topic = new T(topicInstance.constructorArgs) as Topic<any, any, any, Context>;
 
         topic.context = activity ? await Topic.getContext(context, activity) : context;
         topic.parent = parent;
@@ -247,7 +245,7 @@ export abstract class Topic <
     loadTopic (
         topicInstance: string | TopicInstance,
         activity?: Activity,
-    ): Promise<Topic<any, any, any, any, Context>> {
+    ): Promise<Topic<any, any, any, Context>> {
 
         return Topic.loadTopic(this, topicInstance, activity);
     }
@@ -287,7 +285,7 @@ export abstract class Topic <
         topicClass: T,
         startArgs?: Start,
         constructorArgs?: Constructor,
-    ): Promise<Topic<any, any, any, Constructor, Context>> {
+    ): Promise<Topic<any, any, any, Context>> {
 
         const topicInstanceName = this.createTopicInstance(topicClass, constructorArgs);
 
@@ -541,7 +539,7 @@ export abstract class Topic <
     }
 
     public async onChildReturn(
-        child: Topic<any, any, any, any, Context>,
+        child: Topic<any, any, any, Context>,
     ) {
         this.clearChildren();
     }

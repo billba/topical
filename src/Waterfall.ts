@@ -11,9 +11,8 @@ export class Waterfall <
     Start = any,
     State extends WaterfallState = WaterfallState,
     Return = any,
-    Constructor = any,
     Context extends TurnContext = TurnContext
-> extends Topic <Start, State, Return, Constructor, Context> {
+> extends Topic <Start, State, Return, Context> {
 
     result?: ValidatorResult<any>;
 
@@ -66,7 +65,7 @@ export class Waterfall <
             await this.end();
     }
 
-    async onChildReturn (child: Prompt<any, any, any, Context>) {
+    async onChildReturn (child: Prompt<any, any, Context>) {
         if (!(child instanceof Prompt))
             throw "waterfalls can only have Prompts as children";
         
