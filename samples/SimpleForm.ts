@@ -57,12 +57,12 @@ export class SimpleForm extends Topic<SimpleFormSchema, SimpleFormState, SimpleF
     async onChildReturn(
         child: TextPrompt,
     ) {
-        const metadata = this.state.schema[child.return!.args!.name];
+        const metadata = this.state.schema[child.return!.args!.name!];
 
         if (metadata.type !== 'string')
             throw `not expecting type "${metadata.type}"`;
 
-        this.state.form[child.return!.args!.name] = child.return!.result.value!;
+        this.state.form[child.return!.args!.name!] = child.return!.result.value!;
         this.clearChild();
 
         await this.next();
