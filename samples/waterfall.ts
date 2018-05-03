@@ -65,7 +65,15 @@ Age.register();
 class Root extends Topic {
 
     async onStart() {
+        await this.next();
+    }
+
+    async next() {
         await this.startChild(Age);
+    }
+
+    async onChildReturn(child: Topic) {
+        await this.next();
     }
 
     // uses default onDispatch, onChildReturn

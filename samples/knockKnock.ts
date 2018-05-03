@@ -31,6 +31,8 @@ class Root extends Topic {
 
         if (await this.dispatchToChild())
             return;
+
+        await this.send(`Please, just one knock knock joke is all I ask.`)
     }
 
     async onChildReturn (child: KnockKnock) {
