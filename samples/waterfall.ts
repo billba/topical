@@ -1,7 +1,7 @@
 import { MemoryStorage, ConsoleAdapter } from 'botbuilder';
 import { Topic, prettyConsole, Waterfall, ValidatorResult, Prompt, hasNumber, hasText, consoleOnTurn, doTopic, PromptArgs, NumberPrompt, TextPrompt } from '../src/topical';
 
-class PromptForName extends TextPrompt {
+class PromptForName extends Prompt<string> {
 
     validator = hasText
         .and((activity, text) => text.length > 1 && text.length < 30 || 'invalid_name');
@@ -27,7 +27,7 @@ class Age extends Waterfall {
                 await this.startChild(PromptForName, {
                     prompt: `What's your name?`,    
                     reprompt: `Please tell me your name`,
-                });
+                } as PromptArgs);
             },
 
             async (name: string) => {
@@ -45,7 +45,7 @@ class Age extends Waterfall {
                     await this.startChild(PromptForAge, {
                         prompt: `How old are you?`,
                         reprompt: `Please tell me your age.`,   
-                    }, 'en-us');
+                    } as PromptArgs, 'en-us');
             },
 
             async (age: number) => {

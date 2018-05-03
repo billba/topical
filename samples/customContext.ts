@@ -1,5 +1,5 @@
 import { TurnContext, MemoryStorage, ConsoleAdapter } from 'botbuilder';
-import { Topic, TextPrompt, prettyConsole, WSTelemetry, consoleOnTurn, doTopic, PromptArgs } from '../src/topical';
+import { Topic, prettyConsole, WSTelemetry, consoleOnTurn, doTopic, PromptArgs, Prompt } from '../src/topical';
 
 class CustomContext extends TurnContext {
     foo = "hey"
@@ -14,7 +14,7 @@ class Child extends Topic<any, any, any, CustomContext> {
 }
 Child.register();
 
-class PromptForText extends TextPrompt<PromptArgs, CustomContext> {
+class PromptForText extends Prompt<string, PromptArgs, CustomContext> {
 
     prompter = async () => {
         await this.send(this.context.foo);
