@@ -36,7 +36,7 @@ class Root extends Topic {
     }
 
     async onChildReturn (child: KnockKnock) {
-        this.clearChild();
+        this.removeChild();
 
         await this.send(`That was fun. Tell me another.`);
     }

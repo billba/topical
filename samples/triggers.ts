@@ -57,12 +57,13 @@ class Travel extends Topic  {
 
     async onStart() {
         await this.send(`I can book flights and hotels.`);
-        this.children = [Flights, Hotels].map(T => this.createTopicInstance(T));
+        this.createChild('flights', Flights);
+        this.createChild('hotels', Hotels);
         console.log();
     }
 
     async onDispatch() {
-        if (await this.dispatchToChild())
+        if (await this.dispatchToStartedChild())
             return;
         
         if (!await startBestScoringChild(this))

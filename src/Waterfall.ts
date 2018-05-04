@@ -74,7 +74,7 @@ export abstract class Waterfall <
         
         this.result = child.return!.result;
 
-        this.clearChild();
+        this.removeChild();
     }
 
     waterfall(next: (value?: any) => void): Step[] {

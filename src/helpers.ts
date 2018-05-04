@@ -154,3 +154,22 @@ export const getScore = async <
             dispatch,
         }
 }
+
+export const dispatchToStartedChild = async (
+    topic: Topic,
+    ... children: string[],
+) => {
+    const entries = children.length
+        ? children
+            .filter(name => topic.children[name] !== undefined)
+            .map(name => [name, topic.children[name]])
+        : Object.entries(topic.children);
+
+    for (let [name, topicInstanceName] of entries) {
+        const childTopic = await topic.loadTopic(topicInstanceName);
+        if (childTopic.started)
+            return topic.dispatchTo(childTopic);
+    }
+
+    return false;
+}

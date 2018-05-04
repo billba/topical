@@ -1,5 +1,5 @@
 import { TurnContext, MemoryStorage, ConsoleAdapter, Activity } from 'botbuilder';
-import { Topic, prettyConsole, WSTelemetry, consoleOnTurn, doTopic, Prompt, hasText, PromptArgs } from '../src/topical';
+import { Topic, prettyConsole, WSTelemetry, consoleOnTurn, doTopic, Prompt, hasText, PromptArgs, dispatchToStartedChild } from '../src/topical';
 
 class Echo extends Topic {
 
@@ -10,7 +10,7 @@ class Echo extends Topic {
 Echo.register();
 
 class Confirm extends Prompt<boolean> {
-    
+
     validator = hasText
         .transform<boolean>((activity, text) =>
             /yes/i.test(text) ? true :
@@ -23,32 +23,32 @@ Confirm.register();
 class EchoWithConfirm extends Topic<any, Activity> {
 
     async onStart() {
-        await this.startChild(Echo);
+        await this.startChild('echo', Echo);
+        this.createChild('confirm', Confirm);
     }
 
     async onDispatch() {
-        if (this.children.length !== 2 && this.text) {
-            const x = /confirm (.*)/i.exec(this.text);
-            if (x) {
+        if (this.text) {
+            const matches = /confirm (.*)/i.exec(this.text);
+            if (matches) {
                 this.state = {
                     ... this.context.activity,
-                    text: x[1],
+                    text: matches[1],
                 };
 
-                this.children[1] = (await this.createTopicInstanceAndStart(Confirm, {
-                    prompt: `Are you sure you want to say "${x[1]}"?`,
+                await this.startChild('confirm', {
+                    prompt: `Are you sure you want to say "${matches[1]}"?`,
                     reprompt: `I can accept "yes" or "no".`,
-                } as PromptArgs))!.topicInstanceName;
+                });
                 return;
             }
         }
 
-        await this.dispatchTo(this.children[this.children.length - 1]);
+        await dispatchToStartedChild(this, 'confirm', 'echo');
     }
 
     async onChildReturn(child: Confirm) {
-        this.removeChild(child.topicInstanceName);
-        await this.dispatchTo(this.children[0], this.state);
+        await this.dispatchToChild('echo', this.state);
     }
 }
 EchoWithConfirm.register();

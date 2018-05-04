@@ -19,26 +19,23 @@ export interface PromptReturn <V, Args> {
     result: ValidatorResult<V>;
 }
 
+
+async function defaultPrompter (
+    this: Prompt<any, PromptArgs>,
+    result?: ValidatorResult<any>,
+) {
+    await this.send(
+        result && this.state.args!.reprompt || this.state.args!.prompt,
+        result && this.state.args!.speakReprompt || this.state.args!.speakPrompt,
+        InputHints.ExpectingInput,
+    );
+}
+
 export abstract class Prompt <
     V = any,
     Args = PromptArgs,
     Context extends TurnContext = TurnContext,
 > extends Topic<Args, PromptState<Args>, PromptReturn<V, Args>, Context> {
-
-    private async defaultPrompter (
-        this: Prompt<any, PromptArgs, Context>,
-        result?: ValidatorResult<any>,
-    ) {
-        await this.send(
-            result && this.state.args!.reprompt || this.state.args!.prompt,
-            result && this.state.args!.speakReprompt || this.state.args!.speakPrompt,
-            InputHints.ExpectingInput,
-        );
-    }
-
-    private _prompter(result?: ValidatorResult<V>) {
-        return (this.prompter || this.defaultPrompter)(result);
-    }
 
     async onStart (
         args?: Args,
@@ -48,7 +45,7 @@ export abstract class Prompt <
             turns: 0,
         }
 
-        await this._prompter();
+        await this.prompter();
     }
 
     async onDispatch () {
@@ -72,12 +69,12 @@ export abstract class Prompt <
                 }
             });
         else
-            await this._prompter(result);
+            await this.prompter(result);
     }
 
     maxTurns = Number.MAX_SAFE_INTEGER;
  
-    prompter?: (result?: ValidatorResult<V>) => Promise<void>;
+    prompter: (result?: ValidatorResult<V>) => Promise<void> = defaultPrompter;
 
     validator?: Validator<V>;
 }

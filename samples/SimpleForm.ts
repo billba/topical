@@ -60,7 +60,7 @@ export class SimpleForm extends Topic<SimpleFormSchema, SimpleFormState, SimpleF
             throw `not expecting type "${metadata.type}"`;
 
         this.state.form[child.return!.args!.name!] = child.return!.result.value!;
-        this.clearChild();
+        this.removeChild();
 
         await this.next();
     }
