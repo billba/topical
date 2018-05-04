@@ -27,9 +27,8 @@ export class SimpleForm extends Topic<SimpleFormSchema, SimpleFormState, SimpleF
     }
 
     async next () {
-        for (const name of Object.keys(this.state.schema)) {
+        for (const [name, metadata] of Object.entries(this.state.schema)) {
             if (!this.state.form[name]) {
-                const metadata = this.state.schema[name];
 
                 if (metadata.type !== 'string')
                     throw `not expecting type "${metadata.type}"`;
