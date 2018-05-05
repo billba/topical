@@ -24,7 +24,7 @@ interface TopicalConversation {
     rootTopicInstanceName: string;
 }
 
-export interface Topicable <
+export interface TopicClass <
     Start = any,
     State = any,
     Return = any,
@@ -34,6 +34,8 @@ export interface Topicable <
     new (
         args: Constructor,
     ): Topic<Start, State, Return, Context>;
+
+    name: string;
 }
 
 export type GetContext <
@@ -85,7 +87,7 @@ export abstract class Topic <
         Object.assign(Topic, options);
     }
 
-    private static topics: Record<string, Topicable> = {};
+    private static topics: Record<string, TopicClass> = {};
 
     public static register() {
 
@@ -147,7 +149,7 @@ export abstract class Topic <
     }
 
     protected static createTopicInstance <
-        T extends Topicable<Start, any, any, Constructor, Context>,
+        T extends TopicClass<Start, any, any, Constructor, Context>,
         Start,
         Constructor,
         Context extends TurnContext,
@@ -262,7 +264,7 @@ export abstract class Topic <
     }
 
     public static async start <
-        T extends Topicable<Start, any, any, Constructor, Context>,
+        T extends TopicClass<Start, any, any, Constructor, Context>,
         Start,
         Constructor,
         Context extends TurnContext = TurnContext
@@ -301,7 +303,7 @@ export abstract class Topic <
     }
 
     public static async dispatch <
-        T extends Topicable<any, any, any, any, Context>,
+        T extends TopicClass<any, any, any, any, Context>,
         Context extends TurnContext = TurnContext
     > (
         this: T,
@@ -410,8 +412,14 @@ export abstract class Topic <
     }
 
     public removeChild (
-        name = Topic.childName
+        child: Topic | TopicClass | string,
     ) {
+        const name = child instanceof Topic
+            ? child.constructor.name
+            : typeof child === 'string'
+            ? child
+            : child.name;
+
         const topicInstanceName = this.children[name];
         if (!topicInstanceName)
             return;
@@ -460,7 +468,7 @@ export abstract class Topic <
     // }
 
     public createChild <
-        T extends Topicable<any, any, any, Constructor, Context>,
+        T extends TopicClass<any, any, any, Constructor, Context>,
         Constructor,
     > (
         name: string,
@@ -469,7 +477,7 @@ export abstract class Topic <
     ): void;
 
     public createChild <
-        T extends Topicable<any, any, any, Constructor, Context>,
+        T extends TopicClass<any, any, any, Constructor, Context>,
         Constructor,
     > (
         topicClass: T,
@@ -512,7 +520,7 @@ export abstract class Topic <
     ): Promise<void>;
 
     public startChild <
-        T extends Topicable<Start, any, any, Constructor, Context>,
+        T extends TopicClass<Start, any, any, Constructor, Context>,
         Start,
         Constructor,
     > (
@@ -523,7 +531,7 @@ export abstract class Topic <
     ): Promise<void>;
 
     public startChild <
-        T extends Topicable<Start, any, any, Constructor, Context>,
+        T extends TopicClass<Start, any, any, Constructor, Context>,
         Start,
         Constructor,
     > (

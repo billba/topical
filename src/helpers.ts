@@ -1,5 +1,5 @@
 import { Promiseable, MiddlewareHandler, ConsoleAdapter, TurnContext, Activity, ConversationAccount } from "botbuilder";
-import { Topicable, Topic, Score, StartScore, DispatchScore } from "./topical";
+import { TopicClass, Topic, Score, StartScore, DispatchScore } from "./topical";
 
 export const toPromise = <T> (t: Promiseable<T>) => (t as any).then ? (t as Promise<T>) : Promise.resolve<T>(t);
 
@@ -69,7 +69,7 @@ export const consoleOnTurn = async (
 }
 
 export const doTopic = async <
-    T extends Topicable<Start, any, any, Constructor, Context>,
+    T extends TopicClass<Start, any, any, Constructor, Context>,
     Start,
     Constructor,
     Context extends TurnContext = TurnContext
