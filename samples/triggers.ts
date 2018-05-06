@@ -68,6 +68,7 @@ class Travel extends Topic  {
     async help() {
         await this.send(`I can book flights and hotels.`);        
     }
+
     async onStart() {
         await this.send(`Welcome to the Travel bot!`)
         await this.help();
