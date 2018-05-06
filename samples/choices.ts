@@ -17,7 +17,8 @@ class Root extends Topic {
     }
 
     async onDispatch() {
-        await this.dispatchToChild();
+        if (this.text)
+            await this.dispatchToChild();
     }
 
     async onChildReturn(child: ChoicePrompt) {

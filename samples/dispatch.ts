@@ -1,5 +1,5 @@
 import { TurnContext, MemoryStorage, ConsoleAdapter, Activity } from 'botbuilder';
-import { Topic, prettyConsole, WSTelemetry, consoleOnTurn, doTopic, Prompt, hasText, PromptArgs, dispatchToStartedChild } from '../src/topical';
+import { Topic, prettyConsole, WSTelemetry, consoleOnTurn, doTopic, Prompt, hasText, PromptArgs } from '../src/topical';
 
 class Echo extends Topic {
 
@@ -23,32 +23,33 @@ Confirm.register();
 class EchoWithConfirm extends Topic<any, Activity> {
 
     async onStart() {
-        await this.startChild('echo', Echo);
-        this.createChild('confirm', Confirm);
+        await this.startChild(Echo);
+        this.createChild(Confirm);
     }
 
     async onDispatch() {
-        if (this.text) {
-            const matches = /confirm (.*)/i.exec(this.text);
-            if (matches) {
-                this.state = {
-                    ... this.context.activity,
-                    text: matches[1],
-                };
+        if (!this.text)
+            return;
 
-                await this.startChild('confirm', {
-                    prompt: `Are you sure you want to say "${matches[1]}"?`,
-                    reprompt: `I can accept "yes" or "no".`,
-                });
-                return;
-            }
+        const matches = /confirm (.*)/i.exec(this.text);
+        if (matches) {
+            this.state = {
+                ... this.context.activity,
+                text: matches[1],
+            };
+
+            await this.startChild(Confirm, {
+                prompt: `Are you sure you want to say "${matches[1]}"?`,
+                reprompt: `I can accept "yes" or "no".`,
+            });
+            return;
         }
 
-        await dispatchToStartedChild(this, 'confirm', 'echo');
+        await this.dispatchToChild(Confirm, Echo);
     }
 
     async onChildReturn(child: Confirm) {
-        await this.dispatchToChild('echo', this.state);
+        await this.dispatchToChild(this.state, Echo);
     }
 }
 EchoWithConfirm.register();

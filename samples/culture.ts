@@ -27,8 +27,8 @@ class FavoriteNumber extends Topic  {
     }
 
     async onDispatch() {
-        if (await this.dispatchToChild())
-            return;
+        if (this.text)
+            await this.dispatchToChild();
     }
 
     async onChildReturn(child: Topic) {

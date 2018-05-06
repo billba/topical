@@ -128,6 +128,10 @@ export abstract class Topic <
         return this.topicInstance.children;
     }
 
+    public get childNames () {
+        return Object.keys(this.topicInstance.children);
+    }
+
     public return?: Return;
 
     private topicInstance!: TopicInstance;
@@ -141,15 +145,13 @@ export abstract class Topic <
     public text?: string;
     public send!: (activityOrText: string | Partial<Activity>, speak?: string, inputHint?: string) => Promise<ResourceResponse | undefined>;
 
-    constructor (
-    ) {
+    constructor () {
     }
 
     protected static createTopicInstance <
         Constructor,
-        Context extends TurnContext,
     > (
-        this: TopicClass<any, any, any, Constructor, Context>,
+        this: TopicClass<any, any, any, Constructor>,
         constructorArgs?: Constructor,
     ): TopicInstance {
         const topicClassName = this.name;
@@ -217,8 +219,6 @@ export abstract class Topic <
     async end (
         returnArgs?: Return
     ) {
-        this.removeChildren();
-
         this.return = returnArgs;
         this.topicInstance.lifecycle = TopicLifecycle.ended;
 
@@ -254,7 +254,7 @@ export abstract class Topic <
         if (topicalConversation.root)
             throw `You must only call ${this.name}.start once.`;
 
-        topicalConversation.root = (this as any).createTopicInstance(context, constructorArgs);
+        topicalConversation.root = (this as any).createTopicInstance(constructorArgs);
 
         const topic = Topic.loadTopic(context, topicalConversation.root!);
 
@@ -287,32 +287,6 @@ export abstract class Topic <
 
         await Topic.loadTopic(context, topicalConversation.root).onDispatch();
 
-        // garbage collect orphaned instances
-
-        // const orphans = { ... topical.instances };
-
-        // const deorphanize = (topicInstanceName: string) => {
-        //     const instance = orphans[topicInstanceName];
-        //     if (!instance)
-        //         throw "unexpected";
-
-        //     const topic = Topic.load(context, instance);
-
-        //     delete orphans[topicInstanceName];
-    
-        //     for (let child of topic.listChildren())
-        //         deorphanize(child);
-        // }
-
-        // deorphanize(roottopicInstanceName);
-
-        // for (const orphan of Object.keys(orphans)) {
-        //     console.warn(`Garbage collecting instance ${orphan} -- you should have called Topic.deleteTopicInstance()`)
-        //     Topic.deleteTopicInstance(context, orphan);
-        // }
-
-        // await topic.sendTelemetry(context, instance, 'endOfTurn');
-
         await Topic.topicalConversationState.write(context);
     }
 
@@ -335,12 +309,21 @@ export abstract class Topic <
     //     });
     // }
 
-    // public get hasChildren () {
-    //     return Object.keys(this.children).length !== 0;
-    // }
+    public get hasChildren () {
+        return this.childNames.length !== 0;
+    }
+
+    public get hasStartedChildren () {
+        for (const ti of Object.values(this.children)) {
+            if (ti.lifecycle === TopicLifecycle.started)
+                return true;
+        }
+
+        return false;
+    }
 
     public removeChildren () {
-        for (const name of Object.keys(this.children)) {
+        for (const name of this.childNames) {
             delete this.children[name];
         }
     }
@@ -359,45 +342,6 @@ export abstract class Topic <
 
         delete this.children[name];
     }
-
-    // public setChild (
-    //     name: string,
-    //     topicInstance: TopicInstance,
-    // ): void;
-
-    // public setChild (
-    //     topicClass: TopicClass,
-    //     topicInstance: TopicInstance,
-    // ): void;
-
-    // public setChild (
-    //     ... args: any[],
-    // ) {
-    //     let   [name           , topicInstanceName] = args.length === 2
-    //         ? [args[0]        , args[1]          ]
-    //         : [Topic.childName, args[0]          ];
-
-    //     this.removeChild(name);
-    //     this.children[name] = topicInstanceName;
-    // }
-
-
-    // public get child () {
-    //     return this.children[Topic.childName];
-    // }
-
-    // public get hasChild () {
-    //     return this.children.hasOwnProperty(Topic.childName);
-    // }
-
-    // public set child (
-    //     child: string | undefined,
-    // ) {
-    //     this.clearChildren();
-
-    //     if (child)
-    //         this.children[Topic.childName] = child;
-    // }
 
     public createChild <
         Constructor,
@@ -423,7 +367,7 @@ export abstract class Topic <
 
         this.removeChild(name);
 
-        const ti = topicClass.createTopicInstance(this.context, constructorArgs);
+        const ti = topicClass.createTopicInstance(constructorArgs);
 
         this.children[name] = ti;
 
@@ -550,28 +494,34 @@ export abstract class Topic <
     public async dispatchToChild (
         ... args: any[],
     ) {
-        let activity: Activity | undefined;
-        let i: number;
+        let activity: Activity | undefined = undefined;
+        let i = 0;
 
-        let first = args[0];
-        let type = typeof first;
+        if (args.length) { 
+            // see if first arg is activity
+            let first = args[0];
+            let type = typeof first;
 
-          [activity , i] = type !== 'function' && type !== 'string' || ! (first instanceof Topic)
-        ? [first    , 0]
-        : [undefined, 1];
+            if (type !== 'function' && type !== 'string' && !(first instanceof Topic)) {
+                activity = first;
+                i = 1;
+            }
+        }
     
         let children: TopicChildReference[];
         let dispatchArgs: object | undefined = undefined;
 
         if (args.length === i) {
             // no name/topic/class specified means "all children"
-            children = Object.keys(this.children);
+            children = this.childNames;
         } else {
-            // look for dispatchArgs
+            // see if last arg is dispatchArgs
             if (args.length === i + 2) {
-                let type = typeof args[i + 1];
-                if (type !== 'function' && type !== 'string' || ! (args[i + 1] instanceof Topic))
-                    dispatchArgs = args[i + 1];
+                let first = args[i + 1];
+                let type = typeof first;
+
+                if (type !== 'function' && type !== 'string' && !(first instanceof Topic))
+                    dispatchArgs = first;
             }
 
             children = args.slice(i, dispatchArgs && -1);

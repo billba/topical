@@ -1,39 +1,38 @@
 const { MemoryStorage, ConsoleAdapter } = require('botbuilder');
-const { Topic, prettyConsole, consoleOnTurn, doTopic } = require ('../lib/src/topical.js');
+const { Topic, prettyConsole, consoleOnTurn, doTopic, hasNumber } = require ('../lib/src/topical.js');
 
-class ChildTopic extends Topic {
+class Echo extends Topic {
 
     async onStart(args) {
-        await this.send(`Welcome to the child topic!\nWhat multiple of ${args["foo"]} do you want to return?`);
+        await this.send(`Welcome to the child topic! Say 'end child' to go back to the root.`);
     }
 
     async onDispatch() {
-        const num = Number.parseInt(this.text);
-
-        if (Number.isNaN(num))
-            await this.send(`Please supply a number.`);
+        if (this.text === 'end child')
+            await this.end();
         else
-            return this.end({
-                num
-            });
+            await this.send(`Child Topic: you said "${this.text}"`);
     }
 }
-ChildTopic.register();
+Echo.register();
 
 class RootTopic extends Topic {
 
+    async help() {
+        await this.send(`Try "start child" or "time".`);
+    }
+
     async onStart() {
         await this.send(`Welcome to my root topic!`);
+        await this.help();
     }
     
     async onDispatch() {
-        if (this.text === 'end child') {
-            if (this.hasChild()) {
-                this.clearChild();
-                await this.send(`I have ended the child topic.`);
-            } else {
-                await this.send(`There is no child to end`);
-            }
+        if (!this.text)
+            return;
+
+        if (this.text.includes('time')) {
+            await this.send(`The current time is ${new Date().toLocaleTimeString()}`);
             return;
         }
 
@@ -41,18 +40,15 @@ class RootTopic extends Topic {
             return;
 
         if (this.text === 'start child') {
-            return this.startChild(ChildTopic, {
-                foo: 13
-            });
+            return this.startChild(Echo);
         }
 
-        await this.send(`Try "start child" or "end child".`);
+        await this.help();
     }
 
-    async onChildReturn(child)
-    {
-        await this.send(`13 * ${child.return.num} = ${13 * child.return.num}`);
-        this.clearChild();
+    async onChildReturn() {
+        await this.send(`Welcome back from the child topic!`);
+        await this.help();
     }
 }
 RootTopic.register();

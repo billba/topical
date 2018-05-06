@@ -32,7 +32,7 @@ export abstract class Waterfall <
             }
         );
 
-        if (this.hasChild) {
+        if (this.hasStartedChildren) {
             next = false;
             this.result = undefined;
 
@@ -52,7 +52,7 @@ export abstract class Waterfall <
             if (this.ended)
                 return true;
 
-            if (this.hasChild)
+            if (this.hasStartedChildren)
                 next = false;
         }
 
@@ -69,12 +69,9 @@ export abstract class Waterfall <
     }
 
     async onChildReturn (child: Prompt<any, any, Context>) {
-        if (!(child instanceof Prompt))
-            throw "waterfalls can only have Prompts as children";
-        
-        this.result = child.return!.result;
-
-        this.removeChild();
+        if (child instanceof Prompt) {
+            this.result = child.return!.result;
+        }
     }
 
     waterfall(next: (value?: any) => void): Step[] {

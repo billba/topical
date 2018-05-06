@@ -85,9 +85,9 @@ export const doTopic = async <
                 await (topic as any).start(context, startArgs, constructorArgs);
             }
         }
-    } else {
-        await (topic as any).dispatch(context);
     }
+
+    await (topic as any).dispatch(context);
 }
 
 export const startIfScore = async <
@@ -103,33 +103,33 @@ export const startIfScore = async <
         : false;
 }
 
-// export const startBestScoringChild = async <
-//     T extends Topic,
-// > (
-//     topic: T,
-// ) => {
-//     const results = (await Promise.all(Object
-//         .keys(topic.children)
-//         .map<Promise<[Topic, StartScore<any>]>>(child => {
-//             const childTopic = topic.loadChild(child);
-//             return childTopic
-//                 .getStartScore()
-//                 .then(result => [childTopic, result || { score: 0 } as StartScore<any>])
-//         })
-//     ))
-//     .filter(i => i[1].score > 0)
-//     .sort((a, b) => b.result.score - a.result.score);
+export const startBestScoringChild = async <
+    T extends Topic,
+> (
+    topic: T,
+) => {
+    const results = (await Promise.all(Object
+        .keys(topic.children)
+        .map<Promise<[Topic, StartScore<any>]>>(child => {
+            const childTopic = topic.loadChild(child);
+            return childTopic
+                .getStartScore()
+                .then(result => [childTopic, result || { score: 0 } as StartScore<any>])
+        })
+    ))
+    .filter(i => i[1].score > 0)
+    .sort((a, b) => b.result.score - a.result.score);
 
-//     if (results.length) {
-//         await results[0]
-//             .childTopic
-//             .start(results[0].result.startArgs);
+    if (results.length) {
+        await results[0]
+            .childTopic
+            .start(results[0].result.startArgs);
 
-//         return true;
-//     }
+        return true;
+    }
 
-//     return false;
-// }
+    return false;
+}
 
 export interface Score <Start> {
     start?: StartScore<Start>;

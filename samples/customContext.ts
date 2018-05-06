@@ -1,5 +1,5 @@
 import { TurnContext, MemoryStorage, ConsoleAdapter } from 'botbuilder';
-import { Topic, prettyConsole, WSTelemetry, consoleOnTurn, doTopic, PromptArgs, Prompt } from '../src/topical';
+import { Topic, prettyConsole, WSTelemetry, consoleOnTurn, doTopic, PromptArgs, Prompt, hasText } from '../src/topical';
 
 class CustomContext extends TurnContext {
     foo = "hey"
@@ -16,6 +16,8 @@ Child.register();
 
 class PromptForText extends Prompt<string, PromptArgs, CustomContext> {
 
+    validator = hasText;
+
     prompter = async () => {
         await this.send(this.context.foo);
         await this.send(this.state.args!.prompt!);
@@ -30,7 +32,8 @@ class Root extends Topic<any, any, any, CustomContext> {
     }
 
     async onDispatch() {
-        await this.dispatchToChild();
+        if (this.text)
+            await this.dispatchToChild();
     }
 
     async onChildReturn(child: Topic) {
@@ -41,7 +44,6 @@ class Root extends Topic<any, any, any, CustomContext> {
             } as PromptArgs);
         } else if (child instanceof PromptForText) {
             await this.send(`You said ${child.return!.result.value}`);
-            this.removeChild();
         } else
             throw "mystery child topic";
     }

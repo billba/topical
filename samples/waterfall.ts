@@ -71,11 +71,15 @@ class Root extends Topic {
         await this.startChild(Age);
     }
 
+    async onDispatch() {
+        if (this.text)
+            await this.dispatchToChild();
+    }
+
     async onChildReturn(child: Topic) {
         await this.next();
     }
 
-    // uses default onDispatch, onChildReturn
 }
 Root.register();
 

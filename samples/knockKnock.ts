@@ -24,6 +24,9 @@ class Root extends Topic {
     }
 
     async onDispatch () {
+        if (!this.text)
+            return;
+
         if (this.text === 'knock knock') {
             await this.startChild(KnockKnock);
             return;
@@ -36,8 +39,6 @@ class Root extends Topic {
     }
 
     async onChildReturn (child: KnockKnock) {
-        this.removeChild();
-
         await this.send(`That was fun. Tell me another.`);
     }
 }

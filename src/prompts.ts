@@ -18,6 +18,7 @@ export class NumberPrompt <
 
     constructor(culture: string) {
         super();
+        console.log("culture", culture);
         this.validator = hasNumber(culture);
     }
 }

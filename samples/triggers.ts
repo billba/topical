@@ -22,7 +22,10 @@ class Flights extends Topic<FlightsStart> {
     }
 
     async onDispatch() {
-        await this.send(`That's my one trick. Try 'travel' to restart the bot.`);
+        if (this.text === 'end')
+            await this.end();
+
+        await this.send(`That's my one trick. Try 'end' to return to the travel bot.`);
     }
 }
 Flights.register();
@@ -48,7 +51,10 @@ class Hotels extends Topic <HotelsStart> {
     }
 
     async onDispatch() {
-        await this.send(`That's my one trick. Try 'travel' to restart the bot.`);
+        if (this.text === 'end')
+            await this.end();
+
+        await this.send(`That's my one trick. Try 'end' to return to the travel bot.`);
     }
 }
 Hotels.register();
@@ -63,7 +69,7 @@ class Travel extends Topic  {
     }
 
     async onDispatch() {
-        if (await this.dispatchToStartedChild())
+        if (await this.dispatchToChild())
             return;
         
         if (!await startBestScoringChild(this))
@@ -71,23 +77,6 @@ class Travel extends Topic  {
     }
 }
 Travel.register();
-
-class Root extends Topic {
-
-    async onStart() {
-        await this.send(`Say 'travel' to start (or restart) the travel dialog.`);
-    }
-
-    async onDispatch() {
-        if (this.text === 'travel') {
-            await this.startChild(Travel);
-            return;
-        }
-
-        await this.dispatchToChild();
-    }
-}
-Root.register();
 
 // const wst = new WSTelemetry('ws://localhost:8080/server');
 // Topic.telemetry = action => wst.send(action);
@@ -97,5 +86,5 @@ Topic.init(new MemoryStorage());
 consoleOnTurn(
     new ConsoleAdapter()
         .use(prettyConsole),
-    context => doTopic(Root, context)
+    context => doTopic(Travel, context)
 );
