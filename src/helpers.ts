@@ -114,16 +114,15 @@ export const startBestScoringChild = async <
             const childTopic = topic.loadChild(child);
             return childTopic
                 .getStartScore()
-                .then(result => [childTopic, result || { score: 0 } as StartScore<any>])
+                .then(result => [childTopic, result || { score: 0 }] as [Topic, StartScore<any>])
         })
     ))
     .filter(i => i[1].score > 0)
-    .sort((a, b) => b.result.score - a.result.score);
+    .sort((a, b) => b[1].score - a[1].score);
 
     if (results.length) {
-        await results[0]
-            .childTopic
-            .start(results[0].result.startArgs);
+        await results[0][0]
+            .start(results[0][1].startArgs);
 
         return true;
     }

@@ -22,8 +22,10 @@ class Flights extends Topic<FlightsStart> {
     }
 
     async onDispatch() {
-        if (this.text === 'end')
+        if (this.text === 'end') {
             await this.end();
+            return;
+        }
 
         await this.send(`That's my one trick. Try 'end' to return to the travel bot.`);
     }
@@ -51,8 +53,10 @@ class Hotels extends Topic <HotelsStart> {
     }
 
     async onDispatch() {
-        if (this.text === 'end')
+        if (this.text === 'end') {
             await this.end();
+            return;
+        }
 
         await this.send(`That's my one trick. Try 'end' to return to the travel bot.`);
     }
@@ -61,19 +65,32 @@ Hotels.register();
 
 class Travel extends Topic  {
 
+    async help() {
+        await this.send(`I can book flights and hotels.`);        
+    }
     async onStart() {
-        await this.send(`I can book flights and hotels.`);
+        await this.send(`Welcome to the Travel bot!`)
+        await this.help();
+
         this.createChild('flights', Flights);
         this.createChild('hotels', Hotels);
         console.log();
     }
 
     async onDispatch() {
+        if (!this.text)
+            return;
+
         if (await this.dispatchToChild())
             return;
         
         if (!await startBestScoringChild(this))
             await this.send(`I can't do that.`);
+    }
+
+    async onChildReturn() {
+        await this.send(`Welcome back to the Travel bot!`);
+        await this.help();
     }
 }
 Travel.register();
