@@ -314,21 +314,6 @@ export abstract class Topic <
         await Topic.topicalConversationState.write(context);
     }
 
-    public async dispatchTo (
-        topic?: Topic,
-        activity?: Activity,
-        args?: any,
-    ) {
-        if (!topic || !topic.started)
-            return false;
-        
-        // await topic.sendTelemetry(context, instance, 'onReceive.start');
-        await topic.onDispatch(args);
-        // await topic.sendTelemetry(context, instance, 'onReceive.end');
-        
-        return true;
-    }
-
     // private async sendTelemetry (
     //     context: Context,
     //     instance: TopicInstance,
@@ -539,19 +524,104 @@ export abstract class Topic <
     ): Promise<boolean>;
 
     public dispatchToChild (
+        topic: Topic,
         activity?: Activity,
         dispatchArgs?: any,
     ): Promise<boolean>;
 
     public dispatchToChild (
+        topicClass: TopicClass,
+        activity?: Activity,
+        dispatchArgs?: any,
+    ): Promise<boolean>;
+
+    public async dispatchToChild (
         ... args: any[],
     ) {
-        let   [name           , activity, dispatchArgs] = typeof args[0] === 'string'
-            ? [args[0]        , args[1] , args[2]     ]
-            : [Topic.childName, args[0] , args[1]     ];
+        let name: string;
+        let topic: Topic;
+
+          [name                    , topic    ] = typeof args[0] === 'string'
+        ? [args[0]                 , undefined] : typeof args[0] === 'function'
+        ? [args[0].name            , undefined]
+        : [args[0].constructor.name, args[0]  ];
     
-        return this.dispatchTo(this.children[name], activity, dispatchArgs);
+        let activity = args[1];
+        let dispatchArgs = args[2];
+
+        if (!topic || activity)
+            topic = this.loadChild(name, activity);
+
+        if (topic.started) {
+            await topic.onDispatch(dispatchArgs);
+            return true;
+        } else {
+            return false;
+        }
     }
+
+    public dispatchToChildren (
+        activity: Activity,
+        ... topicClasses: TopicClass[],
+    ): Promise<boolean>;
+
+    public dispatchToChildren (
+        ... topicClasses: TopicClass[],
+    ): Promise<boolean>;
+
+    public dispatchToChildren (
+        activity: Activity,
+        ... topics: Topic[],
+    ): Promise<boolean>;
+
+    public dispatchToChildren (
+        ... topics: Topic[],
+    ): Promise<boolean>;
+
+    public dispatchToChildren (
+        activity: Activity,
+        ... names: string[],
+    ): Promise<boolean>;
+
+    public dispatchToChildren (
+        ... names: string[],
+    ): Promise<boolean>;
+
+    public dispatchToChildren (
+        ... args: any[],
+    ) {
+        let type = typeof args[0];
+
+        let   [activity , i] = type === 'function' || type === 'string' || args[0] instanceof Topic 
+            ? [undefined, 0]
+            : [args[0]  , 1];
+
+        let topics: Topic[];
+
+        if (args.length === i)
+            topics = Object
+                .values(this.children)
+                .map(ti => Topic.loadTopic(this, ti, activity))
+        else {
+            args = args.slice(i);
+            type = typeof args[0];
+
+            if (type === 'function')
+                topics = args.map(topicClass => this.loadChild(topicClass, activity));
+            else if (type === 'string')
+                topics = args.map(name => this.loadChild(name, activity));
+            else
+                topics = args;
+        }
+        
+        for (const topic of topics) {
+            if (topic.started)
+                return topic.dispatchToChild(topic, activity);
+        }
+
+    return false;
+}
+
 
     // These five default methods are optionally overrideable by subclasses
 
@@ -571,14 +641,11 @@ export abstract class Topic <
     public async onDispatch (
         args?: any,
     ) {
-        if (await this.dispatchToChild())
-            return;
     }
 
     public async onChildReturn(
         child: Topic<any, any, any, Context>,
     ) {
-        this.removeChildren();
     }
 }
 
