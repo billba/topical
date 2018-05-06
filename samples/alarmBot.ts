@@ -76,7 +76,6 @@ class DeleteAlarm extends Topic<DeleteAlarmStart, DeleteAlarmState, string> {
                 break;
 
             case 'confirm':
-                this.removeChild();
                 await this.end(child.return!.result.value === 'yes'
                     ? this.state.alarmName
                     : undefined
@@ -151,8 +150,6 @@ class AlarmBot extends Topic<any, AlarmBotState> {
         } else if (!(child instanceof ShowAlarms)) {
             throw `unexpected child topic`;
         }
-
-        this.removeChild();
     }
 }
 AlarmBot.register();

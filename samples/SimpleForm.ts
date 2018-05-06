@@ -37,13 +37,11 @@ export class SimpleForm extends Topic<SimpleFormSchema, SimpleFormState, SimpleF
                     name,
                     prompt: metadata.prompt,
                 });
-                break;
+                return;
             }
         }
 
-        if (!this.hasChild) {
-            await this.end(this.state.form);
-        }
+        await this.end(this.state.form);
     }
 
     async onDispatch() {
@@ -60,7 +58,6 @@ export class SimpleForm extends Topic<SimpleFormSchema, SimpleFormState, SimpleF
             throw `not expecting type "${metadata.type}"`;
 
         this.state.form[child.return!.args!.name!] = child.return!.result.value!;
-        this.removeChild();
 
         await this.next();
     }

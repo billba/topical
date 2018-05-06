@@ -37,6 +37,8 @@ export interface TopicClass <
     name: string;
 }
 
+export type TopicChildReference = string | Topic | TopicClass;
+
 export type GetContext <
     Context extends TurnContext = TurnContext,
 > = (
@@ -517,111 +519,86 @@ export abstract class Topic <
         await (topic || Topic.loadTopic(this, ti)).start(startArgs);
     }
 
-    public dispatchToChild (
-        name: string,
-        activity?: Activity,
-        dispatchArgs?: any,
-    ): Promise<boolean>;
+    // dispatch to name/topic/class with args
 
     public dispatchToChild (
-        topic: Topic,
-        activity?: Activity,
-        dispatchArgs?: any,
+        child: TopicChildReference,
+        dispatchArgs: {},
     ): Promise<boolean>;
 
+    // dispatch activity to name/topic/class with args
+
     public dispatchToChild (
-        topicClass: TopicClass,
-        activity?: Activity,
-        dispatchArgs?: any,
+        activity: Activity,
+        child: TopicChildReference,
+        dispatchArgs: {},
+    ): Promise<boolean>;
+
+    // dispatch activity to first name/topic/class that has started
+
+    public dispatchToChild (
+        activity: Activity,
+        ... children: TopicChildReference[],
+    ): Promise<boolean>;
+
+    // dispatch to first name/topic/class that has started
+
+    public dispatchToChild (
+        ... children: TopicChildReference[],
     ): Promise<boolean>;
 
     public async dispatchToChild (
         ... args: any[],
     ) {
-        let name: string;
-        let topic: Topic;
+        let activity: Activity | undefined;
+        let i: number;
 
-          [name                    , topic    ] = typeof args[0] === 'string'
-        ? [args[0]                 , undefined] : typeof args[0] === 'function'
-        ? [args[0].name            , undefined]
-        : [args[0].constructor.name, args[0]  ];
+        let first = args[0];
+        let type = typeof first;
+
+          [activity , i] = type !== 'function' && type !== 'string' || ! (first instanceof Topic)
+        ? [first    , 0]
+        : [undefined, 1];
     
-        let activity = args[1];
-        let dispatchArgs = args[2];
+        let children: TopicChildReference[];
+        let dispatchArgs: object | undefined = undefined;
 
-        if (!topic || activity)
-            topic = this.loadChild(name, activity);
-
-        if (topic.started) {
-            await topic.onDispatch(dispatchArgs);
-            return true;
+        if (args.length === i) {
+            // no name/topic/class specified means "all children"
+            children = Object.keys(this.children);
         } else {
-            return false;
+            // look for dispatchArgs
+            if (args.length === i + 2) {
+                let type = typeof args[i + 1];
+                if (type !== 'function' && type !== 'string' || ! (args[i + 1] instanceof Topic))
+                    dispatchArgs = args[i + 1];
+            }
+
+            children = args.slice(i, dispatchArgs && -1);
         }
+
+        for (const child of children) {
+            let topic: Topic;
+
+            if (child instanceof Topic) {
+                topic = activity ? Topic.loadTopic(this, child.topicInstance, activity) : child;
+            } else {
+                const name = typeof child === 'string' ? child : child.name;
+                const ti =  this.children[name];
+                if (!ti)
+                    throw `No child named ${name}`;
+
+                topic = Topic.loadTopic(this, ti, activity);
+            }
+            
+            if (topic.started) {
+                await topic.onDispatch(dispatchArgs);
+                return true;
+            }
+        }
+    
+        return false;
     }
-
-    public dispatchToChildren (
-        activity: Activity,
-        ... topicClasses: TopicClass[],
-    ): Promise<boolean>;
-
-    public dispatchToChildren (
-        ... topicClasses: TopicClass[],
-    ): Promise<boolean>;
-
-    public dispatchToChildren (
-        activity: Activity,
-        ... topics: Topic[],
-    ): Promise<boolean>;
-
-    public dispatchToChildren (
-        ... topics: Topic[],
-    ): Promise<boolean>;
-
-    public dispatchToChildren (
-        activity: Activity,
-        ... names: string[],
-    ): Promise<boolean>;
-
-    public dispatchToChildren (
-        ... names: string[],
-    ): Promise<boolean>;
-
-    public dispatchToChildren (
-        ... args: any[],
-    ) {
-        let type = typeof args[0];
-
-        let   [activity , i] = type === 'function' || type === 'string' || args[0] instanceof Topic 
-            ? [undefined, 0]
-            : [args[0]  , 1];
-
-        let topics: Topic[];
-
-        if (args.length === i)
-            topics = Object
-                .values(this.children)
-                .map(ti => Topic.loadTopic(this, ti, activity))
-        else {
-            args = args.slice(i);
-            type = typeof args[0];
-
-            if (type === 'function')
-                topics = args.map(topicClass => this.loadChild(topicClass, activity));
-            else if (type === 'string')
-                topics = args.map(name => this.loadChild(name, activity));
-            else
-                topics = args;
-        }
-        
-        for (const topic of topics) {
-            if (topic.started)
-                return topic.dispatchToChild(topic, activity);
-        }
-
-    return false;
-}
-
 
     // These five default methods are optionally overrideable by subclasses
 

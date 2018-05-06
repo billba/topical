@@ -103,36 +103,33 @@ export const startIfScore = async <
         : false;
 }
 
-export const startBestScoringChild = async <
-    T extends Topic,
-> (
-    topic: T,
-) => {
-    const results = (await Promise.all(topic
-        .children
-        .map(child => topic.loadTopic(child)
-            .then(childTopic => childTopic
-                .getStartScore()
-                .then(result => ({
-                    childTopic,
-                    result: result || { score: 0}
-                }))
-            )
-        )
-    ))
-    .filter(i => i.result.score > 0)
-    .sort((a, b) => b.result.score - a.result.score);
+// export const startBestScoringChild = async <
+//     T extends Topic,
+// > (
+//     topic: T,
+// ) => {
+//     const results = (await Promise.all(Object
+//         .keys(topic.children)
+//         .map<Promise<[Topic, StartScore<any>]>>(child => {
+//             const childTopic = topic.loadChild(child);
+//             return childTopic
+//                 .getStartScore()
+//                 .then(result => [childTopic, result || { score: 0 } as StartScore<any>])
+//         })
+//     ))
+//     .filter(i => i[1].score > 0)
+//     .sort((a, b) => b.result.score - a.result.score);
 
-    if (results.length) {
-        await results[0]
-            .childTopic
-            .start(results[0].result.startArgs);
+//     if (results.length) {
+//         await results[0]
+//             .childTopic
+//             .start(results[0].result.startArgs);
 
-        return true;
-    }
+//         return true;
+//     }
 
-    return false;
-}
+//     return false;
+// }
 
 export interface Score <Start> {
     start?: StartScore<Start>;
@@ -153,23 +150,4 @@ export const getScore = async <
             start,
             dispatch,
         }
-}
-
-export const dispatchToStartedChild = async (
-    topic: Topic,
-    ... children: string[],
-) => {
-    const entries = children.length
-        ? children
-            .filter(name => topic.children[name] !== undefined)
-            .map(name => [name, topic.children[name]])
-        : Object.entries(topic.children);
-
-    for (let [name, topicInstanceName] of entries) {
-        const childTopic = await topic.loadTopic(topicInstanceName);
-        if (childTopic.started)
-            return topic.dispatchTo(childTopic);
-    }
-
-    return false;
 }
