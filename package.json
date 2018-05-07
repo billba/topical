@@ -22,8 +22,8 @@
   },
   "dependencies": {
     "@microsoft/recognizers-text-suite": "1.0.1",
-    "botbuilder": "4.0.0-m4.2",
-    "botbuilder-choices": "^4.0.0-m4.2",
+    "botbuilder": "4.0.0-preview1.2",
+    "botbuilder-choices": "4.0.0-preview1.2",
     "ws": "^5.1.1"
   }
 }
