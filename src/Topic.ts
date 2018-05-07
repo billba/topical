@@ -5,7 +5,7 @@ export enum TopicLifecycle {
     created,
     started,
     ended,
-    disposed,
+    removed,
 }
 
 export interface TopicNode {
@@ -178,7 +178,7 @@ export abstract class Topic <
     }
 
     public async recreate() {
-        if (this.topicNode.lifecycle === TopicLifecycle.disposed)
+        if (this.topicNode.lifecycle === TopicLifecycle.removed)
             throw "can't recreate a disposed child";
 
         await this.removeChildren();
@@ -223,7 +223,7 @@ export abstract class Topic <
     public async start (
         startArgs?: Start
     ) {
-        if (this.topicNode.lifecycle === TopicLifecycle.disposed)
+        if (this.topicNode.lifecycle === TopicLifecycle.removed)
             throw "can't start a disposed child";
 
         // await this.sendTelemetry(context, newInstance, 'init.start');
@@ -241,7 +241,7 @@ export abstract class Topic <
     public async end (
         returnArgs?: Return
     ) {
-        if (this.topicNode.lifecycle === TopicLifecycle.disposed)
+        if (this.topicNode.lifecycle === TopicLifecycle.removed)
             throw "can't end a disposed child";
 
         this.return = returnArgs;
@@ -391,7 +391,7 @@ export abstract class Topic <
 
         const topic = child instanceof Topic ? child : this.loadChild(name);
     
-        topic.topicNode.lifecycle = TopicLifecycle.disposed;
+        topic.topicNode.lifecycle = TopicLifecycle.removed;
 
         await topic.onRemove();
 
