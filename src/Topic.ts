@@ -415,11 +415,10 @@ export abstract class Topic <
     ): Promise<T>;
 
     public startChild <
-        Start,
-        T extends Topic<Start, any, any, Context>,
+        T extends Topic<any, any, any, Context>,
     > (
         topic: T,
-        startArgs?: Start,
+        startArgs?: T extends Topic<infer Start> ? Start : any,
     ): Promise<T>;
 
     public startChild <
