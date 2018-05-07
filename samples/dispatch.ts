@@ -24,7 +24,7 @@ class EchoWithConfirm extends Topic<any, Activity> {
 
     async onStart() {
         await this.startChild(Echo);
-        this.createChild(Confirm);
+        await this.createChild(Confirm);
     }
 
     async onDispatch() {

@@ -23,7 +23,7 @@ class FavoriteNumber extends Topic  {
     async next() {
         await this.startChild(PromptForCulture, {
             prompt: `Please pick a culture (${Culture.getSupportedCultureCodes().join(', ')}).`
-        } as PromptArgs);
+        });
     }
 
     async onDispatch() {

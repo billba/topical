@@ -11,7 +11,7 @@ class Root extends Topic {
         await this.startChild(ChoicePrompt, {
             prompt: 'pick',
             reprompt: 'please pick',
-        } as ChoicePromptArgs, {
+        }, {
             choices: ['one', 'two', 'three'],
         });        
     }

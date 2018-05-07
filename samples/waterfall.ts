@@ -10,7 +10,7 @@ PromptForName.register();
 
 class PromptForAge extends Prompt<number> {
 
-    constructor(culture: string) {
+    constructor(culture = 'en-us') {
         super();
 
         this.validator = hasNumber(culture)
@@ -27,7 +27,7 @@ class Age extends Waterfall {
                 await this.startChild(PromptForName, {
                     prompt: `What's your name?`,    
                     reprompt: `Please tell me your name`,
-                } as PromptArgs);
+                });
             },
 
             async (name: string) => {
@@ -45,7 +45,7 @@ class Age extends Waterfall {
                     await this.startChild(PromptForAge, {
                         prompt: `How old are you?`,
                         reprompt: `Please tell me your age.`,   
-                    } as PromptArgs, 'en-us');
+                    });
             },
 
             async (age: number) => {

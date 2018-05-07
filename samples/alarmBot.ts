@@ -11,29 +11,21 @@ const listAlarms = (alarms: Alarm[]) => alarms
     .map(alarm => `* "${alarm.name}" set for ${alarm.when}`)
     .join('\n');
 
-interface ShowAlarmStart {
-    alarms: Alarm[]
-}
-
-class ShowAlarms extends Topic<ShowAlarmStart> {
+class ShowAlarms extends Topic<Alarm[]> {
 
     async onStart (
-        args: ShowAlarmStart,
+        args: Alarm[],
     ) {
 
-        if (args.alarms.length === 0)
+        if (args.length === 0)
             await this.send(`You haven't set any alarms.`);
         else
-            await this.send(`You have the following alarms set:\n${listAlarms(args.alarms)}`);
+            await this.send(`You have the following alarms set:\n${listAlarms(args)}`);
 
         await this.end();
     }
 }
 ShowAlarms.register();
-
-interface DeleteAlarmStart {
-    alarms: Alarm[];
-}
 
 interface DeleteAlarmState {
     alarms: Alarm[];
@@ -41,18 +33,18 @@ interface DeleteAlarmState {
     child: string;
 }
 
-class DeleteAlarm extends Topic<DeleteAlarmStart, DeleteAlarmState, string> {
+class DeleteAlarm extends Topic<Alarm[], DeleteAlarmState, string> {
 
     async onStart (
-        args: DeleteAlarmStart,
+        args: Alarm[],
     ) {
-        if (args.alarms.length === 0) {
+        if (args.length === 0) {
             await this.send(`You don't have any alarms.`);
             await this.end();
             return;
         }
 
-        this.state.alarms = args.alarms;
+        this.state.alarms = args;
 
         await this.startChild(TextPrompt, {
             name: 'whichAlarm',
@@ -119,13 +111,9 @@ class AlarmBot extends Topic<any, AlarmBotState> {
                     },
                 } as SimpleFormSchema);
             } else if (/show|list/i.test(this.text)) {
-                await this.startChild(ShowAlarms, {
-                    alarms: this.state.alarms
-                });
+                await this.startChild(ShowAlarms, this.state.alarms);
             } else if (/delete|remove/i.test(this.text)) {
-                await this.startChild(DeleteAlarm, {
-                    alarms: this.state.alarms
-                });
+                await this.startChild(DeleteAlarm, this.state.alarms);
             } else {
                 await this.send(helpText);
             }

@@ -148,31 +148,38 @@ export abstract class Topic <
     constructor () {
     }
 
-    protected static createTopicInstance <
+    protected static async createTopicInstance <
         Constructor,
+        Context extends TurnContext = TurnContext,
     > (
         this: TopicClass<any, any, any, Constructor>,
+        parentOrContext: Topic<any, any, any, Context> | Context,
         constructorArgs?: Constructor,
-    ): TopicInstance {
+    ) {
         const topicClassName = this.name;
 
         if (!Topic.topics[topicClassName])
             throw `An attempt was made to create an instance of unregistered topic ${topicClassName}.`;
 
-        return {
+        const topic = Topic.loadTopic(parentOrContext, {
             topicClassName,
             constructorArgs,
             children: {},
             state: {},
             lifecycle: TopicLifecycle.created,
-        }
+        });
+
+        await topic.onCreate();
+
+        return topic;
     }
 
-    recreate() {
-        this.removeChildren();
-
+    async recreate() {
+        await this.removeChildren();
         this.topicInstance.state = {};
         this.topicInstance.lifecycle = TopicLifecycle.created;
+
+        await this.onCreate();
     }
 
     protected static loadTopic <Context extends TurnContext> (
@@ -222,14 +229,10 @@ export abstract class Topic <
         this.return = returnArgs;
         this.topicInstance.lifecycle = TopicLifecycle.ended;
 
+        await this.onEnd();
+
         if (this.parent)
             await this.parent.onChildReturn(this);
-    }
-
-    protected static root(
-        context: TurnContext,
-    ) {
-        return Topic.topicalConversationState.get(context)!.root;
     }
 
     public static async start <
@@ -254,9 +257,9 @@ export abstract class Topic <
         if (topicalConversation.root)
             throw `You must only call ${this.name}.start once.`;
 
-        topicalConversation.root = (this as any).createTopicInstance(constructorArgs);
+        const topic = await (this as any).createTopicInstance(context, constructorArgs) as Topic;
 
-        const topic = Topic.loadTopic(context, topicalConversation.root!);
+        topicalConversation.root = topic.topicInstance;
 
         await topic.start(startArgs);
 
@@ -322,13 +325,15 @@ export abstract class Topic <
         return false;
     }
 
-    public removeChildren () {
+    public async removeChildren () {
         for (const name of this.childNames) {
+            await this.loadChild(name).onDispose();
+
             delete this.children[name];
         }
     }
 
-    public removeChild (
+    public async removeChild (
         child: Topic | TopicClass | string,
     ) {
         const name = child instanceof Topic
@@ -340,42 +345,46 @@ export abstract class Topic <
         if (!this.children[name])
             return;
 
+        await (child instanceof Topic ? child : this.loadChild(name)).onDispose();
+
         delete this.children[name];
     }
 
     public createChild <
         Constructor,
+        T extends Topic<any, any, any, Context>,
     > (
         name: string,
-        topicClass: TopicClass<any, any, any, Constructor, Context>,
+        topicClass: TopicClass<any, any, any, Constructor, Context, T>,
         constructorArgs?: Constructor,
-    ): TopicInstance;
+    ): Promise<T>;
 
     public createChild <
         Constructor,
+        T extends Topic<any, any, any, Context>
     > (
-        topicClass: TopicClass<any, any, any, Constructor, Context>,
+        topicClass: TopicClass<any, any, any, Constructor, Context, T>,
         constructorArgs?: Constructor,
-    ): TopicInstance;
+    ): Promise<T>;
 
-    public createChild (
+    public async createChild (
         ... args: any[],
     ) {
         let   [name        , topicClass, constructorArgs] = typeof args[0] === 'string'
             ? [args[0]     , args[1]   , args[2]        ]
             : [args[0].name, args[0]   , args[1]        ];
 
-        this.removeChild(name);
+        await this.removeChild(name);
 
-        const ti = topicClass.createTopicInstance(constructorArgs);
+        const topic = await topicClass.createTopicInstance(this, constructorArgs);
 
-        this.children[name] = ti;
+        this.children[name] = topic.topicInstance;
 
-        return ti;
+        return topic;
     }
 
     public loadChild <
-        T extends Topic<any, any, any, Context> = Topic<any, any, any, Context>,
+        T extends Topic<any, any, any, Context>,
     > (
         topicClass: TopicClass<any, any, any, any, Context, T>,
         activity?: Activity,
@@ -398,45 +407,47 @@ export abstract class Topic <
         );
     }
 
-    public startChild (
-        name: string,
-        startArgs?: any,
-    ): Promise<void>;
-
     public startChild <
-        Start,
-    > (
-        topic: Topic<Start>,
-        startArgs?: Start,
-    ): Promise<void>;
-
-    public startChild <
-        Start,
-        Constructor,
-    > (
-        topicClass: TopicClass<Start, any, any, Constructor>,
-        startArgs?: Start,
-        constructorArgs?: Constructor,
-    ): Promise<void>;
-
-    public startChild <
-        T extends TopicClass<Start, any, any, Constructor>,
-        Start,
-        Constructor,
+        T extends Topic<any, any, any, Context> = Topic<any, any, any, Context>,
     > (
         name: string,
-        topicClass: T,
+        startArgs?: T extends Topic<infer Start> ? Start : any,
+    ): Promise<T>;
+
+    public startChild <
+        Start,
+        T extends Topic<Start, any, any, Context>,
+    > (
+        topic: T,
         startArgs?: Start,
+    ): Promise<T>;
+
+    public startChild <
+        Constructor,
+        T extends Topic<any, any, any, Context>,
+    > (
+        topicClass: TopicClass<any, any, any, Constructor, Context, T>,
+        startArgs?: T extends Topic<infer Start> ? Start : any,
         constructorArgs?: Constructor,
-    ): Promise<void>;
+    ): Promise<T>;
+
+    public startChild <
+        Constructor,
+        T extends Topic<Start, any, any, Context>,
+    > (
+        name: string,
+        topicClass: TopicClass<Start, any, any, Constructor, Context, T>,
+        startArgs?: T extends Topic<infer Start> ? Start : any,
+        constructorArgs?: Constructor,
+    ): Promise<T>;
 
     public async startChild (
         ... args: any[],
     ) {
-        let   [name                    , topic    , i] = typeof args[0] === 'string'
-            ? [args[0]                 , undefined, 1] : typeof args[0] === 'function'
-            ? [args[0].name            , undefined, 0]
-            : [args[0].constructor.name, args[0],   0];
+        let   [name                    , topic                                   , i] = typeof args[0] === 'string'
+            ? [args[0]                 , undefined                               , 1] : typeof args[0] === 'function'
+            ? [args[0].name            , undefined                               , 0]
+            : [args[0].constructor.name, args[0] as Topic<any, any, any, Context>, 0];
 
         let   [topicClass, startArgs  , constructorArgs] = typeof args[i] === 'function'
             ? [args[i]   , args[i + 1], args[i + 2]    ]
@@ -456,11 +467,15 @@ export abstract class Topic <
             create = true;
         }
 
-        if (create) {
-            ti = this.createChild(name, topicClass, constructorArgs);
-        }
+        if (create)
+            topic = await this.createChild(name, topicClass, constructorArgs);
 
-        await (topic || Topic.loadTopic(this, ti)).start(startArgs);
+        if (!topic)
+            topic = Topic.loadTopic(this, ti);
+
+        await topic.start(startArgs);
+
+        return topic;
     }
 
     // dispatch to name/topic/class with args
@@ -550,9 +565,13 @@ export abstract class Topic <
         return false;
     }
 
-    // These five default methods are optionally overrideable by subclasses
+    // These eight default methods are optionally overrideable by subclasses
 
-    public async getStartScore (): Promise<StartScore<Start> | void> {
+    public async onCreate () {
+    }
+
+    public async getStartScore (
+    ): Promise<StartScore<Start> | void> {
     }
 
     public async onStart (
@@ -572,6 +591,14 @@ export abstract class Topic <
 
     public async onChildReturn(
         child: Topic<any, any, any, Context>,
+    ) {
+    }
+
+    public async onEnd (
+    ) {
+    }
+
+    public async onDispose (
     ) {
     }
 }

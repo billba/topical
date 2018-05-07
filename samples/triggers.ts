@@ -73,8 +73,8 @@ class Travel extends Topic  {
         await this.send(`Welcome to the Travel bot!`)
         await this.help();
 
-        this.createChild('flights', Flights);
-        this.createChild('hotels', Hotels);
+        await this.createChild('flights', Flights);
+        await this.createChild('hotels', Hotels);
         console.log();
     }
 

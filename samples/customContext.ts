@@ -28,7 +28,7 @@ PromptForText.register();
 class Root extends Topic<any, any, any, CustomContext> {
 
     async onStart() {
-        this.startChild(Child);
+        await this.startChild(Child);
     }
 
     async onDispatch() {
@@ -39,9 +39,9 @@ class Root extends Topic<any, any, any, CustomContext> {
     async onChildReturn(child: Topic) {
         if (child instanceof Child) {
             await this.send(this.context.foo);
-            this.startChild(PromptForText, {
+            await this.startChild(PromptForText, {
                 prompt: 'Wassup?',
-            } as PromptArgs);
+            });
         } else if (child instanceof PromptForText) {
             await this.send(`You said ${child.return!.result.value}`);
         } else

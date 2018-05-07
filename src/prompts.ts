@@ -3,22 +3,19 @@ import { TurnContext, Activity, InputHints } from 'botbuilder';
 import { FoundChoice, ChoiceFactoryOptions, FindChoicesOptions, Choice, ChoiceFactory } from 'botbuilder-choices';
 
 export class TextPrompt <
-    Args = PromptArgs,
     Context extends TurnContext = TurnContext,
-> extends Prompt<string, Args, Context> {
+> extends Prompt<string, PromptArgs, Context> {
 
     validator = hasText;
 }
 TextPrompt.register();
 
 export class NumberPrompt <
-    Args = PromptArgs,
     Context extends TurnContext = TurnContext,
-> extends Prompt<number, Args, Context> {
+> extends Prompt<number, PromptArgs, Context> {
 
-    constructor(culture: string) {
+    constructor(culture = 'en-us') {
         super();
-        console.log("culture", culture);
         this.validator = hasNumber(culture);
     }
 }
