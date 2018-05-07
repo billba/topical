@@ -548,7 +548,7 @@ export abstract class Topic <
                 topic = activity ? Topic.loadTopic(this, child.topicInstance, activity) : child;
             } else {
                 const name = typeof child === 'string' ? child : child.name;
-                const ti =  this.children[name];
+                const ti = this.children[name];
                 if (!ti)
                     throw `No child named ${name}`;
 
