@@ -58,7 +58,10 @@ class Age extends Topic {
     async onChildEnd(child) {
         if (child instanceof PromptForName) {
             await this.send(`Nice to meet you, ${child.return.result.value}! How old are you?`);
-            this.startChild(PromptForAge);
+            await this.startChild(PromptForAge, {
+                prompt: `Please provide a valid age.`,
+                reprompt: `How old are you?`
+            });
         } else if (child instanceof PromptForAge) {
             const age = child.return.result.value;
 
@@ -87,18 +90,11 @@ PromptForName.register();
 
 class PromptForAge extends Prompt<number, any, CultureConstructor> {
 
-    constructor(construct: CultureConstructor) {
-        super(construct);
+    constructor(culture?: string) {
+        super();
 
-        this.validator = hasNumber(construct.culture)
+        this.validator = hasNumber(culture)
             .and((activity, num) => num > 0 && num < 150 || 'invalid_age');
-    }
-
-    async prompter(result?: ValidatorResult<number>) {
-        await this.send(result
-            ? `Please provide a valid age.`
-            : `How old are you?`
-        );
     }
 }
 PromptForAge.register();
@@ -149,7 +145,10 @@ class Age extends Waterfall {
 
             async (name) => {
                 await this.send(`Nice to meet you, ${name}!`);
-                await this.startChild(PromptForAge, {}, { culture: 'en-us' });
+                await this.startChild(PromptForAge, {
+                    prompt: `Please provide a valid age.`,
+                    reprompt: `How old are you?`
+                });
             },
 
             async (age) => {

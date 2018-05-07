@@ -211,7 +211,7 @@ class LongTextPrompt extends TextPrompt {
 }
 ```
 
-then `validator` will be set twice times. Once in `TextPrompt`'s constructor (which sets it to `hasText`), and once in `LongTextPrompt`. If you then went on to inherit `AllCapsLongTextPrompt` from `LongTextPrompt`, it would be set three times.
+then `validator` will be set twice; once in `TextPrompt`'s constructor (which sets it to `hasText`), and once in `LongTextPrompt`. If you then went on to inherit `AllCapsLongTextPrompt` from `LongTextPrompt`, it would be set three times.
 
 For simple validators like `hasText` this is not a big performance problem, but some validators cost more to create than others.
 

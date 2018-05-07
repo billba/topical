@@ -7,42 +7,35 @@ The *Topics* pattern models each conversation as a dynamic tree of independent c
 
 Because the typical BotBuilder app is implemented as a distributed, load-balanced web service, this tree is persisted to a centralized store (in a non-distrubuted app, this can be an in-memory store). The tree is read into memory at the start of a turn, operations are performed which may alter it, and the updated tree is written back to the store at the end of the turn.
 
-The tree is represented as follows:
+The tree is represented as a classic data structure. Each `TopicNode` contains a dictionary of named children. 
 
 ```ts
 interface TopicalConversation {
-    topicInstances: Record<string, TopicInstance>,
-    rootTopicInstanceName: string;
+    root: TopicNode;
+}
+
+interface TopicNode {
+    children: Record<string, TopicNode>;
+
+    className: string;
+    constructorArgs: any;
+
+    state: any;
+
+    lifecycle: TopicLifecycle;
 }
 
 enum TopicLifecycle {
     created,
     started,
     ended,
-}
-
-interface TopicInstance {
-    topicInstanceName: string;
-    children: string[];
-
-    topicClassName: string;
-    constructorArgs: any,
-
-    state: any;
-
-    lifecycle: TopicLifestyle;
+    disposed,
 }
 ```
 
-`topicInstances` is a dictionary of `TopicInstance`s, indexed by their (unique) `topicInstanceName`. Each `TopicInstance` has a `children` array of `topicInstanceName`s in, and `rootTopicInstanceName` is the `topicInstanceName` of the root.
-
-(To traverse the tree, start with the `rootTopicInstanceName`, look up its `TopicInstance` in `topicInstances`, and do the same recursively with each member of its `children`.)
-
 ## `Topic`, its subclasses, and the class registry.
 
-Topics come in different flavors, each with its own behaviors and state shapes. In *Topical* these are implemented as subclasses of the class `Topic`.
-
-A *Topical* application is a collection of such classes, which are registered by name into a dictionary at application startup. That name corresponds to the `topicClassName` field of each `TopicInstance`.
+Topics come in different flavors, each with its own behaviors and state shapes. In *Topical* these are subclasses of the class `Topic`. A *Topical* application is a collection of such classes, which are registered by name into a dictionary at application startup. That name corresponds to the `className` field of each `TopicNode`.
 
 ## Registration
 
@@ -57,7 +50,7 @@ MyTopic.register();
 
 ## Working with topics
 
-**You never construct instances of your `Topic` subclasses yourself.** Instead, *Topical* does it for you, using the `topicInstanceName` to look up the `TopicInstance`, then using its `topicClass` to look up the actual class, then constructs it for you using `constructorArgs` as the argument to its constructor.
+**You never construct instances of your `Topic` subclasses yourself.** Instead, *Topical* does it for you, using the `className` to look up the actual class, then constructs it for you using `constructorArgs` as the argument to its constructor.
 
 ## Topic creation & lifecycle
 
@@ -66,31 +59,41 @@ MyTopic.register();
 You create a topic by calling
 
 ```ts
-const topicInstanceName = YourTopicHere.createTopicInstance(context, constructorArgs);
+const topic = await Topic.createTopicInstance(YourTopicHere, context, constructorArgs);
 ```
 
-A `TopicInstance` is created with `constructorArgs` and a unique `topicInstanceName`. Its `topicClassName` is set to `"YourTopicHere"`. `children` is set to an an empty array, `state` is set to an empty object, and `lifecycle` is set to `TopicLifecycle.created`. This `TopicInstance` is then added to the `topicInstances` dictionary using `context`. 
+A `TopicNode` is created with `constructorArgs`. Its `className` is set to `"YourTopicHere"`. `children` and `state` are empty, and `lifecycle` is set to `TopicLifecycle.created`. An instance of `YourTopicHere` is created with `constructorArgs`, its `onCreate` method is called, and the instance is returned.
 
-If you're already in a topic, you can achieve the same results with slightly fewer characters by calling:
+This is a low-level API. You would almost always instead do the following from within a topic:
 
 ```ts
-const topicInstanceName = this.createTopicInstance(YourTopicHere, constructorArgs);
+const topic = await this.createChild(YourTopicHere, constructorArgs);
 ```
+
+This does all of the above, and also assigns the `TopicNode` to `this.children['YourTopicHere']`.
 
 ### Loading a topic
 
-Once a topic has been created, you can ask *Topical* to construct an instance of its class:
+At any time, you can ask *Topical* to construct an instance of the `Topic` subclass associated with a node:
 
 ```ts
-const topic = await this.loadTopic(topicInstanceName);
+const topic = await Topic.loadTopic(context, topicInstanceName);
 ```
+
+Again, this is a low-level API. You would almost always instead do the following from within a topic:
+
+```ts
+const topic = await this.loadChild(YourTopicHere);
+```
+
+In this case `loadChild` attempts to load a child named `"YourTopicHere"` and will throw if it can't find one, or if that node doesn't have a `className` of `"YourTopicHere"`.
 
 ### Recreating a topic
 
 You can return a topic to its "just created" state:
 
 ```ts
-topic.recreate();
+await topic.recreate();
 ```
 
 This clears its children, empties `state`, and sets the `lifecycle` to `created`.
@@ -105,25 +108,17 @@ Once a topic has been created, and loaded, you can start it:
 await topic.start(startArgs);
 ```
 
-*Topical* calls `topic.onStart(startArgs)` (and does some other stuff).
+Among other things, this calls `topic.onStart(startArgs)`.
 
-As a convenience, you can create and start a child topic in one fell swoop:
-
-```ts
-const topic = await this.createTopicInstanceAndStart(YourTopicHere, startArgs, constructorArgs);
-```
-
-This returns the resultant topic.
-
-Keep in mind that a topic can end itself in its `onStart` method.
-
-If you have a single-child topic, you can create, start, and set a child topic (potentially replacing another one) all at once.
+More commonly, you'd call:
 
 ```ts
-await this.startChild(YourTopicHere, startArgs, constructorArgs);
+const topic = await this.startChild(YourTopicHere, startArgs, constructorArgs);
 ```
 
-In this case, if the child topic ended itself, `this.child` is set to `undefined`.
+Usefully, if the child doesn't already exist, it is created.
+
+Keep in mind that by the time `start` returns, the topic may have ended itself.
 
 ### Restarting a topic
 
@@ -137,37 +132,64 @@ A topic can end itself:
 await this.end(returnArgs);
 ```
 
-This sets the topic's `lifecycle` to `ended`, clears its children, and sets its `return` property to `returnArgs`. Then, if the topic has a parent, it calls that parent's `onChildEnd` method.
+And a parent can end a child:
+
+```ts
+await this.endChild(YourTopicHere, returnArgs);
+```
+
+This sets the topic's `lifecycle` to `ended`, removes its children, and sets its `return` property to `returnArgs`. Then, if the topic has a parent, it calls that parent's `onChildEnd` method.
 
 An ended topic can always be recreated or restarted.
 
+### Removing a child
+
+When you know you don't want a child any more, remove it:
+
+```ts
+await this.removeChild(YourTopicHere);
+```
+
+This calls the child's `onRemove()` method, and then removes the reference to that child from the node's `children`.
+
 ### Dispatching to a topic
 
-From any topic, dispatch the current activity to a different topic:
+From any topic, dispatch the current activity to a given child:
 
 ```ts
-await this.dispatchTo(topicInstanceName);
+const dispatched = await this.dispatchToChild(YourTopicHere);
 ```
 
-*Topical* constructs an instance of the appropriate class and calls `topic.onDispatch()`, and returns `true`. If you pass in `undefined`, it returns `false`.
+This returns `true` if `YourTopicHere` is `started`, `false` otherwise.
 
-If you have a single-child topic you can do,
+You can list several children. `dispatchToChild` will iterate through them in order, and dispatch to the first one that's `started`:
 
 ```ts
-await this.dispatchToChild();
+const dispatched = await this.dispatchToChild(YourTopicHere, AnotherTopic, ThisOneToo);
 ```
 
-This returns 'false' if there is currently no child.
+If you don't give any topics, `dispatchToChild` will do the same thing for the node's `children`, but not in a predictable order.
+
+```ts
+const dispatched = await this.dispatchToChild();
+```
 
 ### Dispatching an activity
 
 Sometimes you want to dispatch an activity other than the current one. For instance, if the user said something ambiguous you might want to sock it away in your state, ask for clarification, and then recall it and dispatch it. Just do:
 
 ```ts
-await this.dispatchTo(topicInstanceName, activity_you_saved);
+await this.dispatchToChild(activity_you_saved, YourTopicHere);
 ```
 
-or
+You can do this with multiple topics:
+
+```ts
+await this.dispatchToChild(activity_you_saved, YourTopicHere, AnotherTopic, ThisOneToo);
+```
+
+... or with all the node's `children`
+
 
 ```ts
 await this.dispatchToChild(activity_you_saved);
@@ -177,9 +199,9 @@ await this.dispatchToChild(activity_you_saved);
 
 *Topical* may construct a topic for a `TopicInstance` many times over its lifetime, across multiple turns. Topics are constructed for scoring, `start`ing, and `dispatch`ing, or calling any other method that may exist on them.
 
-As a result, a topic's constructor should only do things that make sense in all these situations, and `constructorArgs` should only contain arguments necessary to do those things.
+As a result, a topic's constructor should only do things that make sense in all these situations, and its arguments should only contain arguments necessary to do those things.
 
-Much of what would normally goes in a constructor (like initializing the internal state at startup based on a set of arguments) instead happens in the `onStart` method.
+Much of what would normally goes in a constructor (like initializing the internal state at startup based on a set of arguments) instead happens in the `onCreate` and `onStart` methods.
 
 Many subclasses of `Topic` won't need a constructor at all.
 
@@ -191,13 +213,13 @@ Commonly you will do something like:
 yourMessageLoop(async context => {
      if (context.activity.type === 'conversationUpdate') {
         for (const member of context.activity.membersAdded) {
-            if (member.id != context.activity.recipient.id) {
+            if (member.id === context.activity.recipient.id) {
                 await YourRootTopic.start(context, startArgs, constructorArgs);
             }
         }
-    } else {
-        await YourRootTopic.onDispatch(context);
-    }
+
+    await YourRootTopic.onDispatch(context);
+
 });
 ```
 

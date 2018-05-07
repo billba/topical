@@ -4,7 +4,7 @@ The *Topics* pattern is intentionally very general purpose, enabling a number of
 
 ## Single Active Child
 
-This is the simplest and most common pattern. A topic's `this.children` array is initially empty. A trigger event causes a child to be started and set as the sole member of `this.children`. When this is the case, subsequent activities are dispatched to the child, which continues until the child topic completes by calling its `this.end()` method with or without a return value, at which point the parent topic's `this.children` array is cleared (emptied), and the cycle can be repeated.
+This is the simplest and most common pattern. A trigger event causes a child to be started. Subsequent activities are dispatched to the child, which continues until the child topic completes by calling its `this.end()` method with or without a return value. 
 
 ```ts
 class Root extends Topic {
@@ -52,9 +52,9 @@ Sometimes you want a parent topic to intercept certain messages and handle them 
 
 Sometimes you want a parent to permanently stop dispatching messages to its child.
 
-There are two approaches. You can formally end the child by calling its `end` method. This will end up calling your `onChildEnd` method.
+There are two approaches. You can formally end the child by calling its `end()` method. This gives the child a chance to clean up (via its `onEnd()` method) and will end up calling your `onChildEnd()` method.
 
-If you just want the child to go away completely, you can remove it by calling `this.removeChild(child)` or get rid of all your children by calling `this.removeChildren()`:
+If you just want the child to go away completely, you can remove it by calling `this.removeChild(child)` or remove all your children by calling `this.removeChildren()`. The child still has a chance to clean up via its `onRemove()` method.
 
 ```ts
     async onDispatch() {
@@ -70,8 +70,6 @@ If you just want the child to go away completely, you can remove it by calling `
     }
 ```
 
-**Note:** it is likely that `Topic` will get an `onEnd` method so that a child topic has an opportunity to clean up when it is ended by a parent.
-
 ## Scoring
 
 A child topic can contribute data towards the decision of whether its parent should start and/or dispatch to it.
@@ -82,7 +80,7 @@ Sometimes a child knows better than its parent whether it should be started. In 
 
 ```ts
     async onStart() {
-        this.child = this.createTopicInstance(TravelTopic);
+        this.createChild(TravelTopic);
 
         await this.send("How can I help you today?");
     }
@@ -95,12 +93,10 @@ We then *score* each incoming activity until the child topic signals it should b
         if (await this.dispatchToChild())
             return;
 
-        const topic = await this.loadTopic(this.child);
-
-        const startScore = await topic.getStartScore();
+        const startScore = await this.loadChild(Child).getStartScore();
 
         if (startScore)
-            await topic.start(startScore.startArgs);
+            await this.startChild(Child, startScore.startArgs);
     }
 ```
 
@@ -108,47 +104,35 @@ The result of `getStartScore` is either `void` or a `StartScore` object containi
 * 0 > `score` <= 1, representing the topic's confidence that the current activity should start it
 * `startArgs` that should be supplied to its `start` method in that case.
 
-You can use this data however you see fit. Here we ignore the score, but you could compare it do a threshold value:
+You can use this data however you see fit. You could compare it do a threshold value:
 
 ```ts
         if (startScore && startScore.score > .5)
-            await topic.start(startScore.startArgs);
-```
-
-This is a common enough pattern that *Topical* contains a helper function called `startIfScore`. It returns `true` if the topic was started, `false` if it was not started, or started and completed.
-
-```ts
-    async onDispatch() {
-        if (await this.dispatchToChild())
-            return;
-
-        if (await startIfScore(await this.loadTopic(this.child)), .5) // threshold value is optional
-            return;
-    }
+            await this.startChild(Child, startScore.startArgs);
 ```
 
 Not all topics have triggers. If not, calling `getStartScore()` will return void.
 
-If you have multiple children, the helper `startBestScoringChild` will try every child in `this.children` and start the one returning the highest score, so you can load up a number of potential children and let them duke it out. Multiple scoring only works if all topics are calibrated. One bad apple can spoil the bunch. 
+If you have multiple children, the helper `startBestScoringChild` will try every child and start the one returning the highest score, so you can load up a number of potential children and let them duke it out. For one example of this, see the [triggers](../samples/triggers.ts) sample.
+
+**Pro tip:** Multiple scoring only works if all topics are calibrated. One bad apple can spoil the bunch. 
 
 ### Dispatch Score
 
 Similarly, a started topic can also score its confidence that it should be the one to receive an incoming activity. 
 
-Dispatch scoring is not for the faint of heart. There are many variables to take into account by both the parent and child, and calibration across topics is critical. It is a power tool to be used with all due caution. 
-
 The process of calculating a score may overlap with the process of dispatching an activity. For instance, in both cases the same LUIS model may be run. `getDispatchScore` can return the LUIS intent, which can be used by its `onDispatch` method instead of running the same model again.
 
 ```ts
     async onDispatch() {
-        const topic = await this.loadTopic(this.child);
-
-        const dispatchScore = await topic.getDispatchScore();
+        const dispatchScore = await this.loadChild(Child).getDispatchScore();
 
         if (dispatchScore)
-            await this.dispatchToChild(undefined, dispatchScore.dispatchArgs);
+            await this.dispatchToChild(Child, dispatchScore.dispatchArgs);
     }
 ```
+
+**Pro tip:** Even more than Start Scoring, Dispatch Scoring is not for the faint of heart. There are many variables to take into account by both the parent and child, and calibration across topics is critical. It is a power tool to be used with all due caution. 
 
 ## Prompts
 
@@ -162,7 +146,7 @@ Read up on [waterfalls](./waterfalls.md)
 
 TK
 
-For one example of this, see the [dispatch](./samples/dispatch.ts) sample.
+For one example of this, see the [dispatch](../samples/dispatch.ts) sample.
 
 ## Resolving ambiguity
 
