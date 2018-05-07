@@ -5,6 +5,7 @@ export enum TopicLifecycle {
     created,
     started,
     ended,
+    disposed,
 }
 
 export interface TopicInstance {
@@ -175,6 +176,9 @@ export abstract class Topic <
     }
 
     async recreate() {
+        if (this.topicInstance.lifecycle === TopicLifecycle.disposed)
+            throw "can't recreate a disposed child";
+
         await this.removeChildren();
         this.topicInstance.state = {};
         this.topicInstance.lifecycle = TopicLifecycle.created;
@@ -211,6 +215,9 @@ export abstract class Topic <
     async start (
         startArgs?: Start
     ) {
+        if (this.topicInstance.lifecycle === TopicLifecycle.disposed)
+            throw "can't start a disposed child";
+
         // await this.sendTelemetry(context, newInstance, 'init.start');
 
         if (this.topicInstance.lifecycle !== TopicLifecycle.created)
@@ -226,6 +233,9 @@ export abstract class Topic <
     async end (
         returnArgs?: Return
     ) {
+        if (this.topicInstance.lifecycle === TopicLifecycle.disposed)
+            throw "can't end a disposed child";
+
         this.return = returnArgs;
         this.topicInstance.lifecycle = TopicLifecycle.ended;
 
@@ -325,27 +335,29 @@ export abstract class Topic <
         return false;
     }
 
-    public async removeChildren () {
-        for (const name of this.childNames) {
-            await this.loadChild(name).onDispose();
-
-            delete this.children[name];
-        }
+    public async removeChildren (
+    ) {
+        for (const name of this.childNames)
+            await this.removeChild(name);
     }
 
     public async removeChild (
-        child: Topic | TopicClass | string,
+        child: TopicChildReference,
     ) {
-        const name = child instanceof Topic
-            ? child.constructor.name
-            : typeof child === 'string'
+        const name = typeof child === 'string'
             ? child
-            : child.name;
+            : typeof child === 'function'
+            ? child.name
+            : child.constructor.name;
 
         if (!this.children[name])
             return;
 
-        await (child instanceof Topic ? child : this.loadChild(name)).onDispose();
+        const topic = child instanceof Topic ? child : this.loadChild(name);
+    
+        topic.topicInstance.lifecycle = TopicLifecycle.disposed;
+
+        await topic.onRemove();
 
         delete this.children[name];
     }
@@ -597,7 +609,7 @@ export abstract class Topic <
     ) {
     }
 
-    public async onDispose (
+    public async onRemove (
     ) {
     }
 }
