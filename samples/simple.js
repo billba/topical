@@ -46,7 +46,7 @@ class RootTopic extends Topic {
         await this.help();
     }
 
-    async onChildReturn() {
+    async onChildEnd() {
         await this.send(`Welcome back from the child topic!`);
         await this.help();
     }

@@ -242,7 +242,7 @@ export abstract class Topic <
         await this.onEnd();
 
         if (this.parent)
-            await this.parent.onChildReturn(this);
+            await this.parent.onChildEnd(this);
     }
 
     public static async start <
@@ -600,7 +600,7 @@ export abstract class Topic <
     ) {
     }
 
-    public async onChildReturn(
+    public async onChildEnd(
         child: Topic<any, any, any, Context>,
     ) {
     }

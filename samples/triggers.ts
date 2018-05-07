@@ -89,7 +89,7 @@ class Travel extends Topic  {
             await this.send(`I can't do that.`);
     }
 
-    async onChildReturn() {
+    async onChildEnd() {
         await this.send(`Welcome back to the Travel bot!`);
         await this.help();
     }

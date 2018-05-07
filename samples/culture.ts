@@ -31,7 +31,7 @@ class FavoriteNumber extends Topic  {
             await this.dispatchToChild();
     }
 
-    async onChildReturn(child: Topic) {
+    async onChildEnd(child: Topic) {
         if (child instanceof PromptForCulture) {
             await this.startChild(NumberPrompt, {
                 prompt: `What's your favorite number?`

@@ -49,7 +49,7 @@ export class SimpleForm extends Topic<SimpleFormSchema, SimpleFormState, SimpleF
             throw "a prompt should always be active";
     }
 
-    async onChildReturn(
+    async onChildEnd(
         child: TextPrompt,
     ) {
         const metadata = this.state.schema[child.return!.args!.name!];

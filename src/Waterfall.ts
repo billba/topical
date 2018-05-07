@@ -68,7 +68,7 @@ export abstract class Waterfall <
             await this.end();
     }
 
-    async onChildReturn (child: Prompt<any, any, Context>) {
+    async onChildEnd (child: Prompt<any, any, Context>) {
         if (child instanceof Prompt) {
             this.result = child.return!.result;
         }

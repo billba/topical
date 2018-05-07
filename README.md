@@ -51,9 +51,8 @@ class Root extends Topic {
         }
     }
 
-    async onChildReturn() {
+    async onChildEnd() {
         await this.context.sendActivity(`Welcome back to the Root!`);
-        this.clearChild();
     }
 }
 ```
@@ -99,13 +98,12 @@ Finally it's time to hook your root topic up to your message loop:
 yourMessageLoop(async context => {
      if (context.activity.type === 'conversationUpdate') {
         for (const member of context.activity.membersAdded) {
-            if (member.id != context.activity.recipient.id) {
+            if (member.id === context.activity.recipient.id) {
                 await YourRootTopic.start(context, startArgs, constructorArgs);
             }
         }
-    } else {
-        await YourRootTopic.dispatch(context);
-    }
+
+await YourRootTopic.dispatch(context);
 });
 ```
 

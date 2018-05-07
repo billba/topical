@@ -137,7 +137,7 @@ A topic can end itself:
 await this.end(returnArgs);
 ```
 
-This sets the topic's `lifecycle` to `ended`, clears its children, and sets its `return` property to `returnArgs`. Then, if the topic has a parent, it calls that parent's `onChildReturn` method.
+This sets the topic's `lifecycle` to `ended`, clears its children, and sets its `return` property to `returnArgs`. Then, if the topic has a parent, it calls that parent's `onChildEnd` method.
 
 An ended topic can always be recreated or restarted.
 

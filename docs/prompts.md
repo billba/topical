@@ -72,7 +72,7 @@ You can imagine a Topic that runs user input through a specific validator, using
 
 When you invoke a prompt you optionally supply arguments. These are made available to the `prompter` as `this.state.args`.
 
-When the prompt completes, it returns the following to the parent Topic's `onChildReturn` method as `child.return`:
+When the prompt completes, it returns the following to the parent Topic's `onChildEnd` method as `child.return`:
 
 * `args`: the (optional) arguments supplied when you invoked the prompt
 * `result`: if successful, the result of the last call to the validator. If unsuccessful (the user exceeded `maxTurns`), { reason: 'too_many_attempts' }
@@ -97,7 +97,7 @@ class MyTopic extends Topic {
         });
     }
 
-    async onChildReturn(child) {
+    async onChildEnd(child) {
         await this.send(`Nice to meet you, ${child.return.result.value}`);
     }
 }
@@ -127,7 +127,7 @@ class MyTopic extends Topic {
         await this.dispatchToChild();
     }
 
-    async onChildReturn(child) {
+    async onChildEnd(child) {
         if (child.return.args.name === 'dog') {
             this.state.dogName = child.return.result.value;
             await this.startChild(PetNamePrompt, {
@@ -136,7 +136,6 @@ class MyTopic extends Topic {
             });
         } else {
             this.state.catName = child.return.result.value;
-            this.clearChild();
         }
     }
 }
@@ -188,7 +187,7 @@ class MyTopic extends Topic {
         await this.dispatchToChild();
     }
 
-    async onChildReturn(child) {
+    async onChildEnd(child) {
         if (child instanceof BigNumberPrompt) {
             if (!child.return.result.reason)
                 await this.send(`${child.return.result.value} is indeed a big number.`);

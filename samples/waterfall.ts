@@ -57,7 +57,7 @@ class Age extends Waterfall {
         ];
     }
 
-    // uses default onStart, onDispatch, onChildReturn
+    // uses default onStart, onDispatch, onChildEnd
 }
 Age.register();
 
@@ -76,7 +76,7 @@ class Root extends Topic {
             await this.dispatchToChild();
     }
 
-    async onChildReturn(child: Topic) {
+    async onChildEnd(child: Topic) {
         await this.next();
     }
 

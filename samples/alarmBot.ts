@@ -56,7 +56,9 @@ class DeleteAlarm extends Topic<Alarm[], DeleteAlarmState, string> {
         await this.dispatchToChild();
     }
 
-    async onChildReturn(child: TextPrompt) {
+    async onChildEnd(
+        child: TextPrompt,
+    ) {
         switch (child.return!.args!.name) {
 
             case 'whichAlarm':
@@ -120,7 +122,7 @@ class AlarmBot extends Topic<any, AlarmBotState> {
         }
     }
 
-    async onChildReturn(
+    async onChildEnd(
         child: Topic,
     ) {
         if (child instanceof SimpleForm) {

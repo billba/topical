@@ -21,7 +21,7 @@ class Root extends Topic {
             await this.dispatchToChild();
     }
 
-    async onChildReturn(child: ChoicePrompt) {
+    async onChildEnd(child: ChoicePrompt) {
         await this.send(`You picked "${child.return!.result.value!.value}".`)
         await this.next();
     }

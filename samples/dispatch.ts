@@ -48,7 +48,7 @@ class EchoWithConfirm extends Topic<any, Activity> {
         await this.dispatchToChild(Confirm, Echo);
     }
 
-    async onChildReturn(child: Confirm) {
+    async onChildEnd(child: Confirm) {
         await this.dispatchToChild(this.state, Echo);
     }
 }

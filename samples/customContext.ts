@@ -36,7 +36,7 @@ class Root extends Topic<any, any, any, CustomContext> {
             await this.dispatchToChild();
     }
 
-    async onChildReturn(child: Topic) {
+    async onChildEnd(child: Topic) {
         if (child instanceof Child) {
             await this.send(this.context.foo);
             await this.startChild(PromptForText, {

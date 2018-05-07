@@ -22,9 +22,8 @@ class Root extends Topic {
         }
     }
 
-    async onChildReturn() {
+    async onChildEnd() {
         await this.send(`Welcome back to the Root!`);
-        this.clearChildren();
     }
 }
 Root.register();
@@ -51,12 +50,16 @@ Sometimes you want a parent topic to intercept certain messages and handle them 
 
 ## Child cancelation
 
-Sometimes you want a parent to permanently stop dispatching messages to its child. This is as simple as clearing `this.children`.
+Sometimes you want a parent to permanently stop dispatching messages to its child.
+
+There are two approaches. You can formally end the child by calling its `end` method. This will end up calling your `onChildEnd` method.
+
+If you just want the child to go away completely, you can remove it by calling `this.removeChild(child)` or get rid of all your children by calling `this.removeChildren()`:
 
 ```ts
     async onDispatch() {
         if (this.text === `cancel`)
-            this.clearChildren();
+            this.removeChildren();
 
         if (await this.dispatchToChild())
             return;
