@@ -32,8 +32,13 @@ class Root extends Topic<any, any, any, CustomContext> {
     }
 
     async onDispatch() {
-        if (this.text)
-            await this.dispatchToChild();
+        if (!this.text)
+            return;
+        
+        if (await this.dispatchToChild())
+            return;
+
+        await this.send(`That's all I've got.`)
     }
 
     async onChildEnd(child: Topic) {
