@@ -119,12 +119,20 @@ export abstract class Topic <
         this.topicNode.state = state;
     }
 
+    public get created () {
+        return this.topicNode.lifecycle === TopicLifecycle.created;
+    }
+
     public get started () {
         return this.topicNode.lifecycle === TopicLifecycle.started;
     }
 
     public get ended () {
         return this.topicNode.lifecycle === TopicLifecycle.ended;
+    }
+
+    public get removed () {
+        return this.topicNode.lifecycle === TopicLifecycle.removed;
     }
 
     public get children () {
