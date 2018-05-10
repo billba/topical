@@ -185,9 +185,9 @@ export abstract class Topic <
         return topic;
     }
 
-    public async recreate() {
+    public async recycle() {
         if (this.topicNode.lifecycle === TopicLifecycle.removed)
-            throw "can't recreate a disposed child";
+            throw "can't recycle a removed child";
 
         await this.removeChildren();
         this.topicNode.state = {};
@@ -196,10 +196,10 @@ export abstract class Topic <
         await this.onCreate();
     }
 
-    public async recreateChild (
+    public async recycleChild (
         child: TopicChildReference<Context>,
     ) {
-        await (child instanceof Topic ? child : this.loadChild(child)).recreate();
+        await (child instanceof Topic ? child : this.loadChild(child)).recycle();
     }
 
     protected static loadTopic <Context extends TurnContext> (
@@ -232,12 +232,12 @@ export abstract class Topic <
         startArgs?: Start
     ) {
         if (this.topicNode.lifecycle === TopicLifecycle.removed)
-            throw "can't start a disposed child";
+            throw "can't start a removed child";
 
         // await this.sendTelemetry(context, newInstance, 'init.start');
 
         if (this.topicNode.lifecycle !== TopicLifecycle.created)
-            this.recreate();
+            this.recycle();
 
         this.topicNode.lifecycle = TopicLifecycle.started;
 
@@ -250,7 +250,7 @@ export abstract class Topic <
         returnArgs?: Return
     ) {
         if (this.topicNode.lifecycle === TopicLifecycle.removed)
-            throw "can't end a disposed child";
+            throw "can't end a removed child";
 
         this.return = returnArgs;
         this.topicNode.lifecycle = TopicLifecycle.ended;

@@ -29,7 +29,7 @@ enum TopicLifecycle {
     created,
     started,
     ended,
-    disposed,
+    removed,
 }
 ```
 
@@ -93,7 +93,7 @@ In this case `loadChild` attempts to load a child named `"YourTopicHere"` and wi
 You can return a topic to its "just created" state:
 
 ```ts
-await topic.recreate();
+await topic.recycle();
 ```
 
 This clears its children, empties `state`, and sets the `lifecycle` to `created`.
@@ -122,7 +122,7 @@ Keep in mind that by the time `start` returns, the topic may have ended itself.
 
 ### Restarting a topic
 
-Any topic can be restarted by calling `topic.start`/`this.startChild`. This calls `recreate` if the topic's lifecycle is not `created`.
+Any topic can be restarted by calling `topic.start`/`this.startChild`. This calls `recycle` if the topic's lifecycle is not `created`.
 
 ### Ending a topic
 
@@ -140,7 +140,7 @@ await this.endChild(YourTopicHere, returnArgs);
 
 This sets the topic's `lifecycle` to `ended`, removes its children, and sets its `return` property to `returnArgs`. Then, if the topic has a parent, it calls that parent's `onChildEnd` method.
 
-An ended topic can always be recreated or restarted.
+An ended topic can always be recycled or restarted.
 
 ### Removing a child
 
