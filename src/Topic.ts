@@ -410,6 +410,8 @@ export abstract class Topic <
         await topic.onRemove();
 
         delete this.children[name];
+
+        await topic.removeChildren();
     }
 
     public createChild <
