@@ -614,7 +614,20 @@ export abstract class Topic <
         return false;
     }
 
-    // These eight default methods are optionally overrideable by subclasses
+    public async resume(
+        resumeArgs?: any,
+    ) {
+        await this.onResume(resumeArgs);
+    }
+
+    public async resumeChild (
+        child: TopicChildReference<Context>,
+        resumeArgs?: any,
+    ) {
+        await this.loadChild(child).resume(resumeArgs);
+    }
+
+    // These nine default methods are optionally overrideable by subclasses
 
     public async onCreate () {
     }
@@ -625,6 +638,11 @@ export abstract class Topic <
 
     public async onStart (
         args?: Start,
+    ) {
+    }
+
+    public async onResume (
+        args?: any,
     ) {
     }
 
