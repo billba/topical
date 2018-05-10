@@ -199,7 +199,7 @@ export abstract class Topic <
     public async recycleChild (
         child: TopicChildReference<Context>,
     ) {
-        await (child instanceof Topic ? child : this.loadChild(child)).recycle();
+        await this.loadChild(child).recycle();
     }
 
     protected static loadTopic <Context extends TurnContext> (
@@ -266,27 +266,27 @@ export abstract class Topic <
     > (
         name: string,
         returnArgs?: T extends Topic<any, any, infer Return> ? Return : any,
-    ): Promise<T>;
+    ): Promise<void>;
 
     public endChild <
         T extends Topic<any, any, any, Context>,
     > (
         topic: T,
         returnArgs?: T extends Topic<any, any, infer Return> ? Return : any,
-    ): Promise<T>;
+    ): Promise<void>;
 
     public endChild <
         T extends Topic<any, any, any, Context>,
     > (
         topicClass: TopicClass<any, any, any, any, Context, T>,
         returnArgs?: T extends Topic<any, any, infer Return> ? Return : any,
-    ): Promise<T>;
+    ): Promise<void>;
 
     public async endChild (
         child: TopicChildReference<Context>,
         returnArgs?: any,
     ) {
-        await (child instanceof Topic ? child : this.loadChild(child)).end(returnArgs);
+        await this.loadChild(child).end(returnArgs);
     }
 
     public static async start <
@@ -385,19 +385,25 @@ export abstract class Topic <
             await this.removeChild(name);
     }
 
-    public async removeChild (
+    private getChildName(
         child: TopicChildReference<Context>,
     ) {
-        const name = typeof child === 'string'
+        return typeof child === 'string'
             ? child
             : typeof child === 'function'
             ? child.name
             : child.constructor.name;
+    }
+
+    public async removeChild (
+        child: TopicChildReference<Context>,
+    ) {
+        const name = this.getChildName(child);
 
         if (!this.children[name])
             return;
 
-        const topic = child instanceof Topic ? child : this.loadChild(name);
+        const topic = this.loadChild(child);
     
         topic.topicNode.lifecycle = TopicLifecycle.removed;
 
@@ -442,10 +448,13 @@ export abstract class Topic <
     public loadChild <
         T extends Topic<any, any, any, Context> = Topic<any, any, any, Context>,
     > (
-        nameOrTopicClass: string | TopicClass<any, any, any, any, Context, T>,
+        child: string | T | TopicClass<any, any, any, any, Context, T>,
         activity?: Activity,
     ): T {
-        const name = typeof nameOrTopicClass === 'string' ? nameOrTopicClass : nameOrTopicClass.name;
+        if (child instanceof Topic)
+            return activity ? Topic.loadTopic(this, child.topicNode, activity) as T : child;
+
+        const name = typeof child === 'string' ? child : child.name;
         const ti = this.children[name];
 
         if (!ti)
@@ -453,7 +462,7 @@ export abstract class Topic <
 
         const topic = Topic.loadTopic(this, ti, activity) as T;
 
-        if (typeof nameOrTopicClass === 'function' && topic.topicNode.className !== name)
+        if (typeof child === 'function' && topic.topicNode.className !== name)
             throw `The child named ${name} is not an instance of that class.`;
 
         return topic;
@@ -594,9 +603,7 @@ export abstract class Topic <
         }
 
         for (const child of children) {
-            const topic = child instanceof Topic
-                ? activity ? Topic.loadTopic(this, child.topicNode, activity) : child
-                : this.loadChild(child);
+            const topic = this.loadChild(child, activity);
 
             if (topic.started) {
                 await topic.onDispatch(dispatchArgs);
