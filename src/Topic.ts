@@ -2,10 +2,10 @@ import { Promiseable, Activity, TurnContext, Storage, ConversationState, Resourc
 import { toPromise, Telemetry, TelemetryAction } from './topical';
 
 export enum TopicLifecycle {
-    created,
-    started,
-    ended,
-    removed,
+    Created,
+    Started,
+    Ended,
+    Removed,
 }
 
 export interface TopicNode {
@@ -121,19 +121,19 @@ export abstract class Topic <
     }
 
     public get created () {
-        return this.topicNode.lifecycle === TopicLifecycle.created;
+        return this.topicNode.lifecycle === TopicLifecycle.Created;
     }
 
     public get started () {
-        return this.topicNode.lifecycle === TopicLifecycle.started;
+        return this.topicNode.lifecycle === TopicLifecycle.Started;
     }
 
     public get ended () {
-        return this.topicNode.lifecycle === TopicLifecycle.ended;
+        return this.topicNode.lifecycle === TopicLifecycle.Ended;
     }
 
     public get removed () {
-        return this.topicNode.lifecycle === TopicLifecycle.removed;
+        return this.topicNode.lifecycle === TopicLifecycle.Removed;
     }
 
     public get children () {
@@ -178,7 +178,7 @@ export abstract class Topic <
             constructorArgs,
             children: {},
             state: {},
-            lifecycle: TopicLifecycle.created,
+            lifecycle: TopicLifecycle.Created,
         });
 
         await topic.onCreate();
@@ -188,12 +188,12 @@ export abstract class Topic <
 
     public async recycle(
     ) {
-        if (this.topicNode.lifecycle === TopicLifecycle.removed)
+        if (this.topicNode.lifecycle === TopicLifecycle.Removed)
             throw "can't recycle a removed child";
 
         await this.removeChildren();
         this.topicNode.state = {};
-        this.topicNode.lifecycle = TopicLifecycle.created;
+        this.topicNode.lifecycle = TopicLifecycle.Created;
 
         await this.onCreate();
     }
@@ -233,15 +233,15 @@ export abstract class Topic <
     public async start (
         startArgs?: Start
     ) {
-        if (this.topicNode.lifecycle === TopicLifecycle.removed)
+        if (this.topicNode.lifecycle === TopicLifecycle.Removed)
             throw "can't start a removed child";
 
         // await this.sendTelemetry(context, newInstance, 'init.start');
 
-        if (this.topicNode.lifecycle !== TopicLifecycle.created)
+        if (this.topicNode.lifecycle !== TopicLifecycle.Created)
             this.recycle();
 
-        this.topicNode.lifecycle = TopicLifecycle.started;
+        this.topicNode.lifecycle = TopicLifecycle.Started;
 
         await this.onStart(startArgs);
 
@@ -251,11 +251,11 @@ export abstract class Topic <
     public async end (
         returnArgs?: Return
     ) {
-        if (this.topicNode.lifecycle === TopicLifecycle.removed)
+        if (this.topicNode.lifecycle === TopicLifecycle.Removed)
             throw "can't end a removed child";
 
         this.return = returnArgs;
-        this.topicNode.lifecycle = TopicLifecycle.ended;
+        this.topicNode.lifecycle = TopicLifecycle.Ended;
 
         await this.onEnd();
 
@@ -374,7 +374,7 @@ export abstract class Topic <
 
     public get hasStartedChildren () {
         for (const ti of Object.values(this.children)) {
-            if (ti.lifecycle === TopicLifecycle.started)
+            if (ti.lifecycle === TopicLifecycle.Started)
                 return true;
         }
 
@@ -407,7 +407,7 @@ export abstract class Topic <
 
         const topic = this.loadChild(child);
     
-        topic.topicNode.lifecycle = TopicLifecycle.removed;
+        topic.topicNode.lifecycle = TopicLifecycle.Removed;
 
         await topic.onRemove();
 
