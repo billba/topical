@@ -93,7 +93,8 @@ export abstract class Topic <
 
     private static topics: Record<string, TopicClass> = {};
 
-    public static register() {
+    public static register (
+    ) {
 
         if (this === Topic)
             return;
@@ -185,7 +186,8 @@ export abstract class Topic <
         return topic;
     }
 
-    public async recycle() {
+    public async recycle(
+    ) {
         if (this.topicNode.lifecycle === TopicLifecycle.removed)
             throw "can't recycle a removed child";
 
@@ -617,21 +619,20 @@ export abstract class Topic <
     }
 
     public async resume(
-        resumeArgs?: any,
     ) {
-        await this.onResume(resumeArgs);
+        await this.onResume();
     }
 
     public async resumeChild (
         child: TopicChildReference<Context>,
-        resumeArgs?: any,
     ) {
-        await this.loadChild(child).resume(resumeArgs);
+        await this.loadChild(child).resume();
     }
 
     // These nine default methods are optionally overrideable by subclasses
 
-    public async onCreate () {
+    public async onCreate (
+    ) {
     }
 
     public async getStartScore (
