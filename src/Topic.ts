@@ -306,7 +306,7 @@ export abstract class Topic <
             throw "You can only 'start' a child of Topic.";
 
         if (!Topic.topicalConversationState)
-            throw `You must call Topic.init before calling ${this.name}.do`;
+            throw `You must call Topic.init before calling ${this.name}.start`;
 
         const topicalConversation = await Topic.topicalConversationState.read(context);
 
