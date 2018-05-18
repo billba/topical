@@ -8,7 +8,7 @@
 
 ## How do I install *Topical*?
 
-`npm install -S botbuilder-topical`
+`npm install botbuilder-topical`
 
 ## The *Topics* pattern
 
@@ -26,7 +26,7 @@ The built-in `botbuilder-dialogs` library takes the v3.x Node "Dialogs" pattern 
 * you can choose to write Dialog logic as either a waterfall or a standard message loop
 * you invoke the dialog stack from your main message loop, which means the confusing triggers/scorables concepts from v3 have been eliminated
 
-However the pattern is the same as v3.x: the current activity is routed directly to the current dialog (the one at the top of the stack). This means that each dialog doesn't have a chance to make decisions about how to an activity, including whether to dispatch it to a child. That, and the fact that you are limited to a stack of dialogs (instead of a tree), means that you are very limited in the types of conversational flow that you can implement.
+However, the pattern is the same as v3.x: the current activity is routed directly to the current dialog (the one at the top of the stack). This means that each dialog doesn't have a chance to make decisions about how to respond to an activity, including whether to dispatch it to a child. That, and the fact that you are limited to a stack of dialogs (instead of a tree), means that you are very limited in the types of conversational flow that you can implement.
 
 The *Topics* pattern was designed to solve these problems.
 
@@ -116,7 +116,7 @@ yourMessageLoop(context => doTopic(YourRootTopic, context, startArgs, constructo
 
 In addition to helping your application implement the *Topics* abstraction, *Topical* has a few helpers which make life easier for you bot builders:
 
-* `consoleOnturn` wraps `ConsoleAdapter`'s `listen` method, injecting in a `conversationUpdate` activity at the start of the conversation. This helps you share the same bot logic between Console bots and Bot Framework bots.
+* `consoleOnTurn` wraps `ConsoleAdapter`'s `listen` method, injecting in a `conversationUpdate` activity at the start of the conversation. This helps you share the same bot logic between Console bots and Bot Framework bots.
 
 In every topic:
 * `this.text` is a shorthand for `this.context.activity.text.trim()` -- it is `undefined` if the activity type is not `message`
@@ -130,7 +130,7 @@ These helpers are used throughout the [samples](#samples).
 
 To these samples, you'll need to clone this repo.
 
-[simple sample](/samples/simple.js) is a JavaScript bot demonstrates a conversation with parent-child topics. Run `node samples/simple.js`
+[simple sample](/samples/simple.js) is a JavaScript bot that demonstrates a conversation with parent-child topics. Run `node samples/simple.js`
 
 The rest of the samples are written in TypeScript. To run them you'll need to:
 
