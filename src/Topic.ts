@@ -24,12 +24,8 @@ interface TopicalConversation {
 }
 
 export interface TopicClass <
-    Start = any,
-    State = any,
-    Return = any,
     Constructor = any,
-    Context extends TurnContext = TurnContext,
-    T extends Topic<Start, State, Return, Context> = Topic<Start, State, Return, Context>,
+    T extends Topic = Topic,
 > {
     new (
         args: Constructor,
@@ -38,9 +34,15 @@ export interface TopicClass <
     name: string;
 }
 
+export type GetConstructorArgs<TC> = TC extends TopicClass<infer Constructor> ? Constructor : never;
+
+export type GetStartArgs<TC> = TC extends TopicClass<any, Topic<infer Start>> ? Start : never;
+
+export type GetTopic<TC> =  TC extends TopicClass<any, infer T> ? T : never;
+
 export type TopicChildReference <
-    Context extends TurnContext = TurnContext
-> = string | Topic<any, any, any, Context> | TopicClass<any, any, any, any, Context>;
+    Context extends TurnContext,
+> = string | TopicWithContext<Context> | TopicClass<any, TopicWithContext<Context>>;
 
 export type GetContext <
     Context extends TurnContext = TurnContext,
@@ -63,6 +65,8 @@ export interface DispatchScore {
     dispatchArgs?: any;
     score: number;
 }
+
+export type TopicWithContext<Context extends TurnContext> = Topic<any, any, any, Context>;
 
 export abstract class Topic <
     Start = any,
@@ -150,7 +154,7 @@ export abstract class Topic <
 
     public context!: Context;
 
-    public parent?: Topic<any, any, any, Context>;
+    public parent?: TopicWithContext<Context>;
 
     // helpers - these aren't specific to topics, but they do make life easier
 
@@ -161,12 +165,12 @@ export abstract class Topic <
     }
 
     protected static async createTopicNode <
-        Constructor,
-        Context extends TurnContext = TurnContext,
+        Context extends TurnContext,
+        TC extends TopicClass<any, TopicWithContext<Context>>,
     > (
-        topicClass: TopicClass<any, any, any, Constructor>,
-        parentOrContext: Topic<any, any, any, Context> | Context,
-        constructorArgs?: Constructor,
+        topicClass: TC,
+        parentOrContext: TopicWithContext<Context> | Context,
+        constructorArgs?: GetConstructorArgs<TC>,
     ) {
         const className = topicClass.name;
 
@@ -205,10 +209,10 @@ export abstract class Topic <
     }
 
     protected static loadTopic <Context extends TurnContext> (
-        parentOrContext: Topic<any, any, any, Context> | Context,
+        parentOrContext: TopicWithContext<Context> | Context,
         topicNode: TopicNode,
         activity?: Activity,
-    ): Topic<any, any, any, Context> {
+    ): TopicWithContext<Context> {
 
         const [parent         , context                ] = parentOrContext instanceof Topic
             ? [parentOrContext, parentOrContext.context]
@@ -218,7 +222,7 @@ export abstract class Topic <
         if (!T)
             throw `An attempt was made to load unregistered topic ${topicNode.className}.`
 
-        const topic = new T(topicNode.constructorArgs) as Topic<any, any, any, Context>;
+        const topic = new T(topicNode.constructorArgs) as TopicWithContext<Context>;
 
         topic.context = activity ? Topic.getContext(context, activity) : context;
         topic.parent = parent;
@@ -263,44 +267,23 @@ export abstract class Topic <
             await this.parent.onChildEnd(this);
     }
 
-    public endChild <
-        T extends Topic<any, any, any, Context> = Topic<any, any, any, Context>,
+    public async endChild <
+        T extends TopicWithContext<Context>,
     > (
-        name: string,
-        returnArgs?: T extends Topic<any, any, infer Return> ? Return : any,
-    ): Promise<void>;
-
-    public endChild <
-        T extends Topic<any, any, any, Context>,
-    > (
-        topic: T,
-        returnArgs?: T extends Topic<any, any, infer Return> ? Return : any,
-    ): Promise<void>;
-
-    public endChild <
-        T extends Topic<any, any, any, Context>,
-    > (
-        topicClass: TopicClass<any, any, any, any, Context, T>,
-        returnArgs?: T extends Topic<any, any, infer Return> ? Return : any,
-    ): Promise<void>;
-
-    public async endChild (
-        child: TopicChildReference<Context>,
-        returnArgs?: any,
+        child: string | T | TopicClass<any, T>,
+        returnArgs?: T extends Topic<any, any, infer Return> ? Return : never,
     ) {
         await this.loadChild(child).end(returnArgs);
     }
 
     public static async start <
-        T extends TopicClass<Start, any, any, Constructor, Context>,
-        Start,
-        Constructor,
-        Context extends TurnContext = TurnContext
+        Context extends TurnContext,
+        TC extends TopicClass<any, TopicWithContext<Context>>,
     > (
-        this: T,
+        this: TC,
         context: Context,
-        startArgs?: Start,
-        constructorArgs?: Constructor,
+        startArgs?: GetStartArgs<TC>,
+        constructorArgs?: GetConstructorArgs<TC>,
     ) {
         if (this === Topic as any)
             throw "You can only 'start' a child of Topic.";
@@ -330,10 +313,9 @@ export abstract class Topic <
     }
 
     public static async dispatch <
-        T extends TopicClass<any, any, any, any, Context>,
-        Context extends TurnContext = TurnContext
+        Context extends TurnContext,
     > (
-        this: T,
+        this: TopicClass<any, TopicWithContext<Context>>,
         context: Context,
     ) {
         if (this === Topic as any)
@@ -373,8 +355,8 @@ export abstract class Topic <
     }
 
     public get hasStartedChildren () {
-        for (const ti of Object.values(this.children)) {
-            if (ti.lifecycle === TopicLifecycle.Started)
+        for (const tn of Object.values(this.children)) {
+            if (tn.lifecycle === TopicLifecycle.Started)
                 return true;
         }
 
@@ -417,21 +399,19 @@ export abstract class Topic <
     }
 
     public createChild <
-        Constructor,
-        T extends Topic<any, any, any, Context>,
+        TC extends TopicClass<any, TopicWithContext<Context>>
     > (
         name: string,
-        topicClass: TopicClass<any, any, any, Constructor, Context, T>,
-        constructorArgs?: Constructor,
-    ): Promise<T>;
+        topicClass: TC,
+        constructorArgs?: GetConstructorArgs<TC>,
+    ): Promise<GetTopic<TC>>;
 
     public createChild <
-        Constructor,
-        T extends Topic<any, any, any, Context>
+        TC extends TopicClass<any, TopicWithContext<Context>>
     > (
-        topicClass: TopicClass<any, any, any, Constructor, Context, T>,
-        constructorArgs?: Constructor,
-    ): Promise<T>;
+        topicClass: TC,
+        constructorArgs?: GetConstructorArgs<TC>,
+    ): Promise<GetTopic<TC>>;
 
     public async createChild (
         ... args: any[],
@@ -450,21 +430,21 @@ export abstract class Topic <
     }
 
     public loadChild <
-        T extends Topic<any, any, any, Context> = Topic<any, any, any, Context>,
+        T extends TopicWithContext<Context>,
     > (
-        child: string | T | TopicClass<any, any, any, any, Context, T>,
+        child: string | T | TopicClass<any, T>,
         activity?: Activity,
     ): T {
         if (child instanceof Topic)
             return activity ? Topic.loadTopic(this, child.topicNode, activity) as T : child;
 
         const name = typeof child === 'string' ? child : child.name;
-        const ti = this.children[name];
+        const tn = this.children[name];
 
-        if (!ti)
+        if (!tn)
             throw `No child with name ${name}`;
 
-        const topic = Topic.loadTopic(this, ti, activity) as T;
+        const topic = Topic.loadTopic(this, tn, activity) as T;
 
         if (typeof child === 'function' && topic.topicNode.className !== name)
             throw `The child named ${name} is not an instance of that class.`;
@@ -473,37 +453,28 @@ export abstract class Topic <
     }
 
     public startChild <
-        T extends Topic<any, any, any, Context> = Topic<any, any, any, Context>,
+        T extends TopicWithContext<Context>,
+    > (
+        child: string | T,
+        startArgs?: T extends Topic<infer Start> ? Start : never,
+    ): Promise<T>;
+
+    public startChild <
+        TC extends TopicClass<any, TopicWithContext<Context>>,
+    > (
+        topicClass: TC,
+        startArgs?: GetStartArgs<TC>,
+        constructorArgs?: GetConstructorArgs<TC>,
+    ): Promise<GetTopic<TC>>;
+
+    public startChild <
+        TC extends TopicClass<any, TopicWithContext<Context>>,
     > (
         name: string,
-        startArgs?: T extends Topic<infer Start> ? Start : any,
-    ): Promise<T>;
-
-    public startChild <
-        T extends Topic<any, any, any, Context>,
-    > (
-        topic: T,
-        startArgs?: T extends Topic<infer Start> ? Start : any,
-    ): Promise<T>;
-
-    public startChild <
-        Constructor,
-        T extends Topic<any, any, any, Context>,
-    > (
-        topicClass: TopicClass<any, any, any, Constructor, Context, T>,
-        startArgs?: T extends Topic<infer Start> ? Start : any,
-        constructorArgs?: Constructor,
-    ): Promise<T>;
-
-    public startChild <
-        Constructor,
-        T extends Topic<Start, any, any, Context>,
-    > (
-        name: string,
-        topicClass: TopicClass<Start, any, any, Constructor, Context, T>,
-        startArgs?: T extends Topic<infer Start> ? Start : any,
-        constructorArgs?: Constructor,
-    ): Promise<T>;
+        topicClass: TC,
+        startArgs?: GetStartArgs<TC>,
+        constructorArgs?: GetConstructorArgs<TC>,
+    ): Promise<GetTopic<TC>>;
 
     public async startChild (
         ... args: any[],
@@ -511,31 +482,31 @@ export abstract class Topic <
         let   [name                    , topic                                   , i] = typeof args[0] === 'string'
             ? [args[0]                 , undefined                               , 1] : typeof args[0] === 'function'
             ? [args[0].name            , undefined                               , 0]
-            : [args[0].constructor.name, args[0] as Topic<any, any, any, Context>, 0];
+            : [args[0].constructor.name, args[0] as TopicWithContext<Context>    , 0];
 
-        let   [topicClass, startArgs  , constructorArgs] = typeof args[i] === 'function'
-            ? [args[i]   , args[i + 1], args[i + 2]    ]
-            : [undefined , args[i]    , args[i + 1]    ];
+        let   [topicClass                                           , startArgs  , constructorArgs] = typeof args[i] === 'function'
+            ? [args[i] as TopicClass<any, TopicWithContext<Context>>, args[i + 1], args[i + 2]    ]
+            : [undefined                                            , args[i]    , args[i + 1]    ];
 
+        let create = true;
 
-        let create = false;
+        let tn = this.children[name];
 
-        let ti = this.children[name];
-
-        if (ti) {
-            if (topicClass && topicClass !== ti.className)
-                create = true;
+        if (tn) {
+            create = !!topicClass && topicClass.name !== tn.className;
         } else {
             if (!topicClass)
                 throw `There is no child named ${name}. When starting a new topic you must provide the topic class.`;
             create = true;
         }
 
+        console.log("HEY", args, create);
+
         if (create)
-            topic = await this.createChild(name, topicClass, constructorArgs);
+            topic = await this.createChild(name, topicClass!, constructorArgs);
 
         if (!topic)
-            topic = Topic.loadTopic(this, ti);
+            topic = Topic.loadTopic(this, tn);
 
         await topic.start(startArgs);
 
@@ -660,7 +631,7 @@ export abstract class Topic <
     }
 
     public async onChildEnd(
-        child: Topic<any, any, any, Context>,
+        child: TopicWithContext<Context>,
     ) {
     }
 
@@ -672,4 +643,3 @@ export abstract class Topic <
     ) {
     }
 }
-

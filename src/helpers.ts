@@ -1,5 +1,5 @@
 import { Promiseable, MiddlewareHandler, ConsoleAdapter, TurnContext, Activity, ConversationAccount } from "botbuilder";
-import { TopicClass, Topic, Score, StartScore, DispatchScore } from "./topical";
+import { TopicClass, Topic, Score, StartScore, DispatchScore, TopicWithContext, GetStartArgs, GetConstructorArgs } from "./topical";
 
 export const toPromise = <T> (t: Promiseable<T>) => (t as any).then ? (t as Promise<T>) : Promise.resolve<T>(t);
 
@@ -69,25 +69,23 @@ export const consoleOnTurn = async (
 }
 
 export const doTopic = async <
-    T extends TopicClass<Start, any, any, Constructor, Context>,
-    Start,
-    Constructor,
-    Context extends TurnContext = TurnContext
+    Context extends TurnContext,
+    TC extends TopicClass<any, TopicWithContext<Context>>,
 > (
-    topic: T,
+    topicClass: TC,
     context: Context,
-    startArgs?: Start,
-    constructorArgs?: Constructor,
+    startArgs?: GetStartArgs<TC>,
+    constructorArgs?: GetConstructorArgs<TC>,
 ) => {
     if (context.activity.type === 'conversationUpdate') {
         for (const member of context.activity.membersAdded!) {
             if (member.id === context.activity.recipient.id) {
-                await (topic as any).start(context, startArgs, constructorArgs);
+                await (topicClass as any).start(context, startArgs, constructorArgs);
             }
         }
     }
 
-    await (topic as any).dispatch(context);
+    await (topicClass as any).dispatch(context);
 }
 
 export const startIfScore = async <
