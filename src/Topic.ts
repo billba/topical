@@ -243,7 +243,7 @@ export abstract class Topic <
         // await this.sendTelemetry(context, newInstance, 'init.start');
 
         if (this.topicNode.lifecycle !== TopicLifecycle.Created)
-            this.recycle();
+            await this.recycle();
 
         this.topicNode.lifecycle = TopicLifecycle.Started;
 
@@ -497,10 +497,7 @@ export abstract class Topic <
         } else {
             if (!topicClass)
                 throw `There is no child named ${name}. When starting a new topic you must provide the topic class.`;
-            create = true;
         }
-
-        console.log("HEY", args, create);
 
         if (create)
             topic = await this.createChild(name, topicClass!, constructorArgs);
