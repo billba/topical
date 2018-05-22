@@ -32,6 +32,24 @@ export interface TopicClass <
     ): T;
 
     name: string;
+
+    start <
+        Context extends TurnContext,
+        TC extends TopicClass<any, TopicWithContext<Context>>,
+    > (
+        this: TC,
+        context: Context,
+        startArgs?: GetStartArgs<TC>,
+        constructorArgs?: GetConstructorArgs<TC>,
+    ): Promise<void>;
+
+    dispatch <
+        Context extends TurnContext,
+    > (
+        this: TopicClass<any, TopicWithContext<Context>>,
+        context: Context,
+    ): Promise<void>;
+
 }
 
 export type GetConstructorArgs<TC> = TC extends TopicClass<infer Constructor> ? Constructor : never;
@@ -98,20 +116,21 @@ export abstract class Topic <
     private static topics: Record<string, TopicClass> = {};
 
     public static register (
+        this: TopicClass,
     ) {
 
-        if (this === Topic)
+        if (this === Topic as any)
             return;
 
         const T = Topic.topics[this.name];
 
         if (T) {
-            if (T === this as any)
+            if (T === this)
                 return; // no need to re-register
             throw `A different topic with name ${T.name} has already been registered.`
         }
 
-        Topic.topics[this.name] = this as any;
+        Topic.topics[this.name] = this;
     }
 
     public get state () {
