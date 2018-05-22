@@ -80,12 +80,12 @@ export const doTopic = async <
     if (context.activity.type === 'conversationUpdate') {
         for (const member of context.activity.membersAdded!) {
             if (member.id === context.activity.recipient.id) {
-                await topicClass.start(context, startArgs, constructorArgs);
+                await (topicClass as any).start(context, startArgs, constructorArgs);
             }
         }
     }
 
-    await topicClass.dispatch(context);
+    await (topicClass as any).dispatch(context);
 }
 
 export const startIfScore = async <
