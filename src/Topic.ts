@@ -477,31 +477,28 @@ export abstract class Topic <
     public async startChild (
         ... args: any[],
     ) {
-        let   [name                    , topic                                   , i] = typeof args[0] === 'string'
-            ? [args[0]                 , undefined                               , 1] : typeof args[0] === 'function'
-            ? [args[0].name            , undefined                               , 0]
-            : [args[0].constructor.name, args[0] as TopicWithContext<Context>    , 0];
+        let   [name                    , topic                               , i] = typeof args[0] === 'string'
+            ? [args[0]                 , undefined                           , 1] : typeof args[0] === 'function'
+            ? [args[0].name            , undefined                           , 0]
+            : [args[0].constructor.name, args[0] as TopicWithContext<Context>, 0];
 
         let   [topicClass                                           , startArgs  , constructorArgs] = typeof args[i] === 'function'
             ? [args[i] as TopicClass<any, TopicWithContext<Context>>, args[i + 1], args[i + 2]    ]
             : [undefined                                            , args[i]    , args[i + 1]    ];
 
-        let create = true;
+        if (!topic) {
+            const tn = this.children[name];
 
-        let tn = this.children[name];
+            if (tn) {
+                if (!topicClass || topicClass.name === tn.className)
+                    topic = Topic.loadTopic(this, tn);
+            } else if (!topicClass) {
+                throw `There is no child named ${name}. If you wish to create a topic you must provide the topic class.`;
+            }
 
-        if (tn) {
-            create = !!topicClass && topicClass.name !== tn.className;
-        } else {
-            if (!topicClass)
-                throw `There is no child named ${name}. When starting a new topic you must provide the topic class.`;
+            if (!topic)
+                topic = await this.createChild(name, topicClass!, constructorArgs);
         }
-
-        if (create)
-            topic = await this.createChild(name, topicClass!, constructorArgs);
-
-        if (!topic)
-            topic = Topic.loadTopic(this, tn);
 
         await topic.start(startArgs);
 
