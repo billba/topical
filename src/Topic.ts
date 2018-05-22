@@ -56,8 +56,6 @@ export type GetConstructorArgs<TC> = TC extends TopicClass<infer Constructor> ? 
 
 export type GetStartArgs<TC> = TC extends TopicClass<any, Topic<infer Start>> ? Start : never;
 
-export type GetTopic<TC> =  TC extends TopicClass<any, infer T> ? T : never;
-
 export type TopicChildReference <
     Context extends TurnContext,
 > = string | TopicWithContext<Context> | TopicClass<any, TopicWithContext<Context>>;
@@ -423,14 +421,14 @@ export abstract class Topic <
         name: string,
         topicClass: TC,
         constructorArgs?: GetConstructorArgs<TC>,
-    ): Promise<GetTopic<TC>>;
+    ): Promise<InstanceType<TC>>;
 
     public createChild <
         TC extends TopicClass<any, TopicWithContext<Context>>
     > (
         topicClass: TC,
         constructorArgs?: GetConstructorArgs<TC>,
-    ): Promise<GetTopic<TC>>;
+    ): Promise<InstanceType<TC>>;
 
     public async createChild (
         ... args: any[],
@@ -484,7 +482,7 @@ export abstract class Topic <
         topicClass: TC,
         startArgs?: GetStartArgs<TC>,
         constructorArgs?: GetConstructorArgs<TC>,
-    ): Promise<GetTopic<TC>>;
+    ): Promise<InstanceType<TC>>;
 
     public startChild <
         TC extends TopicClass<any, TopicWithContext<Context>>,
@@ -493,7 +491,7 @@ export abstract class Topic <
         topicClass: TC,
         startArgs?: GetStartArgs<TC>,
         constructorArgs?: GetConstructorArgs<TC>,
-    ): Promise<GetTopic<TC>>;
+    ): Promise<InstanceType<TC>>;
 
     public async startChild (
         ... args: any[],
