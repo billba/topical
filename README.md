@@ -87,11 +87,12 @@ First, initialize *Topical* by calling `Topic.init` with a state storage provide
 ```ts
 Topic.init(new MemoryStorage());
 ```
-Then, create a subclass of `Topic` which will be your "root". Every activity for every user in every conversation will flow through this topic. A typical root topic will create one or more children and dispatch messages to them.
+Then, create a subclass of `Topic` which will be your "root". Every activity for every user in every conversation will flow through this topic. A typical root topic will create one or more children and dispatch messages to them. Every topic must be registered after it is defined:
 ```ts
 class YourRootTopic extends Topic {
     // your topic here
 }
+YourRootTopic.register();
 ```
 Finally it's time to hook your root topic up to your message loop:
 ```ts
